@@ -1,3 +1,3 @@
 This is my professional website.
 
-Made with https://github.com/ronv/ultra theme.
+To serve locally: bundle exec jekyll serve
