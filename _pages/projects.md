@@ -5,7 +5,7 @@ title: Projects
 
 ## Working papers
 
-[Judicial subversion: The effects of political power on court outcomes](https://github.com/gbrlambais/papers/blob/master/judicial_subervsion.pdf). (with Guilherme Lambais). [Latest version: March 2020]
+[Judicial subversion: The effects of political power on court outcomes](https://www.dropbox.com/s/q2ac97xrhvciv7k/subversion.pdf?dl=0). (with Guilherme Lambais). [Latest version: March 2020]
 
 <button class="collapsible" id="subversion">Abstract</button>
 
