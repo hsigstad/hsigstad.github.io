@@ -170,19 +170,94 @@ pre code { background: transparent; border: none; padding: 0; }
   }
 }
 
-/* Mobile: stack (TOC accessible at top) */
+/* Mobile: drawer-based TOC */
 @media (max-width: 999px) {
   .book-nav {
+    position: fixed;
+    top: 0;
+    left: -100%;
+    width: 85%;
+    max-width: 380px;
+    height: 100vh;
+    overflow-y: auto;
+    z-index: 1000;
     padding: var(--page-pad);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    background: var(--soft);
-    margin: 0 0 1rem 0;
+    padding-top: 1.5rem;
+    background: var(--bg);
+    border-right: 1px solid var(--border);
+    box-shadow: 2px 0 12px rgba(0,0,0,0.15);
+    transition: left 0.3s ease-out;
+  }
+
+  .book-nav.mobile-open {
+    left: 0;
   }
 
   .book-main {
     padding: 0 var(--page-pad) var(--page-pad) var(--page-pad);
     margin: 0 auto;
+  }
+
+  /* Mobile TOC toggle button */
+  .mobile-toc-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 999;
+    padding: 0.75rem 1rem;
+    background: var(--link);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-family: var(--sans);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .mobile-toc-toggle:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+  }
+
+  .mobile-toc-toggle:active {
+    transform: translateY(0);
+  }
+
+  .mobile-toc-toggle svg {
+    flex-shrink: 0;
+  }
+
+  /* Backdrop */
+  .mobile-toc-backdrop {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    background: rgba(0,0,0,0.5);
+    z-index: 999;
+    opacity: 0;
+    transition: opacity 0.3s ease-out;
+  }
+
+  .mobile-toc-backdrop.active {
+    display: block;
+    opacity: 1;
+  }
+}
+
+/* Hide mobile elements on desktop */
+@media (min-width: 1000px) {
+  .mobile-toc-toggle,
+  .mobile-toc-backdrop {
+    display: none !important;
   }
 }
 
