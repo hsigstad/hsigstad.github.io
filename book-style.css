@@ -21,16 +21,32 @@
   --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
-  /* Layout knobs */
   --nav-w: 340px;
   --content-measure: 70ch;
 }
 
-/* ---------------------------------
-   Base
-   --------------------------------- */
-
 html { scroll-behavior: smooth; }
+
+/* ============================================================
+   IMPORTANT: Org exporter wraps everything in #content (and sometimes
+   adds width constraints). Neutralize those so our layout applies
+   uniformly to the whole page.
+   ============================================================ */
+
+#content {
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+#content > #table-of-contents {
+  /* if Org ever emits an extra TOC outside your aside, hide it */
+  display: none;
+}
+
+/* ============================================================
+   Base typography
+   ============================================================ */
 
 body {
   margin: 0;
@@ -40,7 +56,6 @@ body {
   line-height: 1.68;
   color: var(--text);
   background: var(--bg);
-
   counter-reset: part chapter section;
 }
 
@@ -114,83 +129,22 @@ pre {
 }
 pre code { background: transparent; border: none; padding: 0; }
 
-/* Pedagogical boxes */
-.intuitionbox, .examplebox, .takeawaybox, .robustnessbox,
-.assumptionbox, .workedexample,
-.chapterorientationbox, .foundationorientationbox,
-.questionblock {
-  border: 1px solid var(--border);
-  border-left-width: 5px;
-  border-radius: var(--radius);
-  padding: 0.95rem 1.05rem;
-  margin: 1.1rem 0;
-  background: var(--soft);
-  box-shadow: var(--shadow);
-}
-.intuitionbox { background: rgba(0,0,0,0.03); border-left-color: rgba(0,0,0,0.35); }
-.examplebox { background: rgba(0,80,160,0.06); border-left-color: rgba(0,80,160,0.45); }
-.takeawaybox { background: rgba(0,120,60,0.06); border-left-color: rgba(0,120,60,0.45); }
-.robustnessbox { background: rgba(184,134,11,0.08); border-left-color: rgba(184,134,11,0.55); }
-.assumptionbox { background: rgba(120,0,120,0.06); border-left-color: rgba(120,0,120,0.45); }
-.chapterorientationbox { background: rgba(0,0,0,0.025); border-left-color: rgba(0,0,0,0.25); }
-.foundationorientationbox { background: rgba(0,0,0,0.035); border-left-color: rgba(0,0,0,0.30); }
-.workedexample { background: rgba(0,80,160,0.06); border-left-color: rgba(0,80,160,0.60); }
-.questionblock { background: rgba(0,0,0,0.02); border-left-color: rgba(0,0,0,0.28); }
-
-.intuitionbox::before,
-.examplebox::before,
-.takeawaybox::before,
-.robustnessbox::before,
-.assumptionbox::before,
-.workedexample::before,
-.chapterorientationbox::before,
-.foundationorientationbox::before {
-  display: block;
-  font-family: var(--sans);
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  font-size: 0.92rem;
-  margin-bottom: 0.45rem;
-  color: rgba(0,0,0,0.78);
-}
-.intuitionbox::before { content: "Intuition"; }
-.examplebox::before { content: "Example"; }
-.takeawaybox::before { content: "Takeaway"; }
-.robustnessbox::before { content: "Robustness"; }
-.assumptionbox::before { content: "Assumptions in Focus"; }
-.workedexample::before { content: "Worked Example (exam-style reasoning)"; }
-.chapterorientationbox::before { content: "Chapter Orientation"; }
-.foundationorientationbox::before { content: "Foundations Orientation"; }
-
-/* Front matter */
-.book-frontmatter {
-  text-align: center;
-  margin: 3rem 0 2.5rem 0;
-}
-.book-title { font-size: 2.1rem; font-weight: 700; margin: 0 0 0.6rem 0; }
-.book-subtitle { font-size: 1.2rem; font-weight: 400; color: rgba(0,0,0,0.7); margin: 0 0 1.2rem 0; }
-.book-author { font-size: 1rem; font-weight: 400; color: rgba(0,0,0,0.6); margin: 0; }
-
 /* ============================================================
-   Layout
-   Desktop: permanent sticky sidebar
-   Mobile: off-canvas drawer opened by a fixed button
+   Two-column layout (desktop): TOC left, EVERYTHING else right
    ============================================================ */
 
 .book-layout {
   max-width: var(--site-max);
   margin: 0 auto;
-  padding: 1.25rem 1.25rem;
+  padding: 1.5rem 1.25rem;
 }
 
-/* Main reading column always uses a stable measure */
+/* Right column: make sure it wraps ALL Org content */
 .book-main {
   max-width: var(--content-measure);
-  margin: 0 auto;
-  padding: 0 var(--page-pad) var(--page-pad) var(--page-pad);
 }
 
-/* ---------- Desktop: permanent sidebar ---------- */
+/* Desktop: permanent sticky sidebar */
 @media (min-width: 1000px) {
   .book-layout {
     display: grid;
@@ -204,82 +158,48 @@ pre code { background: transparent; border: none; padding: 0; }
     top: 1rem;
     max-height: calc(100vh - 2rem);
     overflow: auto;
+
     padding: var(--page-pad);
     border-right: 1px solid var(--border);
-    background: transparent;
-    transform: none !important; /* in case classes linger */
   }
 
   .book-main {
-    margin: 0;
     padding: 0 var(--page-pad) var(--page-pad) var(--page-pad);
+    margin: 0;
     justify-self: start;
   }
-
-  /* Hide mobile-only elements */
-  .nav-toggle { display: none; }
-  .nav-backdrop { display: none !important; }
 }
 
-/* ---------- Mobile: drawer + fixed “Contents” button ---------- */
+/* Mobile: stack (TOC accessible at top) */
 @media (max-width: 999px) {
-  /* Always-available button */
-  .nav-toggle {
-    position: fixed;
-    top: 0.9rem;
-    left: 0.9rem;
-    z-index: 1300;
-  }
-
-  .nav-toggle button {
-    font: 650 0.98rem/1 var(--sans);
-    padding: 0.58rem 0.85rem;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    background: rgba(0,0,0,0.02);
-    box-shadow: 0 8px 22px rgba(0,0,0,0.14);
-  }
-
-  /* Backdrop when open */
-  .nav-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.35);
-    z-index: 1200;
-  }
-
-  /* Drawer */
   .book-nav {
-    position: fixed;
-    inset: 0 auto 0 0;
-    width: min(85vw, 360px);
-    transform: translateX(-105%);
-    transition: transform 180ms ease;
-    z-index: 1250;
-
-    background: var(--bg);
-    border-right: 1px solid var(--border);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.18);
     padding: var(--page-pad);
-    overflow: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--soft);
+    margin: 0 0 1rem 0;
   }
 
-  .book-nav.is-open {
-    transform: translateX(0);
+  .book-main {
+    padding: 0 var(--page-pad) var(--page-pad) var(--page-pad);
+    margin: 0 auto;
   }
-
-  /* Prevent background scroll when nav open */
-  html.nav-open, html.nav-open body {
-    height: 100%;
-    overflow: hidden;
-  }
-
-  /* Give the content a bit of top space so the fixed button doesn’t overlap title */
-  .book-main { padding-top: calc(var(--page-pad) + 2.25rem); }
 }
 
 /* ============================================================
-   TOC in sidebar: optimized (not the old centered box)
+   Front matter
+   ============================================================ */
+
+.book-frontmatter {
+  text-align: center;
+  margin: 3rem 0 2.5rem 0;
+}
+.book-title { font-size: 2.1rem; font-weight: 700; margin: 0 0 0.6rem 0; }
+.book-subtitle { font-size: 1.2rem; font-weight: 400; color: rgba(0,0,0,0.7); margin: 0 0 1.2rem 0; }
+.book-author { font-size: 1rem; font-weight: 400; color: rgba(0,0,0,0.6); margin: 0; }
+
+/* ============================================================
+   TOC: sidebar-optimized (no centered box)
    ============================================================ */
 
 #table-of-contents {
@@ -375,49 +295,91 @@ body { counter-reset: part chapter section; }
   body { font-size: 1.10rem; }
 }
 
-/* Dark mode */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: rgba(255,255,255,0.92);
-    --muted: rgba(255,255,255,0.68);
-    --bg: #0f1115;
-    --soft: rgba(255,255,255,0.06);
-    --border: rgba(255,255,255,0.16);
 
-    --link: #7ab4ff;
-    --link-visited: #c39bff;
+/* ----------------------------
+   5) Your pedagogical boxes — upgraded
+   - More “booky”: left accent + small header label
+   ---------------------------- */
 
-    --code-bg: rgba(255,255,255,0.08);
-    --code-border: rgba(255,255,255,0.14);
-
-    --shadow: 0 1px 2px rgba(0,0,0,0.35);
-  }
-
-  .intuitionbox::before,
-  .examplebox::before,
-  .takeawaybox::before,
-  .robustnessbox::before,
-  .assumptionbox::before,
-  .workedexample::before,
-  .chapterorientationbox::before,
-  .foundationorientationbox::before { color: rgba(255,255,255,0.82); }
-
-  th { background: rgba(255,255,255,0.06); }
-
-  @media (max-width: 999px) {
-    .nav-toggle button { background: rgba(255,255,255,0.06); }
-    .nav-backdrop { background: rgba(0,0,0,0.55); }
-  }
+/* Generic box styling */
+.intuitionbox, .examplebox, .takeawaybox, .robustnessbox,
+.assumptionbox, .workedexample,
+.chapterorientationbox, .foundationorientationbox,
+.questionblock {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.95rem 1.05rem;
+  margin: 1.1rem 0;
+  background: var(--soft);
+  box-shadow: var(--shadow);
 }
 
-/* Print */
-@media print {
-  .book-layout { display: block; max-width: none; padding: 0; }
-  .book-nav { position: static; max-height: none; overflow: visible; border-right: none; box-shadow: none; }
-  .nav-toggle, .nav-backdrop { display: none !important; }
-  a { color: inherit; text-decoration: none; }
-  pre { page-break-inside: avoid; }
-  .intuitionbox, .examplebox, .takeawaybox, .robustnessbox,
-  .assumptionbox, .workedexample, .chapterorientationbox,
-  .foundationorientationbox, .questionblock { box-shadow: none; }
+/* Left accent to help scanning */
+.intuitionbox, .examplebox, .takeawaybox, .robustnessbox,
+.assumptionbox, .workedexample,
+.chapterorientationbox, .foundationorientationbox,
+.questionblock {
+  border-left-width: 5px;
+}
+
+/* Slight differentiation by type (subtle) */
+.intuitionbox { background: rgba(0,0,0,0.03); border-left-color: rgba(0,0,0,0.35); }
+.examplebox { background: rgba(0,80,160,0.06); border-left-color: rgba(0,80,160,0.45); }
+.takeawaybox { background: rgba(0,120,60,0.06); border-left-color: rgba(0,120,60,0.45); }
+.robustnessbox { background: rgba(184,134,11,0.08); border-left-color: rgba(184,134,11,0.55); }
+.assumptionbox { background: rgba(120,0,120,0.06); border-left-color: rgba(120,0,120,0.45); }
+
+.chapterorientationbox { background: rgba(0,0,0,0.025); border-left-color: rgba(0,0,0,0.25); }
+.foundationorientationbox { background: rgba(0,0,0,0.035); border-left-color: rgba(0,0,0,0.30); }
+
+.workedexample {
+  background: rgba(0,80,160,0.06);
+  border-left-color: rgba(0,80,160,0.60);
+  border-width: 1px;
+}
+
+/* Box “titles” via CSS only (more subtle + consistent) */
+.intuitionbox::before,
+.examplebox::before,
+.takeawaybox::before,
+.robustnessbox::before,
+.assumptionbox::before,
+.workedexample::before,
+.chapterorientationbox::before,
+.foundationorientationbox::before {
+  display: block;
+  font-family: var(--sans);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  font-size: 0.92rem;
+  margin-bottom: 0.45rem;
+  color: rgba(0,0,0,0.78);
+}
+
+.intuitionbox::before { content: "Intuition"; }
+.examplebox::before { content: "Example"; }
+.takeawaybox::before { content: "Takeaway"; }
+.robustnessbox::before { content: "Robustness"; }
+.assumptionbox::before { content: "Assumptions in Focus"; }
+.workedexample::before { content: "Worked Example (exam-style reasoning)"; }
+.chapterorientationbox::before { content: "Chapter Orientation"; }
+.foundationorientationbox::before { content: "Foundations Orientation"; }
+
+/* Make the first paragraph inside boxes slightly tighter */
+.intuitionbox > p:first-child,
+.examplebox > p:first-child,
+.takeawaybox > p:first-child,
+.robustnessbox > p:first-child,
+.assumptionbox > p:first-child,
+.workedexample > p:first-child,
+.chapterorientationbox > p:first-child,
+.foundationorientationbox > p:first-child,
+.questionblock > p:first-child {
+  margin-top: 0.35rem;
+}
+
+/* Question block: make it look “exam prompt”-like */
+.questionblock {
+  background: rgba(0,0,0,0.02);
+  border-left-color: rgba(0,0,0,0.28);
 }
