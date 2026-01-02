@@ -622,10 +622,12 @@ body { counter-reset: part chapter section; }
   transform: rotate(-90deg);
 }
 
-/* Make entire heading clickable */
+/* Make entire heading clickable and use flexbox for ordering */
 h2.foldable-heading,
 h3.foldable-heading,
 h4.foldable-heading {
+  display: inline-flex;
+  align-items: baseline;
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
@@ -638,9 +640,26 @@ h4.foldable-heading:hover {
   opacity: 0.85;
 }
 
+/* Order elements: arrow first, then counter, then text */
+.heading-fold-arrow {
+  order: -1;
+}
+
+h2.foldable-heading::before,
+h3.foldable-heading::before,
+h4.foldable-heading::before {
+  order: 0;
+}
+
+.heading-text {
+  order: 1;
+}
+
 /* Content that can be folded */
 .foldable-content {
   overflow: hidden;
+  max-height: 0;
+  opacity: 0;
   transition: max-height 0.4s ease, opacity 0.3s ease;
 }
 
@@ -653,17 +672,11 @@ h4.foldable-heading:hover {
   padding: 0;
 }
 
-/* Expanded state - show content */
-.foldable-content:not(.heading-folded) {
+/* Expanded state - show content (only when NOT inside a folded heading) */
+div:not(.heading-folded) > .foldable-content,
+div:not(.heading-folded) ~ div > .foldable-content {
   max-height: none;
   opacity: 1;
-}
-
-/* Ensure counter numbers still display correctly */
-.outline-2 > h2.foldable-heading::before,
-.outline-3 > h3.foldable-heading::before,
-.outline-4 > h4.foldable-heading::before {
-  /* Inherit existing counter styles */
 }
 
 /* Mobile: Larger tap target for fold arrow */
