@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="robots" content="noindex, nofollow">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DataJud — Judicialização da Saúde</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+  :root {
+    --bg: #f8f9fa; --card: #fff; --fg: #1a1a1a; --muted: #666;
+    --border: #dee2e6; --accent: #0d6efd; --accent2: #198754;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--fg); line-height: 1.5;
+  }
+  .stats-bar { display: flex; gap: .8rem; padding: 1rem 2rem; flex-wrap: wrap; }
+  .stat-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: .75rem 1rem; flex: 1; min-width: 140px; text-align: center;
+  }
+  .stat-card .value { font-size: 1.4rem; font-weight: 700; color: var(--accent); }
+  .stat-card .label { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+
+  main { padding: 0 2rem 3rem; max-width: 1400px; margin: 0 auto; }
+  h2.section-title { font-size: 1.15rem; margin: 1.6rem 0 .8rem; padding-bottom: .3rem; border-bottom: 2px solid var(--border); }
+  .narrative { font-size: .9rem; line-height: 1.7; color: #333; margin-bottom: 1rem; }
+  .narrative ul { margin: .5rem 0 .5rem 1.5rem; }
+  .narrative li { margin-bottom: .25rem; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1.2rem 1.4rem; }
+  .card h3 { font-size: .95rem; margin-bottom: .8rem; color: var(--fg); }
+  .card.full { grid-column: 1 / -1; }
+  .chart-wrap { position: relative; width: 100%; }
+  .chart-wrap.bar { height: 300px; }
+  .chart-wrap.hbar { height: 320px; }
+
+  .ds-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+  .ds-table th, .ds-table td { padding: .45rem .6rem; border-bottom: 1px solid var(--border); text-align: left; }
+  .ds-table th { background: #f0f4f8; font-weight: 600; }
+  .ds-table a { color: var(--accent); text-decoration: none; font-weight: 600; }
+  .ds-table a:hover { text-decoration: underline; }
+
+  .ref-table { width: 100%; border-collapse: collapse; font-size: .82rem; margin-top: .5rem; }
+  .ref-table th, .ref-table td { padding: .35rem .6rem; border-bottom: 1px solid var(--border); text-align: left; }
+  .ref-table th { background: #f0f4f8; font-weight: 600; }
+
+  footer { text-align: center; padding: 1.5rem; font-size: .8rem; color: var(--muted); border-top: 1px solid var(--border); margin-top: 2rem; }
+</style>
+</head>
+<body>
+
+<style>
+  .site-nav {
+    position: sticky; top: 0; z-index: 100;
+    background: #212529; display: flex; align-items: center;
+    padding: 0 2rem; height: 3rem;
+  }
+  .site-nav .nav-brand {
+    color: #fff; text-decoration: none; font-weight: 600; font-size: 1rem;
+    margin-right: auto;
+  }
+  .site-nav .nav-brand:hover { color: #e9ecef; }
+  .site-nav .nav-link {
+    color: #adb5bd; text-decoration: none; font-size: .85rem;
+    padding: 0 .75rem; height: 3rem; display: flex; align-items: center;
+    background: none; border: none; cursor: pointer; font-family: inherit;
+  }
+  .site-nav .nav-link:hover, .site-nav .nav-link.active { color: #fff; }
+  .nav-dropdown { position: relative; }
+  .dropdown-menu {
+    display: none; position: absolute; top: 3rem; right: 0;
+    background: #fff; border: 1px solid var(--border); border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.12); min-width: 220px;
+    padding: .4rem 0; z-index: 200; max-height: 80vh; overflow-y: auto;
+  }
+  .nav-dropdown.open .dropdown-menu { display: block; }
+  .dropdown-menu a {
+    display: block; padding: .3rem 1rem; color: #1a1a1a;
+    text-decoration: none; font-size: .82rem;
+  }
+  .dropdown-menu a:hover { background: #f0f4f8; }
+  .dropdown-group-label {
+    padding: .4rem 1rem .15rem; font-size: .68rem; font-weight: 700;
+    color: #888; text-transform: uppercase; letter-spacing: .04em;
+  }
+  .dropdown-divider { border-top: 1px solid #eee; margin: .3rem 0; }
+  .page-header {
+    padding: .8rem 2rem; border-bottom: 1px solid var(--border); background: #fff;
+  }
+  .page-header h1 { font-size: 1.3rem; font-weight: 600; }
+  .page-header p { color: var(--muted); font-size: .85rem; margin-top: .15rem; }
+</style>
+
+<nav class="site-nav">
+  <a href="../index.html" class="nav-brand">Judicialização da Saúde</a>
+  <a href="../paper/index.html" class="nav-link">Paper</a>
+  <div class="nav-dropdown">
+    <button class="nav-link">Docs &#9662;</button>
+    <div class="dropdown-menu">
+    <div class="dropdown-group-label">Research reference</div>
+    <a href="../docs/README.html">Project Overview</a>
+    <a href="../docs/summary.html">Research Summary</a>
+    <a href="../docs/institutions.html">Institutional Background</a>
+    <a href="../docs/data.html">Data Sources</a>
+    <a href="../docs/methods.html">Empirical Methods</a>
+    <a href="../docs/literature.html">Literature</a>
+    <a href="../docs/theory.html">Theoretical Framework</a>
+    <a href="../docs/hypotheses.html">Hypotheses & Evidence</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Working notes</div>
+    <a href="../docs/thinking.html">Open Questions & Ideas</a>
+    <a href="../docs/decisions.html">Key Decisions</a>
+    <a href="../docs/qa.html">Research Q&A</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Task tracking</div>
+    <a href="../docs/todo.html">Active Tasks</a>
+    <a href="../docs/done.html">Completed Tasks</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Communication</div>
+    <a href="../docs/meetings.html">Meeting Notes</a>
+    <a href="../docs/feedback.html">External Feedback</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Court analysis</div>
+    <a href="../docs/01-stf-reasoning-templates.html">STF Reasoning Templates</a>
+    <a href="../docs/02-stj-repetitivos-patterns.html">STJ Repetitivos Patterns</a>
+    <a href="../docs/03-tjsp-plans-vs-sus.html">TJSP: Plans vs SUS</a>
+    <a href="../docs/04-conitec-pcdt-vs-courts.html">CONITEC vs Courts</a>
+    <a href="../docs/05-interfederative-responsibility.html">Interfederative Responsibility</a>
+    </div>
+  </div>
+  <div class="nav-dropdown">
+    <button class="nav-link active">Data &#9662;</button>
+    <div class="dropdown-menu">
+    <a href="../sources/tjsp.html">TJSP</a>
+    <a href="../sources/datajud.html">DataJud</a>
+    <a href="../sources/stf-stj.html">STF & STJ</a>
+    <a href="../sources/trf3.html">TRF3</a>
+    <a href="../sources/spending.html">Municipal Spending</a>
+    <a href="../sources/legislation.html">Health Legislation</a>
+    </div>
+  </div>
+  <a href="../references/index.html" class="nav-link">References</a>
+  <a href="../news/index.html" class="nav-link">News</a>
+</nav>
+<script>
+document.querySelectorAll('.nav-dropdown > .nav-link').forEach(function(btn) {
+  btn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    var dd = btn.parentElement;
+    var wasOpen = dd.classList.contains('open');
+    document.querySelectorAll('.nav-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+    if (!wasOpen) dd.classList.add('open');
+  });
+});
+document.addEventListener('click', function() {
+  document.querySelectorAll('.nav-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+});
+</script>
+
+<div class="page-header">
+  <h1>DataJud</h1>
+  <p>Unified case metadata from the CNJ national judicial statistics database.</p>
+</div>
+
+<div class="stats-bar" id="stats-bar"></div>
+
+<main>
+
+<h2 class="section-title">Overview</h2>
+<div class="card full">
+  <div class="narrative">
+    <p>
+      <strong>DataJud</strong> is Brazil's national judicial statistics database, maintained by the
+      <strong>CNJ</strong> (Conselho Nacional de Justiça). It aggregates case metadata from all Brazilian
+      courts via the unified numbering system (<em>numeração única</em>), which standardizes case
+      identifiers across jurisdictions.
+    </p>
+    <p style="margin-top:.6rem">
+      Case subjects and procedural classes follow the <strong>TPU</strong> (Tabelas Processuais Unificadas)
+      taxonomy, a standardized classification system for all Brazilian courts. Our sample consists of
+      TJSP health cases pulled via the DataJud API, providing structured metadata (filing date, court
+      level, subject codes) that complements the TJSP text data.
+    </p>
+  </div>
+</div>
+
+<h2 class="section-title">Distributions</h2>
+<div class="grid" id="chart-grid"></div>
+
+<!-- Reference tables -->
+<h2 class="section-title">Reference Tables</h2>
+<div class="card full">
+  <div class="narrative">
+    <p>
+      Three lookup tables provide the mapping between numeric codes and human-readable names used in
+      the DataJud system:
+    </p>
+    <ul>
+      <li><strong>Assuntos (Subjects)</strong> — maps CNJ subject codes to names following the TPU taxonomy</li>
+      <li><strong>Classes</strong> — maps procedural class codes to names (e.g., Procedimento Comum, Mandado de Segurança)</li>
+      <li><strong>Órgãos Julgadores (Court Units)</strong> — specific court divisions that handle cases, with IBGE municipality codes for geographic mapping</li>
+    </ul>
+  </div>
+  <table class="ref-table" id="ref-summary"></table>
+</div>
+
+<h2 class="section-title">Datasets</h2>
+<div class="card full">
+  <div style="overflow-x:auto;">
+    <table class="ds-table">
+      <thead><tr><th>Dataset</th><th>Description</th><th>Rows</th><th>Columns</th><th>Size</th><th></th></tr></thead>
+      <tbody id="ds-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+</main>
+<footer>Generated by <code>bash build.sh site</code></footer>
+
+<script>
+const DATA = /* INJECT_DATA */ {"id":"datajud","name":"DataJud","description":"Unified case metadata from the CNJ national judicial statistics database.","total_rows":2591,"total_file_size":330429,"dataset_count":4,"temporal_range":{"min":"1995-09-26","max":"2024-06-25"},"datasets":[{"id":"datajud-assuntos","name":"DataJud Subject Lookup","description":"Lookup table of legal subject codes and names from DataJud.","category":"DataJud","source_notes":"Reference table mapping CNJ subject codes (assunto_codigo) to human-readable names. Subjects follow the TPU (Tabelas Processuais Unificadas) taxonomy maintained by the CNJ.","file_size":3456,"row_count":106,"col_count":2,"columns":[{"name":"assunto_codigo","dtype":"int64","null_count":0,"null_pct":0.0},{"name":"assunto_nome","dtype":"object","null_count":0,"null_pct":0.0}],"categorical":{"assunto_nome":{"labels":["Erro Médico","Fornecimento de medicamentos","Tratamento Domiciliar (Home Care)","Tratamento médico-hospitalar","Seguro","Fornecimento de insumos","Irregularidade no atendimento","Internação/Transferência Hospitalar","Tutela de Urgência","Internação Compulsória","Cláusulas Abusivas","Unidade de terapia intensiva (UTI) ou unidade de cuidados intensivos (UCI)","Fornecimento de Medicamentos","Tratamento Médico-Hospitalar","Indenizaçao por Dano Moral","Hospitais e Outras Unidades de Saúde","Financiamento do SUS","Terceirização do SUS","Pessoas com deficiência","Pessoa Idosa"],"values":[4,2,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1]},"assunto_codigo":{"labels":[1855,12488,12486,12485,12484,12483,12416,12030,11974,11885,11884,11883,11864,11856,11854,11852,11851,11843,11842,11811],"values":[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]}},"temporal":{},"sample_columns":["assunto_codigo","assunto_nome"],"sample":[["12519","Vigilância Sanitária e Epidemológica"],["5626","Família"],["3508","Falsificação / Corrupção / Adulteração / Alteração de produto destinado a fins terapêuticos ou medicinais"],["12490","Fornecimento de insumos"],["12509","Internação involuntária"],["11854","Saúde Mental"],["8961","Antecipação de Tutela / Tutela Específica"],["9596","Prestação de Serviços"],["12504","Diálise/Hemodiálise"],["5967","Taxa de Saúde Suplementar"],["10356","Assistência Médico-Hospitalar"],["10240","Posse e Exercício"],["1855","Indenizaçao por Dano Moral"],["12487","Fornecimento de medicamentos"],["7703","Pagamento"],["11852","Financiamento do SUS"],["11864","Irregularidade no atendimento"],["12488","Reajuste contratual"],["10503","Erro Médico"],["10256","Compulsória"],["6004","Anulação de Débito Fiscal"],["12489","Tratamento médico-hospitalar"],["11843","Pessoas com deficiência"],["7794","Tratamento Ambulatorial"],["7770","Interpretação / Revisão de Contrato"],["9047","Efeitos"],["10263","Tratamento da Própria Saúde"],["12416","Tutela de Urgência"],["6226","Inclusão Indevida em Cadastro de Inadimplentes"],["12486","Planos de saúde"],["9995","Erro Médico"],["12499","Fraldas"],["4847","Seguro"],["10434","Erro Médico"],["12506","Unidade de terapia intensiva (UTI) / unidade de cuidados intensivos (UCI)"],["7949","Direitos da Personalidade "],["10064","Saúde"],["3509","Exercício Ilegal da Medicina, Arte Dentária ou Farmacêutica"],["14760","Tratamento Domiciliar (Home Care)"],["12485","Fornecimento de insumos"],["10023","Multas e demais Sanções"],["9606","Compromisso"],["6233","Planos de Saúde"],["10671","Obrigação de Fazer / Não Fazer"],["9597","Seguro"],["4703","Defeito, nulidade ou anulação"],["10244","Assistência à Saúde"],["11856","Hospitais e Outras Unidades de Saúde"],["11885","Unidade de terapia intensiva (UTI) ou unidade de cuidados intensivos (UCI)"],["7795","Internação"]]},{"id":"datajud-classes","name":"DataJud Class Lookup","description":"Lookup table of procedural class codes and names from DataJud.","category":"DataJud","source_notes":"Reference table mapping CNJ procedural class codes to human-readable names. Classes define the type of legal action (e.g., Procedimento Comum, Mandado de Segurança).","file_size":1780,"row_count":49,"col_count":2,"columns":[{"name":"classe_codigo","dtype":"int64","null_count":0,"null_pct":0.0},{"name":"classe_nome","dtype":"object","null_count":0,"null_pct":0.0}],"categorical":{"classe_nome":{"labels":["Procedimento Comum Cível","Agravo de Execução Penal","Embargos de Declaração Criminal","Procedimento do Juizado Especial Cível","Pedido de Uniformização de Interpretação de Lei Cível","Recurso Inominado Cível","Execução Fiscal","Agravo Interno Cível","Exceção de Incompetência","Requisição de Pequeno Valor","Outras medidas provisionais","Tutela Infância e Juventude","Embargos de Declaração Cível","Impugnação de Assistência Judiciária","Procedimento Comum Infância e Juventude","Apelação / Remessa Necessária","Cumprimento Provisório de Decisão","Execução de Medida de Segurança","Reclamação Pré-processual","Cumprimento de Sentença contra a Fazenda Pública"],"values":[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]}},"temporal":{},"sample_columns":["classe_codigo","classe_nome"],"sample":[["204","Agravo de Instrumento em Recurso Extraordinário"],["12088","Liquidação Provisória de Sentença pelo Procedimento Comum"],["12135","Tutela Antecipada Antecedente"],["12078","Cumprimento de Sentença contra a Fazenda Pública"],["233","Incidente de Uniformização de Jurisprudência"],["420","Embargos de Declaração Criminal"],["417","Apelação Criminal"],["413","Agravo de Execução Penal"],["1116","Execução Fiscal"],["241","Petição Cível"],["202","Agravo de Instrumento"],["65","Ação Civil Pública"],["1266","Requisição de Pequeno Valor"],["156","Cumprimento de sentença"],["64","Ação Civil de Improbidade Administrativa"],["151","Liquidação por Arbitramento"],["1728","Apelação / Remessa Necessária"],["10980","Cumprimento Provisório de Decisão"],["12134","Tutela Cautelar Antecedente"],["212","Recurso Extraordinário"],["157","Cumprimento Provisório de Sentença"],["228","Exibição de Documento ou Coisa Cível"],["386","Execução da Pena"],["1232","Exceção de Incompetência"],["460","Recurso Inominado Cível"],["7","Procedimento Comum Cível"],["11875","Reclamação Pré-processual"],["1208","Agravo Interno Cível"],["120","Mandado de Segurança Cível"],["457","Pedido de Uniformização de Interpretação de Lei Cível"],["199","Remessa Necessária Cível"],["1396","Tutela Infância e Juventude"],["22","Procedimento Sumário"],["278","Termo Circunstanciado"],["38","Habilitação"],["1689","Embargos de Declaração Cível"],["1289","Outras medidas provisionais"],["307","Habeas Corpus Criminal"],["1706","Procedimento Comum Infância e Juventude"],["198","Apelação Cível"],["283","Ação Penal - Procedimento Ordinário"],["236","Oposição"],["14695","Procedimento do Juizado Especial da Fazenda Pública"],["261","Carta Precatória Cível"],["152","Liquidação de Sentença pelo Procedimento Comum"],["11399","Execução de Medida de Segurança"],["206","Agravo Regimental Cível"],["436","Procedimento do Juizado Especial Cível"],["1702","Impugnação de Assistência Judiciária"]]},{"id":"datajud-orgaos","name":"DataJud Court Units","description":"Lookup table of court units (órgãos julgadores) from DataJud.","category":"DataJud","source_notes":"Reference table of court units (órgãos julgadores) — the specific court divisions that handle cases. Includes the IBGE municipality code for geographic mapping. Court units at TJSP include Varas Cíveis, Varas da Fazenda Pública, and specialized divisions.","file_size":21975,"row_count":436,"col_count":3,"columns":[{"name":"orgao_codigo","dtype":"int64","null_count":0,"null_pct":0.0},{"name":"orgao_nome","dtype":"object","null_count":0,"null_pct":0.0},{"name":"orgao_municipio_ibge","dtype":"float64","null_count":430,"null_pct":98.6}],"categorical":{},"temporal":{},"sample_columns":["orgao_codigo","orgao_nome","orgao_municipio_ibge"],"sample":[["70913","3ª CÂMARA DE DIREITO PÚBLICO",""],["9997","VARA JUIZADO ESPECIAL CIVEL DE OURINHOS",""],["59785","01 TURMA CIVEL E CRIMINAL DO COLEGIO RECURSAL DA 5ª C.J. - JUNDIAI DE JUNDIAI",""],["59826","02 TURMA CIVEL E CRIMINAL DO COLEGIO RECURSAL DA 45ª C.J. - MOGI DAS CRUZES DE MOGI DAS CRUZES",""],["59852","03 TURMA CIVEL DO I COLEGIO RECURSAL DA CAPITAL DE CENTRAL-23.548",""],["59806","02 TURMA CIVEL DO COLEGIO RECURSAL DA 38ª C.J. - FRANCA DE FRANCA",""],["10777","02 CUMULATIVA DE VINHEDO",""],["10081","01 CUMULATIVA DE PIRAPOZINHO",""],["81233","2VARA JUDICIAL DE SANTANA DE PARNAÍBA",""],["70920","10ª CÂMARA DE DIREITO PÚBLICO",""],["59807","02 TURMA CIVEL DO COLEGIO RECURSAL DA 3ª C.J. - SANTO ANDRE DE SANTO ANDRE",""],["9977","03 CIVEL DE OSASCO",""],["11647","SETOR DE EXECUCOES FAZENDA PUBLICA DE CENTRAL",""],["70912","2ª CÂMARA DE DIREITO PÚBLICO",""],["10574","10 CIVEL DE CENTRAL",""],["9981","07 CIVEL DE OSASCO",""],["78573","02 FAZENDA PUBLICA DE PIRACICABA",""],["10645","05 CIVEL DE SAO VICENTE",""],["9903","02 CUMULATIVA DE MIRANDOPOLIS",""],["10572","08 CIVEL DE CENTRAL",""],["9383","05 CIVEL DE BAURU",""],["10595","31 CIVEL DE CENTRAL",""],["9461","10 CIVEL DE CAMPINAS",""],["71008","01 TURMA  DO JUIZADO FAZENDA PUBLICA DO COLEGIO RESURSAL DA CAPITAL DE CENTRAL",""],["10383","02 CIVEL DE SANTANA",""],["10490","05 CIVEL DE PINHEIROS",""],["9851","02 CIVEL DE LINS",""],["59904","TURMA CIVEL E CRIMINAL DO COLEGIO RECURSAL DA 51ª C.J. - CARAGUATATUBA DE CARAGUATATUBA",""],["74316","JUIZADO ESP.DA FAZENDA PUBLICA DE BAURU",""],["9706","JUIZADO ESPECIAL CIVEL CRIM. DE IPAUCU",""],["74365","16 FAZENDA PUBLICA DE CENTRAL",""],["59895","TURMA CIVEL E CRIMINAL DO COLEGIO RECURSAL DA 39ª C.J. - BATATAIS DE BATATAIS",""],["10601","37 CIVEL DE CENTRAL",""],["59828","02 TURMA CIVEL E CRIMINAL DO COLEGIO RECURSAL DA 52ª C.J. - ITAPECERICA DA SERRA DE ITAPECERICA DA SERRA",""],["70848","1ª CÂMARA DE DIREITO PRIVADO",""],["9862","VARA UNICA DE MACATUBA",""],["10725","01 CIVEL DE TATUI",""],["10359","04 CIVEL DE SAO JOSE DOS CAMPOS",""],["9637","VARA JUIZADO ESP. CIVEL CRIM. DE GUARATINGUETA",""],["59808","02 TURMA CIVEL DO COLEGIO RECURSAL DA 41ª C.J. - RIBEIRAO PRETO DE RIBEIRAO PRETO",""],["59879","06 TURMA CIVEL E CRIMINAL DO V COLEGIO RECURSAL DA CAPITAL DE PENHA",""],["10489","04 CIVEL DE PINHEIROS",""],["17570","03 VARA JUIZADO ESPECIAL CIVEL DE SANTOS",""],["10008","JUIZADO ESPECIAL CIVEL CRIM. DE PALMEIRA D OESTE",""],["10573","09 CIVEL DE CENTRAL",""],["9557","01 CIVEL DE DIADEMA",""],["10576","12 CIVEL DE CENTRAL",""],["59821","02 TURMA CIVEL E CRIMINAL DO COLEGIO RECURSAL DA 20ª C.J. - ITU DE ITU",""],["9996","JUIZADO ESPECIAL CIVEL CRIM. DE OSVALDO CRUZ",""],["59751","01 TURMA CIVEL DO COLEGIO RECURSAL DA 22ª C.J. - ITAPETININGA DE ITAPETININGA",""]]},{"id":"datajud-processos","name":"DataJud Cases","description":"Normalized court case records from the CNJ DataJud API (TJSP health sample).","category":"DataJud","source_notes":"Sourced from the CNJ (Conselho Nacional de Justiça) DataJud API, Brazil's national judicial statistics database. Contains normalized case records for TJSP health cases. DataJud aggregates case metadata from all Brazilian courts via the CNJ's unified numbering system (numeração única). Cleaned and normalized by <code>source/clean/clean_datajud.py</code>.","file_size":303218,"row_count":2000,"col_count":10,"columns":[{"name":"processo_id","dtype":"object","null_count":0,"null_pct":0.0},{"name":"numero_processo","dtype":"object","null_count":0,"null_pct":0.0},{"name":"tribunal","dtype":"object","null_count":0,"null_pct":0.0},{"name":"grau","dtype":"object","null_count":0,"null_pct":0.0},{"name":"nivel_sigilo","dtype":"int64","null_count":0,"null_pct":0.0},{"name":"data_ajuizamento","dtype":"object","null_count":0,"null_pct":0.0},{"name":"data_ultima_atualizacao","dtype":"object","null_count":0,"null_pct":0.0},{"name":"timestamp","dtype":"object","null_count":0,"null_pct":0.0},{"name":"classe_codigo","dtype":"int64","null_count":0,"null_pct":0.0},{"name":"orgao_codigo","dtype":"int64","null_count":0,"null_pct":0.0}],"categorical":{"tribunal":{"labels":["TJSP"],"values":[2000]},"grau":{"labels":["G1","TR","G2","JE"],"values":[847,587,556,10]}},"temporal":{"data_ajuizamento":{"min":"1995-09-26","max":"2024-06-25","by_year":{"labels":[1995,2001,2003,2006,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024],"values":[1,1,1,2,2,4,1,12,28,23,14,37,155,84,86,268,268,299,266,391,57]}}},"sample_columns":["processo_id","numero_processo","tribunal","grau","nivel_sigilo","data_ajuizamento","data_ultima_atualizacao","timestamp","classe_codigo","orgao_codigo"],"sample":[["TJSP_TR_30000261420228269010","30000261420228269010","TJSP","TR","0","2022-12-14T14:55:15.000Z","2024-08-30T17:55:40.064Z","2024-09-25T17:31:15.646557591Z","202","59804"],["TJSP_G1_01466161820128260100","01466161820128260100","TJSP","G1","0","2014-05-15T14:24:33.000Z","2024-09-01T06:03:12.878Z","2024-09-25T09:20:58.427512695Z","156","10580"],["TJSP_TR_10021648320198260153","10021648320198260153","TJSP","TR","0","2021-03-04T10:17:21.000Z","2024-08-30T18:02:10.811Z","2024-09-25T17:29:48.806335051Z","460","59865"],["TJSP_G1_01723584520128260100","01723584520128260100","TJSP","G1","0","2012-07-27T13:11:19.000Z","2024-09-01T03:27:02.185Z","2024-09-25T10:55:17.620191712Z","7","10602"],["TJSP_198_G2_70850_10556271320228260224","10556271320228260224","TJSP","G2","0","2023-08-02T11:54:42.000Z","2024-08-30T18:02:45.178Z","2024-09-25T17:29:39.509497831Z","198","70850"],["TJSP_G2_22686047320158260000","22686047320158260000","TJSP","G2","0","2016-01-25T16:35:06.000Z","2024-08-30T18:03:26.681Z","2024-09-25T17:29:38.604651092Z","1208","70854"],["TJSP_G2_00009713520148260635","00009713520148260635","TJSP","G2","0","2016-04-07T15:17:45.000Z","2024-08-30T18:21:26.550Z","2024-09-25T17:28:42.195892242Z","1689","70852"],["TJSP_G2_10764922220148260100","10764922220148260100","TJSP","G2","0","2016-05-30T00:00:00.000Z","2024-08-30T17:57:03.680Z","2024-09-25T17:30:53.854646533Z","1689","70854"],["TJSP_G1_10020439020218260248","10020439020218260248","TJSP","G1","0","2021-03-05T16:11:40.000Z","2024-08-01T11:32:23.342Z","2024-09-21T10:51:35.147437811Z","436","9705"],["TJSP_G2_00165151920148260100","00165151920148260100","TJSP","G2","0","2018-03-13T17:32:03.000Z","2024-08-30T18:02:22.571Z","2024-09-25T17:29:46.267390964Z","1208","70855"],["TJSP_G1_10358763020228260001","10358763020228260001","TJSP","G1","0","2022-11-04T11:44:48.000Z","2024-08-01T14:25:37.937Z","2024-09-21T10:10:09.120014823Z","7","10386"],["TJSP_TR_00045017520238260071","00045017520238260071","TJSP","TR","0","2023-08-21T11:38:37.000Z","2024-08-30T18:02:41.978Z","2024-09-25T17:29:39.762912581Z","460","59803"],["TJSP_TR_10004948420208260699","10004948420208260699","TJSP","TR","0","2022-01-17T13:19:07.000Z","2024-08-30T18:06:25.382Z","2024-09-25T17:29:15.910501754Z","460","59870"],["TJSP_151_G1_10731_00091998720188260625","00091998720188260625","TJSP","G1","0","2018-07-16T08:58:25.000Z","2024-09-01T05:20:28.143Z","2024-09-25T09:46:58.461255064Z","151","10731"],["TJSP_7_G1_10599_00018783920168260635","00018783920168260635","TJSP","G1","0","2016-02-09T10:56:26.000Z","2024-09-01T06:01:14.751Z","2024-09-25T09:22:13.004778021Z","7","10599"],["TJSP_G1_10147448720198260625","10147448720198260625","TJSP","G1","0","2019-10-17T14:31:24.000Z","2024-09-01T06:34:07.924Z","2024-09-25T09:02:55.399131865Z","7","10732"],["TJSP_G1_00013002620228260228","00013002620228260228","TJSP","G1","0","2022-02-20T12:43:26.000Z","2024-09-01T04:29:12.236Z","2024-09-25T10:10:00.181415795Z","7","10606"],["TJSP_G1_10024036820218260266","10024036820218260266","TJSP","G1","0","2021-05-03T16:48:55.000Z","2024-07-31T23:15:27.188Z","2024-09-21T18:00:00.583552345Z","156","9712"],["TJSP_G2_10620363320158260100","10620363320158260100","TJSP","G2","0","2016-05-13T10:30:09.000Z","2024-08-30T17:57:58.495Z","2024-09-25T17:30:39.649633328Z","1689","70849"],["TJSP_G2_21328602820238260000","21328602820238260000","TJSP","G2","0","2023-05-30T19:49:34.000Z","2024-08-30T17:55:50.300Z","2024-09-25T17:31:14.286003092Z","202","70848"],["TJSP_G2_10063759820178260100","10063759820178260100","TJSP","G2","0","2018-05-17T10:50:49.000Z","2024-09-01T04:53:43.388Z","2024-09-25T09:58:57.048633749Z","1689","70853"],["TJSP_TR_00012017520198260094","00012017520198260094","TJSP","TR","0","2020-05-27T18:58:19.000Z","2024-08-30T17:57:46.899Z","2024-09-25T17:30:42.056727539Z","460","59895"],["TJSP_TR_00005484020238260480","00005484020238260480","TJSP","TR","0","2023-09-01T13:44:04.000Z","2024-08-30T17:53:48.833Z","2024-09-25T17:31:33.771157153Z","460","59844"],["TJSP_460_TR_59903_10019069420168260568","10019069420168260568","TJSP","TR","0","2016-08-17T16:53:09.000Z","2024-08-30T18:07:23.585Z","2024-09-25T17:29:12.260698593Z","460","59903"],["TJSP_G2_10017182820188260505","10017182820188260505","TJSP","G2","0","2022-10-04T11:29:31.000Z","2024-08-30T17:54:54.462Z","2024-09-25T17:31:23.774932836Z","198","70920"],["TJSP_G1_10072934820218260008","10072934820218260008","TJSP","G1","0","2021-06-07T19:33:30.000Z","2024-08-01T04:23:35.310Z","2024-09-21T14:22:09.716321760Z","7","10466"],["TJSP_TR_00010843820168260111","00010843820168260111","TJSP","TR","0","2020-07-01T15:47:41.000Z","2024-08-30T18:05:16.832Z","2024-09-25T17:29:24.033188551Z","460","59847"],["TJSP_G2_21786746320238260000","21786746320238260000","TJSP","G2","0","2023-07-13T15:28:00.000Z","2024-08-30T18:16:10.609Z","2024-09-25T17:28:49.873050130Z","202","70851"],["TJSP_12078_G1_17835_00210699020198260562","00210699020198260562","TJSP","G1","0","2019-09-20T18:23:37.000Z","2024-09-01T04:18:54.282Z","2024-09-25T10:16:32.219505283Z","12078","17835"],["TJSP_G1_00051690520208260248","00051690520208260248","TJSP","G1","0","2020-11-03T16:02:51.000Z","2024-08-02T00:32:00.696Z","2024-09-21T06:55:41.259475140Z","436","9705"],["TJSP_12078_G1_10769_00035347520198260651","00035347520198260651","TJSP","G1","0","2019-11-18T10:24:57.000Z","2024-09-01T05:05:33.097Z","2024-09-25T09:55:03.842519505Z","12078","10769"],["TJSP_G2_21129594020248260000","21129594020248260000","TJSP","G2","0","2024-04-23T16:45:00.000Z","2024-08-30T18:20:21.977Z","2024-09-25T17:28:43.146927679Z","202","70851"],["TJSP_G1_10009380720228260228","10009380720228260228","TJSP","G1","0","2022-09-11T09:42:23.000Z","2024-09-01T05:22:49.304Z","2024-09-25T09:45:40.493477515Z","120","10560"],["TJSP_G1_10876457620198260100","10876457620198260100","TJSP","G1","0","2019-09-05T14:01:48.000Z","2024-09-01T03:27:00.610Z","2024-09-25T10:55:17.667227186Z","7","10566"],["TJSP_TR_00008314520198260111","00008314520198260111","TJSP","TR","0","2021-11-18T16:26:57.000Z","2024-08-30T18:07:25.841Z","2024-09-25T17:29:12.253599299Z","460","59808"],["TJSP_G1_10004999820198260228","10004999820198260228","TJSP","G1","0","2019-12-20T12:16:15.000Z","2024-09-01T05:51:07.800Z","2024-09-25T09:27:46.075106855Z","436","76604"],["TJSP_TR_10008481020198260614","10008481020198260614","TJSP","TR","0","2020-07-13T14:59:47.000Z","2024-08-30T17:58:14.239Z","2024-09-25T17:30:34.173335268Z","1689","59898"],["TJSP_G2_10091893020158260011","10091893020158260011","TJSP","G2","0","2016-06-20T17:07:44.000Z","2024-08-30T18:02:45.115Z","2024-09-25T17:29:39.757448590Z","1689","70852"],["TJSP_TR_00000147220208269058","00000147220208269058","TJSP","TR","0","2020-01-16T09:38:55.000Z","2024-08-30T18:07:26.302Z","2024-09-25T17:29:12.252639291Z","204","59831"],["TJSP_G1_00020407820198260651","00020407820198260651","TJSP","G1","0","2019-07-11T18:45:51.000Z","2024-09-01T06:40:57.559Z","2024-09-25T08:57:52.801173051Z","436","10769"],["TJSP_G1_10000343920198260471","10000343920198260471","TJSP","G1","0","2019-01-15T18:33:36.000Z","2024-08-01T00:35:34.237Z","2024-09-21T17:09:07.444183281Z","436","10102"],["TJSP_G2_10566254820188260053","10566254820188260053","TJSP","G2","0","2021-06-14T15:58:16.000Z","2024-08-30T17:54:43.475Z","2024-09-25T17:31:24.493529345Z","198","70922"],["TJSP_G1_00014177720208260651","00014177720208260651","TJSP","G1","0","2020-10-09T15:48:18.000Z","2024-09-01T06:41:02.979Z","2024-09-25T08:57:50.998022495Z","436","10769"],["TJSP_G1_10008791920228260228","10008791920228260228","TJSP","G1","0","2022-08-21T01:18:34.000Z","2024-09-01T05:20:22.620Z","2024-09-25T09:47:03.790646354Z","7","10568"],["TJSP_TR_00017058220198260320","00017058220198260320","TJSP","TR","0","2019-08-20T12:05:54.000Z","2024-08-30T17:58:41.837Z","2024-09-25T17:30:28.152535324Z","460","59793"],["TJSP_G1_00021031920158260595","00021031920158260595","TJSP","G1","0","2015-07-20T15:08:23.000Z","2024-09-01T04:04:06.719Z","2024-09-25T10:23:58.606457573Z","7","10657"],["TJSP_G1_10025451620218260220","10025451620218260220","TJSP","G1","0","2021-06-23T10:27:41.000Z","2024-09-01T05:36:28.032Z","2024-09-25T09:37:32.801266001Z","436","9637"],["TJSP_G1_10025281620198260651","10025281620198260651","TJSP","G1","0","2019-12-03T09:04:36.000Z","2024-09-01T03:37:12.695Z","2024-09-25T10:48:50.877870033Z","7","10770"],["TJSP_G1_10068750920188260011","10068750920188260011","TJSP","G1","0","2018-07-11T11:35:46.000Z","2024-08-01T09:35:43.387Z","2024-09-21T11:19:09.192464867Z","7","10486"],["TJSP_G2_21371603320238260000","21371603320238260000","TJSP","G2","0","2023-06-02T23:36:04.000Z","2024-08-30T17:58:14.590Z","2024-09-25T17:30:34.172723964Z","202","70852"]]}]};
+
+const pal = ['#0d6efd','#198754','#dc3545','#fd7e14','#6f42c1','#20c997','#0dcaf0','#d63384','#ffc107','#6610f2'];
+function fmtNum(n) { return n.toLocaleString('en'); }
+function fmtSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(1) + ' MB';
+}
+
+// ── Stats bar ──
+(function() {
+  const bar = document.getElementById('stats-bar');
+  const proc = DATA.datasets.find(d => d.id === 'datajud-processos');
+  const items = [
+    ['Cases', proc ? fmtNum(proc.row_count) : '—'],
+    ['Columns', proc ? String(proc.col_count) : '—'],
+    ['Datasets', String(DATA.dataset_count)],
+    ['Total Size', fmtSize(DATA.total_file_size)],
+  ];
+  if (DATA.temporal_range && DATA.temporal_range.min) {
+    items.push(['Date Range', DATA.temporal_range.min.slice(0,4) + '–' + DATA.temporal_range.max.slice(0,4)]);
+  }
+  items.forEach(([label, value]) => {
+    const d = document.createElement('div');
+    d.className = 'stat-card';
+    d.innerHTML = '<div class="value">' + value + '</div><div class="label">' + label + '</div>';
+    bar.appendChild(d);
+  });
+})();
+
+// ── Charts ──
+(function() {
+  const grid = document.getElementById('chart-grid');
+  const proc = DATA.datasets.find(d => d.id === 'datajud-processos');
+  if (!proc) return;
+
+  // Temporal
+  const temporal = proc.temporal || {};
+  if (temporal.data_ajuizamento) {
+    const t = temporal.data_ajuizamento;
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = '<h3>Cases by Year (data_ajuizamento)</h3><div class="chart-wrap bar"><canvas id="ch-year"></canvas></div>';
+    grid.appendChild(card);
+    setTimeout(() => {
+      new Chart(document.getElementById('ch-year'), {
+        type: 'bar',
+        data: { labels: t.by_year.labels, datasets: [{ data: t.by_year.values, backgroundColor: '#0d6efd' }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+      });
+    }, 0);
+  }
+
+  // Categorical
+  const catCols = ['grau', 'tribunal'];
+  const catLabels = { 'grau': 'Court Level (Grau)', 'tribunal': 'Tribunal' };
+  const cats = proc.categorical || {};
+  catCols.forEach((col, idx) => {
+    const d = cats[col];
+    if (!d) return;
+    const card = document.createElement('div');
+    card.className = 'card';
+    const cid = 'ch-cat-' + idx;
+    card.innerHTML = '<h3>' + (catLabels[col] || col) + '</h3><div class="chart-wrap hbar"><canvas id="' + cid + '"></canvas></div>';
+    grid.appendChild(card);
+    setTimeout(() => {
+      new Chart(document.getElementById(cid), {
+        type: 'bar',
+        data: { labels: d.labels, datasets: [{ data: d.values, backgroundColor: pal[idx + 1] }] },
+        options: {
+          indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } }
+        }
+      });
+    }, 0);
+  });
+
+  // Assuntos and classes from lookup tables
+  const assuntos = DATA.datasets.find(d => d.id === 'datajud-assuntos');
+  const classes = DATA.datasets.find(d => d.id === 'datajud-classes');
+  [assuntos, classes].forEach((ds, idx) => {
+    if (!ds) return;
+    const cats2 = ds.categorical || {};
+    const col = Object.keys(cats2)[0];
+    if (!col) return;
+    const d = cats2[col];
+    const card = document.createElement('div');
+    card.className = 'card';
+    const labels = d.labels.map(s => String(s).length > 40 ? String(s).slice(0, 38) + '\u2026' : String(s));
+    const cid = 'ch-ref-' + idx;
+    card.innerHTML = '<h3>Top ' + ds.name.split(' ').pop() + '</h3><div class="chart-wrap hbar"><canvas id="' + cid + '"></canvas></div>';
+    grid.appendChild(card);
+    setTimeout(() => {
+      new Chart(document.getElementById(cid), {
+        type: 'bar',
+        data: { labels: labels, datasets: [{ data: d.values, backgroundColor: pal[(idx + 3) % pal.length] }] },
+        options: {
+          indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } }
+        }
+      });
+    }, 0);
+  });
+})();
+
+// ── Reference table summary ──
+(function() {
+  const table = document.getElementById('ref-summary');
+  const refs = DATA.datasets.filter(d => ['datajud-assuntos','datajud-classes','datajud-orgaos'].includes(d.id));
+  if (refs.length === 0) return;
+  let html = '<thead><tr><th>Table</th><th>Rows</th><th>Columns</th><th>Size</th></tr></thead><tbody>';
+  refs.forEach(ds => {
+    html += '<tr><td><strong>' + ds.name + '</strong></td><td>' + fmtNum(ds.row_count) + '</td><td>' + ds.col_count + '</td><td>' + fmtSize(ds.file_size) + '</td></tr>';
+  });
+  html += '</tbody>';
+  table.innerHTML = html;
+})();
+
+// ── Dataset table ──
+(function() {
+  const tbody = document.getElementById('ds-tbody');
+  DATA.datasets.forEach(ds => {
+    const tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td><strong>' + ds.name + '</strong></td>' +
+      '<td style="max-width:350px;font-size:.8rem;color:#555">' + ds.description + '</td>' +
+      '<td>' + fmtNum(ds.row_count) + '</td><td>' + ds.col_count + '</td>' +
+      '<td>' + fmtSize(ds.file_size) + '</td>' +
+      '<td><a href="../datasets/' + ds.id + '.html">View &rarr;</a></td>';
+    tbody.appendChild(tr);
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="robots" content="noindex, nofollow">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TJSP Sentenças (Collapsed)</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+  :root {
+    --bg: #f8f9fa; --card: #fff; --fg: #1a1a1a; --muted: #666;
+    --border: #dee2e6; --accent: #0d6efd; --accent2: #198754;
+    --accent3: #dc3545; --accent4: #fd7e14;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--fg); line-height: 1.5;
+  }
+
+  .stats-bar {
+    display: flex; gap: .8rem; padding: 1rem 2rem; flex-wrap: wrap;
+  }
+  .stat-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: .75rem 1rem; flex: 1; min-width: 120px;
+    text-align: center;
+  }
+  .stat-card .value { font-size: 1.5rem; font-weight: 700; color: var(--accent); }
+  .stat-card .label { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+
+  main { padding: 0 2rem 3rem; max-width: 1400px; margin: 0 auto; }
+
+  h2.section-title {
+    font-size: 1.15rem; margin: 1.6rem 0 .8rem; padding-bottom: .3rem;
+    border-bottom: 2px solid var(--border);
+  }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1.2rem 1.4rem;
+  }
+  .card h3 { font-size: .95rem; margin-bottom: .8rem; color: var(--fg); }
+  .card.full { grid-column: 1 / -1; }
+
+  .chart-wrap { position: relative; width: 100%; }
+  .chart-wrap.bar { height: 300px; }
+  .chart-wrap.hbar { height: 380px; }
+
+  /* column info table */
+  .col-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+  .col-table th, .col-table td {
+    padding: .35rem .6rem; border-bottom: 1px solid var(--border); text-align: left;
+  }
+  .col-table th { background: #f0f4f8; font-weight: 600; position: sticky; top: 0; }
+  .col-table .null-bar { display: inline-block; height: 10px; border-radius: 2px; background: #dc3545; }
+
+  /* data table */
+  .table-wrap { overflow-x: auto; max-height: 520px; overflow-y: auto; }
+  .data-table { width: 100%; border-collapse: collapse; font-size: .8rem; }
+  .data-table th, .data-table td {
+    padding: .4rem .5rem; border-bottom: 1px solid var(--border);
+    text-align: left; white-space: nowrap; max-width: 250px; overflow: hidden; text-overflow: ellipsis;
+  }
+  .data-table th { position: sticky; top: 0; background: #f0f4f8; font-weight: 600; }
+  .data-table tbody tr:hover { background: #f0f4ff; }
+
+  .search-bar { margin-bottom: .8rem; }
+  .search-bar input {
+    font-size: .85rem; padding: .4rem .7rem; border: 1px solid var(--border);
+    border-radius: 4px; width: 100%; max-width: 400px;
+  }
+  .count-label { font-size: .8rem; color: var(--muted); margin-left: .8rem; }
+
+  footer {
+    text-align: center; padding: 1.5rem; font-size: .8rem; color: var(--muted);
+    border-top: 1px solid var(--border); margin-top: 2rem;
+  }
+</style>
+</head>
+<body>
+
+<style>
+  .site-nav {
+    position: sticky; top: 0; z-index: 100;
+    background: #212529; display: flex; align-items: center;
+    padding: 0 2rem; height: 3rem;
+  }
+  .site-nav .nav-brand {
+    color: #fff; text-decoration: none; font-weight: 600; font-size: 1rem;
+    margin-right: auto;
+  }
+  .site-nav .nav-brand:hover { color: #e9ecef; }
+  .site-nav .nav-link {
+    color: #adb5bd; text-decoration: none; font-size: .85rem;
+    padding: 0 .75rem; height: 3rem; display: flex; align-items: center;
+    background: none; border: none; cursor: pointer; font-family: inherit;
+  }
+  .site-nav .nav-link:hover, .site-nav .nav-link.active { color: #fff; }
+  .nav-dropdown { position: relative; }
+  .dropdown-menu {
+    display: none; position: absolute; top: 3rem; right: 0;
+    background: #fff; border: 1px solid var(--border); border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.12); min-width: 220px;
+    padding: .4rem 0; z-index: 200; max-height: 80vh; overflow-y: auto;
+  }
+  .nav-dropdown.open .dropdown-menu { display: block; }
+  .dropdown-menu a {
+    display: block; padding: .3rem 1rem; color: #1a1a1a;
+    text-decoration: none; font-size: .82rem;
+  }
+  .dropdown-menu a:hover { background: #f0f4f8; }
+  .dropdown-group-label {
+    padding: .4rem 1rem .15rem; font-size: .68rem; font-weight: 700;
+    color: #888; text-transform: uppercase; letter-spacing: .04em;
+  }
+  .dropdown-divider { border-top: 1px solid #eee; margin: .3rem 0; }
+  .page-header {
+    padding: .8rem 2rem; border-bottom: 1px solid var(--border); background: #fff;
+  }
+  .page-header h1 { font-size: 1.3rem; font-weight: 600; }
+  .page-header p { color: var(--muted); font-size: .85rem; margin-top: .15rem; }
+</style>
+
+<nav class="site-nav">
+  <a href="../index.html" class="nav-brand">Judicialização da Saúde</a>
+  <a href="../paper/index.html" class="nav-link">Paper</a>
+  <div class="nav-dropdown">
+    <button class="nav-link">Docs &#9662;</button>
+    <div class="dropdown-menu">
+    <div class="dropdown-group-label">Research reference</div>
+    <a href="../docs/README.html">Project Overview</a>
+    <a href="../docs/summary.html">Research Summary</a>
+    <a href="../docs/institutions.html">Institutional Background</a>
+    <a href="../docs/data.html">Data Sources</a>
+    <a href="../docs/methods.html">Empirical Methods</a>
+    <a href="../docs/literature.html">Literature</a>
+    <a href="../docs/theory.html">Theoretical Framework</a>
+    <a href="../docs/hypotheses.html">Hypotheses & Evidence</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Working notes</div>
+    <a href="../docs/thinking.html">Open Questions & Ideas</a>
+    <a href="../docs/decisions.html">Key Decisions</a>
+    <a href="../docs/qa.html">Research Q&A</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Task tracking</div>
+    <a href="../docs/todo.html">Active Tasks</a>
+    <a href="../docs/done.html">Completed Tasks</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Communication</div>
+    <a href="../docs/meetings.html">Meeting Notes</a>
+    <a href="../docs/feedback.html">External Feedback</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Court analysis</div>
+    <a href="../docs/01-stf-reasoning-templates.html">STF Reasoning Templates</a>
+    <a href="../docs/02-stj-repetitivos-patterns.html">STJ Repetitivos Patterns</a>
+    <a href="../docs/03-tjsp-plans-vs-sus.html">TJSP: Plans vs SUS</a>
+    <a href="../docs/04-conitec-pcdt-vs-courts.html">CONITEC vs Courts</a>
+    <a href="../docs/05-interfederative-responsibility.html">Interfederative Responsibility</a>
+    </div>
+  </div>
+  <div class="nav-dropdown">
+    <button class="nav-link active">Data &#9662;</button>
+    <div class="dropdown-menu">
+    <a href="../sources/tjsp.html">TJSP</a>
+    <a href="../sources/datajud.html">DataJud</a>
+    <a href="../sources/stf-stj.html">STF & STJ</a>
+    <a href="../sources/trf3.html">TRF3</a>
+    <a href="../sources/spending.html">Municipal Spending</a>
+    <a href="../sources/legislation.html">Health Legislation</a>
+    </div>
+  </div>
+  <a href="../references/index.html" class="nav-link">References</a>
+  <a href="../news/index.html" class="nav-link">News</a>
+</nav>
+<script>
+document.querySelectorAll('.nav-dropdown > .nav-link').forEach(function(btn) {
+  btn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    var dd = btn.parentElement;
+    var wasOpen = dd.classList.contains('open');
+    document.querySelectorAll('.nav-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+    if (!wasOpen) dd.classList.add('open');
+  });
+});
+document.addEventListener('click', function() {
+  document.querySelectorAll('.nav-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+});
+</script>
+
+<div class="page-header">
+  <h1>TJSP Sentenças (Collapsed)</h1>
+  <p>Collapsed judge–assunto–vara–year–comarca–outcome cells from TJSP health sentenças. 478K rows representing 1.29M cases.</p>
+</div>
+
+<div class="stats-bar" id="stats-bar"></div>
+
+<main>
+
+<!-- Data source notes -->
+<div id="source-notes-section"></div>
+
+<!-- Column info -->
+<h2 class="section-title">Column Information</h2>
+<div class="card full">
+  <div style="overflow-x:auto; max-height:400px; overflow-y:auto;">
+    <table class="col-table" id="col-table"></table>
+  </div>
+</div>
+
+<!-- Distribution charts -->
+<div id="dist-section"></div>
+
+<!-- Temporal charts -->
+<div id="temporal-section"></div>
+
+<!-- Sample data -->
+<h2 class="section-title">Sample Data (50 rows)</h2>
+<div class="card full">
+  <div class="search-bar">
+    <input type="text" id="search" placeholder="Search across all columns...">
+    <span class="count-label" id="row-count"></span>
+  </div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead id="thead"></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+</main>
+
+<footer>
+  Generated by <code>bash build.sh site</code>
+</footer>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  Embedded data — replaced by build pipeline
+// ═══════════════════════════════════════════════════════════════
+const DATA = /* INJECT_DATA */ {"id":"tjsp-sentencas-collapsed","name":"TJSP Sentenças (Collapsed)","description":"Collapsed judge–assunto–vara–year–comarca–outcome cells from TJSP health sentenças. 478K rows representing 1.29M cases.","category":"TJSP Sentença","source_notes":"Derived from the full TJSP sentença text data by collapsing individual cases into judge–assunto–vara–year–comarca–outcome–defendant cells. Each row represents a unique combination of these dimensions, with <code>n_cases</code> counting the underlying individual cases. 478,882 rows representing 1,288,509 total cases from 3,006 judges across 322 comarcas (2005–2024). This is the primary dataset for the judge IV empirical analysis. Built by <code>source/clean/collapse_tjsp_sentencas.py</code>.","file_size":86659542,"row_count":478882,"col_count":12,"columns":[{"name":"assunto","dtype":"object","null_count":0,"null_pct":0.0},{"name":"assunto_category","dtype":"object","null_count":0,"null_pct":0.0},{"name":"classe","dtype":"object","null_count":35729,"null_pct":7.5},{"name":"magistrado","dtype":"object","null_count":6687,"null_pct":1.4},{"name":"vara","dtype":"object","null_count":664,"null_pct":0.1},{"name":"year","dtype":"float64","null_count":6510,"null_pct":1.4},{"name":"comarca","dtype":"object","null_count":664,"null_pct":0.1},{"name":"foro","dtype":"object","null_count":664,"null_pct":0.1},{"name":"outcome","dtype":"object","null_count":0,"null_pct":0.0},{"name":"tutela_antecipada","dtype":"object","null_count":0,"null_pct":0.0},{"name":"defendant_type","dtype":"object","null_count":0,"null_pct":0.0},{"name":"n_cases","dtype":"int64","null_count":0,"null_pct":0.0}],"categorical":{"assunto":{"labels":["planos de saúde","fornecimento de medicamentos","auxílio-acidente (art. 86)","tratamento médico-hospitalar","aposentadoria por invalidez","auxílio-doença previdenciário","auxílio-doença acidentário","benefício assistencial (art. 203,v cf/88)","restabelecimento","tratamento médico-hospitalar e/ou fornecimento de medicamentos","adicional de insalubridade","serviços hospitalares","aposentadoria por invalidez acidentária","erro médico","incapacidade laborativa permanente","tratamento da própria saúde","saúde","assistência à saúde","incapacidade laborativa parcial","custeio de assistência médica"],"values":[76135,46071,42503,41831,41002,36153,28376,20129,15537,14700,14408,14228,13103,9391,8533,5928,5328,5149,5124,4779]},"assunto_category":{"labels":["disability","health_plan","treatment","medication","hospital","occupational_health","other_health","medical_error","sus"],"values":[214397,76142,70214,48207,22543,19224,18419,9391,345]},"outcome":{"labels":["extinto","procedente","improcedente","other","parcialmente_procedente","acordo"],"values":[191231,120431,75116,49314,33210,9580]},"defendant_type":{"labels":["federal","state","health_plan","municipality","hospital","other","public_unspecified"],"values":[194751,101653,95449,66783,11933,7308,1005]},"tutela_antecipada":{"labels":["no_mention","granted","denied"],"values":[351632,87361,39889]}},"temporal":{"year":{"min":"2005","max":"2024","by_year":{"labels":[2005,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024],"values":[1,8,7,96,21881,32702,35431,35677,42158,43137,50414,42939,40212,39643,42576,45490]}}},"sample_columns":["assunto","assunto_category","classe","magistrado","vara","year","comarca","foro","outcome","tutela_antecipada","defendant_type","n_cases"],"sample":[["auxílio-acidente (art. 86)","disability","Procedimento Comum Cível","FERNANDO JOSE ALGUZ DA SILVEIRA","1ª Vara Cível","2020.0","Tatuí","Foro de Tatuí","improcedente","no_mention","federal","9"],["erro médico","medical_error","Procedimento Comum Cível","Maria Gabriella Pavlópoulos Spaolonzi","13ª Vara de Fazenda Pública","2021.0","SÃO PAULO","Foro Central - Fazenda Pública/Acidentes","improcedente","no_mention","state","1"],["aposentadoria por invalidez","disability","Cumprimento de sentença","RENATA HELOISA DA SILVA SALLES","1ª Vara Cível","2023.0","Itatiba","Foro de Itatiba","extinto","no_mention","federal","3"],["tratamento médico-hospitalar","treatment","Cumprimento Provisório de Sentença","HENRIQUE DADA PAIVA","8ª Vara Cível","2020.0","SÃO PAULO","Foro Central Cível","extinto","no_mention","health_plan","1"],["auxílio-acidente (art. 86)","disability","Precatório","RAFAEL MEIRA HAMATSU RIBEIRO","3ª Vara Cível","2021.0","Osasco","Foro de Osasco","extinto","no_mention","state","1"],["erro médico","medical_error","Procedimento Comum Cível","VANESSA PEREIRA DA SILVA","3ª Vara","2019.0","Guaratinguetá","Foro de Guaratinguetá","improcedente","no_mention","municipality","1"],["fornecimento de medicamentos","medication","Procedimento Comum Cível","SIMONE CURADO FERREIRA OLIVEIRA","7ª Vara Cível","2024.0","Santos","Foro de Santos","procedente","granted","health_plan","2"],["serviços hospitalares","hospital","Mandado de Segurança Cível","Antonia Maria Prado de Melo","1ª Vara","2023.0","Tremembé","Foro de Tremembé","extinto","no_mention","state","1"],["aposentadoria por invalidez","disability","","Jamil Chaim Alves","2ª Vara","2018.0","Itanhaém","Foro de Itanhaém","procedente","no_mention","federal","1"],["auxílio-acidente (art. 86)","disability","","MARCIO AUGUSTO ZWICKER DI FLORA","2ª Vara","2018.0","Pederneiras","Foro de Pederneiras","acordo","no_mention","federal","1"],["aposentadoria por invalidez","disability","Procedimento Comum Cível","SILVIA CAMILA CALIL MENDONCA","2ª Vara","2018.0","Guararapes","Foro de Guararapes","extinto","no_mention","federal","28"],["auxílio-acidente (art. 86)","disability","Cumprimento de sentença","NAIRA ASSIS BARBOSA","5ª Vara Cível","2022.0","São José dos Campos","Foro de São José dos Campos","extinto","no_mention","federal","1"],["serviços hospitalares","hospital","Procedimento Comum Cível","Antonio Carlos Lombardi De Souza Pinto","2ª Vara Cível","2023.0","Taubaté","Foro de Taubaté","acordo","no_mention","health_plan","2"],["movimentos repetitivos/tenossinovite/ler/dort","occupational_health","Procedimento Comum","Alexandre Muñoz","2ª Vara Cível","2017.0","Itaquaquecetuba","Foro de Itaquaquecetuba","improcedente","no_mention","federal","1"],["auxílio-doença previdenciário","disability","Procedimento Comum Cível","SAMARA ELIZA LUTIHERI FELTRIN NESPOLI","Vara Única","2019.0","Rosana","Foro de Rosana","procedente","denied","federal","1"],["incapacidade laborativa permanente","disability","Procedimento Comum Cível","LARISSA BONI VALIERIS","5ª Vara Cível","2021.0","Guarulhos","Foro de Guarulhos","extinto","no_mention","federal","1"],["planos de saúde","health_plan","Procedimento Comum Cível","Daniel Toscano","8ª Vara Cível","2021.0","São José dos Campos","Foro de São José dos Campos","improcedente","granted","health_plan","1"],["planos de saúde","health_plan","Procedimento Comum","Patrícia Érica Luna da Silva","2ª Vara Cível","2017.0","Ribeirão Preto","Foro de Ribeirão Preto","extinto","no_mention","health_plan","1"],["auxílio-doença acidentário","disability","Procedimento Comum Cível","Ricardo Truite Alves","2ª Vara Cível","2020.0","Limeira","Foro de Limeira","extinto","no_mention","federal","1"],["fornecimento de medicamentos","medication","Cumprimento de Sentença contra a Fazenda Pública","Daiane Thaís Souto Oliva de Souza","2ª Vara","2021.0","Presidente Venceslau","Foro de Presidente Venceslau","extinto","no_mention","state","1"],["planos de saúde","health_plan","Procedimento Comum","Fabio de Souza Pimenta","32ª Vara Cível","2017.0","SÃO PAULO","Foro Central Cível","extinto","no_mention","hospital","1"],["planos de saúde","health_plan","Procedimento do Juizado Especial Cível","Mario Yamada Filho","","2017.0","","","extinto","no_mention","health_plan","1"],["aposentadoria por invalidez","disability","Procedimento Comum","José Wellington Bezerra da Costa Neto","1ª Vara","2013.0","Ribeirão Pires","Foro de Ribeirão Pires","procedente","no_mention","federal","1"],["tratamento médico-hospitalar","treatment","Procedimento Comum Cível","MARCIO FERRAZ NUNES","3ª Vara Cível","2019.0","Sorocaba","Foro de Sorocaba","parcialmente_procedente","granted","health_plan","2"],["planos de saúde","health_plan","Cumprimento de sentença","Luciane Cristina Silva Tavares","1ª Vara do Juizado Especial Cível","2018.0","SÃO PAULO","Foro Regional VIII - Tatuapé","extinto","no_mention","state","2"],["auxílio-acidente (art. 86)","disability","Procedimento Comum Cível","FERNANDO AWENSZTERN PAVLOVSKY","2ª Vara Cível","2018.0","Itapevi","Foro de Itapevi","improcedente","granted","federal","1"],["serviços de saúde","other_health","Procedimento Comum Cível","VANDICKSON SOARES EMIDIO","2ª Vara Judicial","2023.0","Panorama","Foro de Panorama","extinto","no_mention","state","1"],["planos de saúde","health_plan","Procedimento do Juizado Especial Cível","Marcelo Vieira","Vara do Juizado Especial Cível e Criminal","2016.0","Limeira","Foro de Limeira","extinto","no_mention","state","1"],["adicional de insalubridade","occupational_health","Procedimento Comum Cível","HALLANA DUARTE MIRANDA","Vara Única","2023.0","Eldorado","Foro de Eldorado Paulista","procedente","no_mention","municipality","7"],["planos de saúde","health_plan","Procedimento Comum Cível","Carolina de Figueiredo Dorlhiac Nogueira","38ª Vara Cível","2020.0","SÃO PAULO","Foro Central Cível","acordo","no_mention","state","1"],["aposentadoria por invalidez acidentária","disability","Procedimento Comum Cível","SONIA CAVALCANTE PESSOA","2ª Vara Cível","2019.0","Araçatuba","Foro de Araçatuba","procedente","granted","federal","1"],["fornecimento de medicamentos","medication","Procedimento do Juizado Especial Cível","Graziela Da Silva Nery Rocha","Vara da Fazenda Pública","2017.0","Limeira","Foro de Limeira","procedente","no_mention","municipality","9"],["fornecimento de medicamentos","medication","Ação Civil Pública","Marcelo Asdrúbal Augusto Gama","2ª Vara Cível","2019.0","Sertãozinho","Foro de Sertãozinho","procedente","no_mention","municipality","1"],["fornecimento de medicamentos","medication","Procedimento Comum Cível","SAMARA ELIZA LUTIHERI FELTRIN NESPOLI","Vara Única","2019.0","Teodoro Sampaio","Foro de Teodoro Sampaio","other","no_mention","municipality","2"],["benefício assistencial (art. 203,v cf/88)","disability","Procedimento Comum","Fábio Alexandre Marinelli Sola","1ª Vara","2015.0","Adamantina","Foro de Adamantina","extinto","no_mention","federal","1"],["auxílio-doença previdenciário","disability","Procedimento Comum Cível","JOSE AUGUSTO NARDY MARZAGAO","4ª Vara Cível","2017.0","Atibaia","Foro de Atibaia","improcedente","no_mention","federal","1"],["adicional de insalubridade","occupational_health","Procedimento do Juizado Especial Cível","MARCOS ALEXANDRE SANTOS AMBROGI","Vara do Juizado Especial Cível e Criminal","2019.0","Mauá","Foro de Mauá","parcialmente_procedente","no_mention","municipality","2"],["fornecimento de medicamentos","medication","Procedimento do Juizado Especial Cível","Rodrigo Rissi Fernandes","Vara do Juizado Especial Cível e Criminal","2016.0","Sertãozinho","Foro de Sertãozinho","improcedente","no_mention","municipality","1"],["planos de saúde","health_plan","Cumprimento de sentença","Francisco José Blanco Magdalena","9ª Vara Cível","2016.0","Campinas","Foro de Campinas","extinto","no_mention","health_plan","1"],["planos de saúde","health_plan","Procedimento Comum","Marcelo Augusto Oliveira","41ª Vara Cível","2013.0","SÃO PAULO","Foro Central Cível","procedente","no_mention","health_plan","3"],["planos de saúde","health_plan","Procedimento Comum Cível","ANA CAROLINA ACHOA AGUIAR SIQUEIRA DE OLIVEIRA","2ª Vara Judicial","2019.0","Agudos","Foro de Agudos","procedente","no_mention","state","1"],["planos de saúde","health_plan","Cumprimento de sentença","Rogério Sartori Astolphi","6ª Vara Cível","2021.0","Piracicaba","Foro de Piracicaba","extinto","no_mention","health_plan","1"],["auxílio-acidente (art. 86)","disability","Procedimento Comum Cível","Raphael De Oliveira Machado Dias","Vara Única","2024.0","Teodoro Sampaio","Foro de Teodoro Sampaio","other","no_mention","federal","1"],["planos de saúde","health_plan","Procedimento Comum","Patrícia Helena Feitosa Milani","3ª Vara de Família e Sucessões","2015.0","São José dos Campos","Foro de São José dos Campos","extinto","no_mention","health_plan","1"],["saúde","other_health","Cumprimento Provisório de Sentença","Betiza Marques Soria Prado","Vara do Juizado Especial Cível e Criminal","2017.0","Jaú","Foro de Jaú","other","no_mention","municipality","1"],["benefício assistencial (art. 203,v cf/88)","disability","Cumprimento de sentença","ANA LUCIA SCHMIDT RIZZON","1ª Vara","2017.0","Pederneiras","Foro de Pederneiras","extinto","no_mention","federal","1"],["tratamento médico-hospitalar","treatment","Ação Civil Pública","Lívia Martins Trindade Prado","1ª Vara","2018.0","Lucélia","Foro de Lucélia","procedente","granted","state","1"],["planos de saúde","health_plan","Procedimento Comum Cível","Caren Cristina Fernandes De Oliveira","2ª Vara Cível","2016.0","SÃO PAULO","Foro Regional X - Ipiranga","procedente","granted","health_plan","1"],["tratamento médico-hospitalar","treatment","Cumprimento de sentença","Alexandre Zanetti Stauber","4ª Vara Cível","2023.0","Santo André","Foro de Santo André","extinto","no_mention","health_plan","1"],["aposentadoria por invalidez","disability","Procedimento Comum Cível","Camilo Resegue Neto","3ª Vara Cível","2019.0","Votuporanga","Foro de Votuporanga","procedente","no_mention","federal","55"]]};
+
+// ═══════════════════════════════════════════════════════════════
+//  Helpers
+// ═══════════════════════════════════════════════════════════════
+const pal = ['#0d6efd','#198754','#dc3545','#fd7e14','#6f42c1','#20c997',
+             '#0dcaf0','#d63384','#ffc107','#6610f2','#adb5bd','#e85d04',
+             '#2b9348','#4361ee','#f72585'];
+function fmtNum(n) { return n.toLocaleString('en'); }
+function fmtSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(1) + ' MB';
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Data source notes
+// ═══════════════════════════════════════════════════════════════
+(function() {
+  if (!DATA.source_notes) return;
+  const section = document.getElementById('source-notes-section');
+  const h2 = document.createElement('h2');
+  h2.className = 'section-title';
+  h2.textContent = 'About This Dataset';
+  section.appendChild(h2);
+  const card = document.createElement('div');
+  card.className = 'card full';
+  card.innerHTML = '<p style="font-size:.9rem;line-height:1.7;color:#333">' + DATA.source_notes + '</p>';
+  section.appendChild(card);
+})();
+
+// ═══════════════════════════════════════════════════════════════
+//  Stats bar
+// ═══════════════════════════════════════════════════════════════
+(function() {
+  const bar = document.getElementById('stats-bar');
+  const items = [
+    ['Rows', fmtNum(DATA.row_count)],
+    ['Columns', fmtNum(DATA.col_count)],
+    ['File Size', fmtSize(DATA.file_size)],
+  ];
+  // Add temporal ranges
+  Object.entries(DATA.temporal || {}).forEach(([col, t]) => {
+    items.push(['Date Range (' + col + ')', t.min + ' to ' + t.max]);
+  });
+  items.forEach(([label, value]) => {
+    const d = document.createElement('div');
+    d.className = 'stat-card';
+    d.innerHTML = '<div class="value">' + value + '</div><div class="label">' + label + '</div>';
+    bar.appendChild(d);
+  });
+})();
+
+// ═══════════════════════════════════════════════════════════════
+//  Column info table
+// ═══════════════════════════════════════════════════════════════
+(function() {
+  const table = document.getElementById('col-table');
+  let html = '<thead><tr><th>#</th><th>Column</th><th>Type</th><th>Nulls</th><th>Null %</th></tr></thead><tbody>';
+  DATA.columns.forEach((c, i) => {
+    const barW = Math.min(c.null_pct, 100);
+    html += '<tr><td>' + (i + 1) + '</td><td><strong>' + c.name + '</strong></td>'
+      + '<td>' + c.dtype + '</td>'
+      + '<td>' + fmtNum(c.null_count) + '</td>'
+      + '<td><span class="null-bar" style="width:' + barW + 'px"></span> ' + c.null_pct + '%</td></tr>';
+  });
+  html += '</tbody>';
+  table.innerHTML = html;
+})();
+
+// ═══════════════════════════════════════════════════════════════
+//  Categorical distribution charts
+// ═══════════════════════════════════════════════════════════════
+(function() {
+  const section = document.getElementById('dist-section');
+  const cats = Object.entries(DATA.categorical || {});
+  if (cats.length === 0) return;
+
+  const h2 = document.createElement('h2');
+  h2.className = 'section-title';
+  h2.textContent = 'Categorical Distributions (Top 15)';
+  section.appendChild(h2);
+
+  const grid = document.createElement('div');
+  grid.className = 'grid';
+  section.appendChild(grid);
+
+  cats.forEach(([col, d], idx) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    const labels = d.labels.map(s => String(s).length > 40 ? String(s).slice(0, 38) + '\u2026' : String(s));
+    card.innerHTML = '<h3>' + col + '</h3><div class="chart-wrap hbar"><canvas id="cat-' + idx + '"></canvas></div>';
+    grid.appendChild(card);
+
+    // Render after DOM insertion
+    setTimeout(() => {
+      new Chart(document.getElementById('cat-' + idx), {
+        type: 'bar',
+        data: { labels: labels, datasets: [{ data: d.values, backgroundColor: pal[idx % pal.length] }] },
+        options: {
+          indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { x: { beginAtZero: true } }
+        }
+      });
+    }, 0);
+  });
+})();
+
+// ═══════════════════════════════════════════════════════════════
+//  Temporal charts
+// ═══════════════════════════════════════════════════════════════
+(function() {
+  const section = document.getElementById('temporal-section');
+  const temps = Object.entries(DATA.temporal || {});
+  if (temps.length === 0) return;
+
+  const h2 = document.createElement('h2');
+  h2.className = 'section-title';
+  h2.textContent = 'Temporal Distribution';
+  section.appendChild(h2);
+
+  const grid = document.createElement('div');
+  grid.className = 'grid';
+  section.appendChild(grid);
+
+  temps.forEach(([col, t], idx) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = '<h3>' + col + ' by year</h3><div class="chart-wrap bar"><canvas id="temp-' + idx + '"></canvas></div>';
+    grid.appendChild(card);
+
+    setTimeout(() => {
+      new Chart(document.getElementById('temp-' + idx), {
+        type: 'bar',
+        data: {
+          labels: t.by_year.labels,
+          datasets: [{ label: 'Count', data: t.by_year.values, backgroundColor: '#0d6efd' }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+    }, 0);
+  });
+})();
+
+// ═══════════════════════════════════════════════════════════════
+//  Sample data table
+// ═══════════════════════════════════════════════════════════════
+const allRows = DATA.sample || [];
+const sampleCols = DATA.sample_columns || [];
+
+(function() {
+  document.getElementById('thead').innerHTML = '<tr>' + sampleCols.map(c => '<th>' + c + '</th>').join('') + '</tr>';
+  const searchEl = document.getElementById('search');
+  const countEl = document.getElementById('row-count');
+  const tbody = document.getElementById('tbody');
+
+  function render() {
+    const q = searchEl.value.toLowerCase();
+    const rows = q ? allRows.filter(r => r.some(v => String(v).toLowerCase().includes(q))) : allRows;
+    tbody.innerHTML = rows.map(r =>
+      '<tr>' + r.map(v => '<td>' + v + '</td>').join('') + '</tr>'
+    ).join('');
+    countEl.textContent = rows.length + ' of ' + allRows.length + ' rows';
+  }
+  searchEl.addEventListener('input', render);
+  render();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="robots" content="noindex, nofollow">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DataJud Cases</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+  :root {
+    --bg: #f8f9fa; --card: #fff; --fg: #1a1a1a; --muted: #666;
+    --border: #dee2e6; --accent: #0d6efd; --accent2: #198754;
+    --accent3: #dc3545; --accent4: #fd7e14;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--fg); line-height: 1.5;
+  }
+
+  .stats-bar {
+    display: flex; gap: .8rem; padding: 1rem 2rem; flex-wrap: wrap;
+  }
+  .stat-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: .75rem 1rem; flex: 1; min-width: 120px;
+    text-align: center;
+  }
+  .stat-card .value { font-size: 1.5rem; font-weight: 700; color: var(--accent); }
+  .stat-card .label { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+
+  main { padding: 0 2rem 3rem; max-width: 1400px; margin: 0 auto; }
+
+  h2.section-title {
+    font-size: 1.15rem; margin: 1.6rem 0 .8rem; padding-bottom: .3rem;
+    border-bottom: 2px solid var(--border);
+  }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1.2rem 1.4rem;
+  }
+  .card h3 { font-size: .95rem; margin-bottom: .8rem; color: var(--fg); }
+  .card.full { grid-column: 1 / -1; }
+
+  .chart-wrap { position: relative; width: 100%; }
+  .chart-wrap.bar { height: 300px; }
+  .chart-wrap.hbar { height: 380px; }
+
+  /* column info table */
+  .col-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+  .col-table th, .col-table td {
+    padding: .35rem .6rem; border-bottom: 1px solid var(--border); text-align: left;
+  }
+  .col-table th { background: #f0f4f8; font-weight: 600; position: sticky; top: 0; }
+  .col-table .null-bar { display: inline-block; height: 10px; border-radius: 2px; background: #dc3545; }
+
+  /* data table */
+  .table-wrap { overflow-x: auto; max-height: 520px; overflow-y: auto; }
+  .data-table { width: 100%; border-collapse: collapse; font-size: .8rem; }
+  .data-table th, .data-table td {
+    padding: .4rem .5rem; border-bottom: 1px solid var(--border);
+    text-align: left; white-space: nowrap; max-width: 250px; overflow: hidden; text-overflow: ellipsis;
+  }
+  .data-table th { position: sticky; top: 0; background: #f0f4f8; font-weight: 600; }
+  .data-table tbody tr:hover { background: #f0f4ff; }
+
+  .search-bar { margin-bottom: .8rem; }
+  .search-bar input {
+    font-size: .85rem; padding: .4rem .7rem; border: 1px solid var(--border);
+    border-radius: 4px; width: 100%; max-width: 400px;
+  }
+  .count-label { font-size: .8rem; color: var(--muted); margin-left: .8rem; }
+
+  footer {
+    text-align: center; padding: 1.5rem; font-size: .8rem; color: var(--muted);
+    border-top: 1px solid var(--border); margin-top: 2rem;
+  }
+</style>
+</head>
+<body>
+
+<style>
+  .site-nav {
+    position: sticky; top: 0; z-index: 100;
+    background: #212529; display: flex; align-items: center;
+    padding: 0 2rem; height: 3rem;
+  }
+  .site-nav .nav-brand {
+    color: #fff; text-decoration: none; font-weight: 600; font-size: 1rem;
+    margin-right: auto;
+  }
+  .site-nav .nav-brand:hover { color: #e9ecef; }
+  .site-nav .nav-link {
+    color: #adb5bd; text-decoration: none; font-size: .85rem;
+    padding: 0 .75rem; height: 3rem; display: flex; align-items: center;
+    background: none; border: none; cursor: pointer; font-family: inherit;
+  }
+  .site-nav .nav-link:hover, .site-nav .nav-link.active { color: #fff; }
+  .nav-dropdown { position: relative; }
+  .dropdown-menu {
+    display: none; position: absolute; top: 3rem; right: 0;
+    background: #fff; border: 1px solid var(--border); border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.12); min-width: 220px;
+    padding: .4rem 0; z-index: 200; max-height: 80vh; overflow-y: auto;
+  }
+  .nav-dropdown.open .dropdown-menu { display: block; }
+  .dropdown-menu a {
+    display: block; padding: .3rem 1rem; color: #1a1a1a;
+    text-decoration: none; font-size: .82rem;
+  }
+  .dropdown-menu a:hover { background: #f0f4f8; }
+  .dropdown-group-label {
+    padding: .4rem 1rem .15rem; font-size: .68rem; font-weight: 700;
+    color: #888; text-transform: uppercase; letter-spacing: .04em;
+  }
+  .dropdown-divider { border-top: 1px solid #eee; margin: .3rem 0; }
+  .page-header {
+    padding: .8rem 2rem; border-bottom: 1px solid var(--border); background: #fff;
+  }
+  .page-header h1 { font-size: 1.3rem; font-weight: 600; }
+  .page-header p { color: var(--muted); font-size: .85rem; margin-top: .15rem; }
+</style>
+
+<nav class="site-nav">
+  <a href="../index.html" class="nav-brand">Judicialização da Saúde</a>
+  <a href="../paper/index.html" class="nav-link">Paper</a>
+  <div class="nav-dropdown">
+    <button class="nav-link">Docs &#9662;</button>
+    <div class="dropdown-menu">
+    <div class="dropdown-group-label">Research reference</div>
+    <a href="../docs/README.html">Project Overview</a>
+    <a href="../docs/summary.html">Research Summary</a>
+    <a href="../docs/institutions.html">Institutional Background</a>
+    <a href="../docs/data.html">Data Sources</a>
+    <a href="../docs/methods.html">Empirical Methods</a>
+    <a href="../docs/literature.html">Literature</a>
+    <a href="../docs/theory.html">Theoretical Framework</a>
+    <a href="../docs/hypotheses.html">Hypotheses & Evidence</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Working notes</div>
+    <a href="../docs/thinking.html">Open Questions & Ideas</a>
+    <a href="../docs/decisions.html">Key Decisions</a>
+    <a href="../docs/qa.html">Research Q&A</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Task tracking</div>
+    <a href="../docs/todo.html">Active Tasks</a>
+    <a href="../docs/done.html">Completed Tasks</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Communication</div>
+    <a href="../docs/meetings.html">Meeting Notes</a>
+    <a href="../docs/feedback.html">External Feedback</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Court analysis</div>
+    <a href="../docs/01-stf-reasoning-templates.html">STF Reasoning Templates</a>
+    <a href="../docs/02-stj-repetitivos-patterns.html">STJ Repetitivos Patterns</a>
+    <a href="../docs/03-tjsp-plans-vs-sus.html">TJSP: Plans vs SUS</a>
+    <a href="../docs/04-conitec-pcdt-vs-courts.html">CONITEC vs Courts</a>
+    <a href="../docs/05-interfederative-responsibility.html">Interfederative Responsibility</a>
+    </div>
+  </div>
+  <div class="nav-dropdown">
+    <button class="nav-link active">Data &#9662;</button>
+    <div class="dropdown-menu">
+    <a href="../sources/tjsp.html">TJSP</a>
+    <a href="../sources/datajud.html">DataJud</a>
+    <a href="../sources/stf-stj.html">STF & STJ</a>
+    <a href="../sources/trf3.html">TRF3</a>
+    <a href="../sources/spending.html">Municipal Spending</a>
+    <a href="../sources/legislation.html">Health Legislation</a>
+    </div>
+  </div>
+  <a href="../references/index.html" class="nav-link">References</a>
+  <a href="../news/index.html" class="nav-link">News</a>
+</nav>
+<script>
+document.querySelectorAll('.nav-dropdown > .nav-link').forEach(function(btn) {
+  btn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    var dd = btn.parentElement;
+    var wasOpen = dd.classList.contains('open');
+    document.querySelectorAll('.nav-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+    if (!wasOpen) dd.classList.add('open');
+  });
+});
+document.addEventListener('click', function() {
+  document.querySelectorAll('.nav-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+});
+</script>
+
+<div class="page-header">
+  <h1>DataJud Cases</h1>
+  <p>Normalized court case records from the CNJ DataJud API (TJSP health sample).</p>
+</div>
+
+<div class="stats-bar" id="stats-bar"></div>
+
+<main>
+
+<!-- Data source notes -->
+<div id="source-notes-section"></div>
+
+<!-- Column info -->
+<h2 class="section-title">Column Information</h2>
+<div class="card full">
+  <div style="overflow-x:auto; max-height:400px; overflow-y:auto;">
+    <table class="col-table" id="col-table"></table>
+  </div>
+</div>
+
+<!-- Distribution charts -->
+<div id="dist-section"></div>
+
+<!-- Temporal charts -->
+<div id="temporal-section"></div>
+
+<!-- Sample data -->
+<h2 class="section-title">Sample Data (50 rows)</h2>
+<div class="card full">
+  <div class="search-bar">
+    <input type="text" id="search" placeholder="Search across all columns...">
+    <span class="count-label" id="row-count"></span>
+  </div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead id="thead"></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+</main>
+
+<footer>
+  Generated by <code>bash build.sh site</code>
+</footer>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  Embedded data — replaced by build pipeline
+// ═══════════════════════════════════════════════════════════════
+const DATA = /* INJECT_DATA */ {"id":"datajud-processos","name":"DataJud Cases","description":"Normalized court case records from the CNJ DataJud API (TJSP health sample).","category":"DataJud","source_notes":"Sourced from the CNJ (Conselho Nacional de Justiça) DataJud API, Brazil's national judicial statistics database. Contains normalized case records for TJSP health cases. DataJud aggregates case metadata from all Brazilian courts via the CNJ's unified numbering system (numeração única). Cleaned and normalized by <code>source/clean/clean_datajud.py</code>.","file_size":303218,"row_count":2000,"col_count":10,"columns":[{"name":"processo_id","dtype":"object","null_count":0,"null_pct":0.0},{"name":"numero_processo","dtype":"object","null_count":0,"null_pct":0.0},{"name":"tribunal","dtype":"object","null_count":0,"null_pct":0.0},{"name":"grau","dtype":"object","null_count":0,"null_pct":0.0},{"name":"nivel_sigilo","dtype":"int64","null_count":0,"null_pct":0.0},{"name":"data_ajuizamento","dtype":"object","null_count":0,"null_pct":0.0},{"name":"data_ultima_atualizacao","dtype":"object","null_count":0,"null_pct":0.0},{"name":"timestamp","dtype":"object","null_count":0,"null_pct":0.0},{"name":"classe_codigo","dtype":"int64","null_count":0,"null_pct":0.0},{"name":"orgao_codigo","dtype":"int64","null_count":0,"null_pct":0.0}],"categorical":{"tribunal":{"labels":["TJSP"],"values":[2000]},"grau":{"labels":["G1","TR","G2","JE"],"values":[847,587,556,10]}},"temporal":{"data_ajuizamento":{"min":"1995-09-26","max":"2024-06-25","by_year":{"labels":[1995,2001,2003,2006,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024],"values":[1,1,1,2,2,4,1,12,28,23,14,37,155,84,86,268,268,299,266,391,57]}}},"sample_columns":["processo_id","numero_processo","tribunal","grau","nivel_sigilo","data_ajuizamento","data_ultima_atualizacao","timestamp","classe_codigo","orgao_codigo"],"sample":[["TJSP_TR_30000261420228269010","30000261420228269010","TJSP","TR","0","2022-12-14T14:55:15.000Z","2024-08-30T17:55:40.064Z","2024-09-25T17:31:15.646557591Z","202","59804"],["TJSP_G1_01466161820128260100","01466161820128260100","TJSP","G1","0","2014-05-15T14:24:33.000Z","2024-09-01T06:03:12.878Z","2024-09-25T09:20:58.427512695Z","156","10580"],["TJSP_TR_10021648320198260153","10021648320198260153","TJSP","TR","0","2021-03-04T10:17:21.000Z","2024-08-30T18:02:10.811Z","2024-09-25T17:29:48.806335051Z","460","59865"],["TJSP_G1_01723584520128260100","01723584520128260100","TJSP","G1","0","2012-07-27T13:11:19.000Z","2024-09-01T03:27:02.185Z","2024-09-25T10:55:17.620191712Z","7","10602"],["TJSP_198_G2_70850_10556271320228260224","10556271320228260224","TJSP","G2","0","2023-08-02T11:54:42.000Z","2024-08-30T18:02:45.178Z","2024-09-25T17:29:39.509497831Z","198","70850"],["TJSP_G2_22686047320158260000","22686047320158260000","TJSP","G2","0","2016-01-25T16:35:06.000Z","2024-08-30T18:03:26.681Z","2024-09-25T17:29:38.604651092Z","1208","70854"],["TJSP_G2_00009713520148260635","00009713520148260635","TJSP","G2","0","2016-04-07T15:17:45.000Z","2024-08-30T18:21:26.550Z","2024-09-25T17:28:42.195892242Z","1689","70852"],["TJSP_G2_10764922220148260100","10764922220148260100","TJSP","G2","0","2016-05-30T00:00:00.000Z","2024-08-30T17:57:03.680Z","2024-09-25T17:30:53.854646533Z","1689","70854"],["TJSP_G1_10020439020218260248","10020439020218260248","TJSP","G1","0","2021-03-05T16:11:40.000Z","2024-08-01T11:32:23.342Z","2024-09-21T10:51:35.147437811Z","436","9705"],["TJSP_G2_00165151920148260100","00165151920148260100","TJSP","G2","0","2018-03-13T17:32:03.000Z","2024-08-30T18:02:22.571Z","2024-09-25T17:29:46.267390964Z","1208","70855"],["TJSP_G1_10358763020228260001","10358763020228260001","TJSP","G1","0","2022-11-04T11:44:48.000Z","2024-08-01T14:25:37.937Z","2024-09-21T10:10:09.120014823Z","7","10386"],["TJSP_TR_00045017520238260071","00045017520238260071","TJSP","TR","0","2023-08-21T11:38:37.000Z","2024-08-30T18:02:41.978Z","2024-09-25T17:29:39.762912581Z","460","59803"],["TJSP_TR_10004948420208260699","10004948420208260699","TJSP","TR","0","2022-01-17T13:19:07.000Z","2024-08-30T18:06:25.382Z","2024-09-25T17:29:15.910501754Z","460","59870"],["TJSP_151_G1_10731_00091998720188260625","00091998720188260625","TJSP","G1","0","2018-07-16T08:58:25.000Z","2024-09-01T05:20:28.143Z","2024-09-25T09:46:58.461255064Z","151","10731"],["TJSP_7_G1_10599_00018783920168260635","00018783920168260635","TJSP","G1","0","2016-02-09T10:56:26.000Z","2024-09-01T06:01:14.751Z","2024-09-25T09:22:13.004778021Z","7","10599"],["TJSP_G1_10147448720198260625","10147448720198260625","TJSP","G1","0","2019-10-17T14:31:24.000Z","2024-09-01T06:34:07.924Z","2024-09-25T09:02:55.399131865Z","7","10732"],["TJSP_G1_00013002620228260228","00013002620228260228","TJSP","G1","0","2022-02-20T12:43:26.000Z","2024-09-01T04:29:12.236Z","2024-09-25T10:10:00.181415795Z","7","10606"],["TJSP_G1_10024036820218260266","10024036820218260266","TJSP","G1","0","2021-05-03T16:48:55.000Z","2024-07-31T23:15:27.188Z","2024-09-21T18:00:00.583552345Z","156","9712"],["TJSP_G2_10620363320158260100","10620363320158260100","TJSP","G2","0","2016-05-13T10:30:09.000Z","2024-08-30T17:57:58.495Z","2024-09-25T17:30:39.649633328Z","1689","70849"],["TJSP_G2_21328602820238260000","21328602820238260000","TJSP","G2","0","2023-05-30T19:49:34.000Z","2024-08-30T17:55:50.300Z","2024-09-25T17:31:14.286003092Z","202","70848"],["TJSP_G2_10063759820178260100","10063759820178260100","TJSP","G2","0","2018-05-17T10:50:49.000Z","2024-09-01T04:53:43.388Z","2024-09-25T09:58:57.048633749Z","1689","70853"],["TJSP_TR_00012017520198260094","00012017520198260094","TJSP","TR","0","2020-05-27T18:58:19.000Z","2024-08-30T17:57:46.899Z","2024-09-25T17:30:42.056727539Z","460","59895"],["TJSP_TR_00005484020238260480","00005484020238260480","TJSP","TR","0","2023-09-01T13:44:04.000Z","2024-08-30T17:53:48.833Z","2024-09-25T17:31:33.771157153Z","460","59844"],["TJSP_460_TR_59903_10019069420168260568","10019069420168260568","TJSP","TR","0","2016-08-17T16:53:09.000Z","2024-08-30T18:07:23.585Z","2024-09-25T17:29:12.260698593Z","460","59903"],["TJSP_G2_10017182820188260505","10017182820188260505","TJSP","G2","0","2022-10-04T11:29:31.000Z","2024-08-30T17:54:54.462Z","2024-09-25T17:31:23.774932836Z","198","70920"],["TJSP_G1_10072934820218260008","10072934820218260008","TJSP","G1","0","2021-06-07T19:33:30.000Z","2024-08-01T04:23:35.310Z","2024-09-21T14:22:09.716321760Z","7","10466"],["TJSP_TR_00010843820168260111","00010843820168260111","TJSP","TR","0","2020-07-01T15:47:41.000Z","2024-08-30T18:05:16.832Z","2024-09-25T17:29:24.033188551Z","460","59847"],["TJSP_G2_21786746320238260000","21786746320238260000","TJSP","G2","0","2023-07-13T15:28:00.000Z","2024-08-30T18:16:10.609Z","2024-09-25T17:28:49.873050130Z","202","70851"],["TJSP_12078_G1_17835_00210699020198260562","00210699020198260562","TJSP","G1","0","2019-09-20T18:23:37.000Z","2024-09-01T04:18:54.282Z","2024-09-25T10:16:32.219505283Z","12078","17835"],["TJSP_G1_00051690520208260248","00051690520208260248","TJSP","G1","0","2020-11-03T16:02:51.000Z","2024-08-02T00:32:00.696Z","2024-09-21T06:55:41.259475140Z","436","9705"],["TJSP_12078_G1_10769_00035347520198260651","00035347520198260651","TJSP","G1","0","2019-11-18T10:24:57.000Z","2024-09-01T05:05:33.097Z","2024-09-25T09:55:03.842519505Z","12078","10769"],["TJSP_G2_21129594020248260000","21129594020248260000","TJSP","G2","0","2024-04-23T16:45:00.000Z","2024-08-30T18:20:21.977Z","2024-09-25T17:28:43.146927679Z","202","70851"],["TJSP_G1_10009380720228260228","10009380720228260228","TJSP","G1","0","2022-09-11T09:42:23.000Z","2024-09-01T05:22:49.304Z","2024-09-25T09:45:40.493477515Z","120","10560"],["TJSP_G1_10876457620198260100","10876457620198260100","TJSP","G1","0","2019-09-05T14:01:48.000Z","2024-09-01T03:27:00.610Z","2024-09-25T10:55:17.667227186Z","7","10566"],["TJSP_TR_00008314520198260111","00008314520198260111","TJSP","TR","0","2021-11-18T16:26:57.000Z","2024-08-30T18:07:25.841Z","2024-09-25T17:29:12.253599299Z","460","59808"],["TJSP_G1_10004999820198260228","10004999820198260228","TJSP","G1","0","2019-12-20T12:16:15.000Z","2024-09-01T05:51:07.800Z","2024-09-25T09:27:46.075106855Z","436","76604"],["TJSP_TR_10008481020198260614","10008481020198260614","TJSP","TR","0","2020-07-13T14:59:47.000Z","2024-08-30T17:58:14.239Z","2024-09-25T17:30:34.173335268Z","1689","59898"],["TJSP_G2_10091893020158260011","10091893020158260011","TJSP","G2","0","2016-06-20T17:07:44.000Z","2024-08-30T18:02:45.115Z","2024-09-25T17:29:39.757448590Z","1689","70852"],["TJSP_TR_00000147220208269058","00000147220208269058","TJSP","TR","0","2020-01-16T09:38:55.000Z","2024-08-30T18:07:26.302Z","2024-09-25T17:29:12.252639291Z","204","59831"],["TJSP_G1_00020407820198260651","00020407820198260651","TJSP","G1","0","2019-07-11T18:45:51.000Z","2024-09-01T06:40:57.559Z","2024-09-25T08:57:52.801173051Z","436","10769"],["TJSP_G1_10000343920198260471","10000343920198260471","TJSP","G1","0","2019-01-15T18:33:36.000Z","2024-08-01T00:35:34.237Z","2024-09-21T17:09:07.444183281Z","436","10102"],["TJSP_G2_10566254820188260053","10566254820188260053","TJSP","G2","0","2021-06-14T15:58:16.000Z","2024-08-30T17:54:43.475Z","2024-09-25T17:31:24.493529345Z","198","70922"],["TJSP_G1_00014177720208260651","00014177720208260651","TJSP","G1","0","2020-10-09T15:48:18.000Z","2024-09-01T06:41:02.979Z","2024-09-25T08:57:50.998022495Z","436","10769"],["TJSP_G1_10008791920228260228","10008791920228260228","TJSP","G1","0","2022-08-21T01:18:34.000Z","2024-09-01T05:20:22.620Z","2024-09-25T09:47:03.790646354Z","7","10568"],["TJSP_TR_00017058220198260320","00017058220198260320","TJSP","TR","0","2019-08-20T12:05:54.000Z","2024-08-30T17:58:41.837Z","2024-09-25T17:30:28.152535324Z","460","59793"],["TJSP_G1_00021031920158260595","00021031920158260595","TJSP","G1","0","2015-07-20T15:08:23.000Z","2024-09-01T04:04:06.719Z","2024-09-25T10:23:58.606457573Z","7","10657"],["TJSP_G1_10025451620218260220","10025451620218260220","TJSP","G1","0","2021-06-23T10:27:41.000Z","2024-09-01T05:36:28.032Z","2024-09-25T09:37:32.801266001Z","436","9637"],["TJSP_G1_10025281620198260651","10025281620198260651","TJSP","G1","0","2019-12-03T09:04:36.000Z","2024-09-01T03:37:12.695Z","2024-09-25T10:48:50.877870033Z","7","10770"],["TJSP_G1_10068750920188260011","10068750920188260011","TJSP","G1","0","2018-07-11T11:35:46.000Z","2024-08-01T09:35:43.387Z","2024-09-21T11:19:09.192464867Z","7","10486"],["TJSP_G2_21371603320238260000","21371603320238260000","TJSP","G2","0","2023-06-02T23:36:04.000Z","2024-08-30T17:58:14.590Z","2024-09-25T17:30:34.172723964Z","202","70852"]]};
+
+// ═══════════════════════════════════════════════════════════════
+//  Helpers
+// ═══════════════════════════════════════════════════════════════
+const pal = ['#0d6efd','#198754','#dc3545','#fd7e14','#6f42c1','#20c997',
+             '#0dcaf0','#d63384','#ffc107','#6610f2','#adb5bd','#e85d04',
+             '#2b9348','#4361ee','#f72585'];
+function fmtNum(n) { return n.toLocaleString('en'); }
+function fmtSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(1) + ' MB';
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Data source notes
+// ═══════════════════════════════════════════════════════════════
+(function() {
+  if (!DATA.source_notes) return;
+  const section = document.getElementById('source-notes-section');
+  const h2 = document.createElement('h2');
+  h2.className = 'section-title';
+  h2.textContent = 'About This Dataset';
+  section.appendChild(h2);
+  const card = document.createElement('div');
+  card.className = 'card full';
+  card.innerHTML = '<p style="font-size:.9rem;line-height:1.7;color:#333">' + DATA.source_notes + '</p>';
+  section.appendChild(card);
+})();
+
+// ═══════════════════════════════════════════════════════════════
+//  Stats bar
+// ═══════════════════════════════════════════════════════════════
+(function() {
+  const bar = document.getElementById('stats-bar');
+  const items = [
+    ['Rows', fmtNum(DATA.row_count)],
+    ['Columns', fmtNum(DATA.col_count)],
+    ['File Size', fmtSize(DATA.file_size)],
+  ];
+  // Add temporal ranges
+  Object.entries(DATA.temporal || {}).forEach(([col, t]) => {
+    items.push(['Date Range (' + col + ')', t.min + ' to ' + t.max]);
+  });
+  items.forEach(([label, value]) => {
+    const d = document.createElement('div');
+    d.className = 'stat-card';
+    d.innerHTML = '<div class="value">' + value + '</div><div class="label">' + label + '</div>';
+    bar.appendChild(d);
+  });
+})();
+
+// ═══════════════════════════════════════════════════════════════
+//  Column info table
+// ═══════════════════════════════════════════════════════════════
+(function() {
+  const table = document.getElementById('col-table');
+  let html = '<thead><tr><th>#</th><th>Column</th><th>Type</th><th>Nulls</th><th>Null %</th></tr></thead><tbody>';
+  DATA.columns.forEach((c, i) => {
+    const barW = Math.min(c.null_pct, 100);
+    html += '<tr><td>' + (i + 1) + '</td><td><strong>' + c.name + '</strong></td>'
+      + '<td>' + c.dtype + '</td>'
+      + '<td>' + fmtNum(c.null_count) + '</td>'
+      + '<td><span class="null-bar" style="width:' + barW + 'px"></span> ' + c.null_pct + '%</td></tr>';
+  });
+  html += '</tbody>';
+  table.innerHTML = html;
+})();
+
+// ═══════════════════════════════════════════════════════════════
+//  Categorical distribution charts
+// ═══════════════════════════════════════════════════════════════
+(function() {
+  const section = document.getElementById('dist-section');
+  const cats = Object.entries(DATA.categorical || {});
+  if (cats.length === 0) return;
+
+  const h2 = document.createElement('h2');
+  h2.className = 'section-title';
+  h2.textContent = 'Categorical Distributions (Top 15)';
+  section.appendChild(h2);
+
+  const grid = document.createElement('div');
+  grid.className = 'grid';
+  section.appendChild(grid);
+
+  cats.forEach(([col, d], idx) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    const labels = d.labels.map(s => String(s).length > 40 ? String(s).slice(0, 38) + '\u2026' : String(s));
+    card.innerHTML = '<h3>' + col + '</h3><div class="chart-wrap hbar"><canvas id="cat-' + idx + '"></canvas></div>';
+    grid.appendChild(card);
+
+    // Render after DOM insertion
+    setTimeout(() => {
+      new Chart(document.getElementById('cat-' + idx), {
+        type: 'bar',
+        data: { labels: labels, datasets: [{ data: d.values, backgroundColor: pal[idx % pal.length] }] },
+        options: {
+          indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { x: { beginAtZero: true } }
+        }
+      });
+    }, 0);
+  });
+})();
+
+// ═══════════════════════════════════════════════════════════════
+//  Temporal charts
+// ═══════════════════════════════════════════════════════════════
+(function() {
+  const section = document.getElementById('temporal-section');
+  const temps = Object.entries(DATA.temporal || {});
+  if (temps.length === 0) return;
+
+  const h2 = document.createElement('h2');
+  h2.className = 'section-title';
+  h2.textContent = 'Temporal Distribution';
+  section.appendChild(h2);
+
+  const grid = document.createElement('div');
+  grid.className = 'grid';
+  section.appendChild(grid);
+
+  temps.forEach(([col, t], idx) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = '<h3>' + col + ' by year</h3><div class="chart-wrap bar"><canvas id="temp-' + idx + '"></canvas></div>';
+    grid.appendChild(card);
+
+    setTimeout(() => {
+      new Chart(document.getElementById('temp-' + idx), {
+        type: 'bar',
+        data: {
+          labels: t.by_year.labels,
+          datasets: [{ label: 'Count', data: t.by_year.values, backgroundColor: '#0d6efd' }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+    }, 0);
+  });
+})();
+
+// ═══════════════════════════════════════════════════════════════
+//  Sample data table
+// ═══════════════════════════════════════════════════════════════
+const allRows = DATA.sample || [];
+const sampleCols = DATA.sample_columns || [];
+
+(function() {
+  document.getElementById('thead').innerHTML = '<tr>' + sampleCols.map(c => '<th>' + c + '</th>').join('') + '</tr>';
+  const searchEl = document.getElementById('search');
+  const countEl = document.getElementById('row-count');
+  const tbody = document.getElementById('tbody');
+
+  function render() {
+    const q = searchEl.value.toLowerCase();
+    const rows = q ? allRows.filter(r => r.some(v => String(v).toLowerCase().includes(q))) : allRows;
+    tbody.innerHTML = rows.map(r =>
+      '<tr>' + r.map(v => '<td>' + v + '</td>').join('') + '</tr>'
+    ).join('');
+    countEl.textContent = rows.length + ' of ' + allRows.length + ' rows';
+  }
+  searchEl.addEventListener('input', render);
+  render();
+})();
+</script>
+</body>
+</html>

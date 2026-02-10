@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="robots" content="noindex, nofollow">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Health Legislation Corpus</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+  :root {
+    --bg: #f8f9fa; --card: #fff; --fg: #1a1a1a; --muted: #666;
+    --border: #dee2e6; --accent: #0d6efd; --accent2: #198754;
+    --accent3: #dc3545; --accent4: #fd7e14;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--fg); line-height: 1.5;
+  }
+
+  .stats-bar {
+    display: flex; gap: .8rem; padding: 1rem 2rem; flex-wrap: wrap;
+  }
+  .stat-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: .75rem 1rem; flex: 1; min-width: 120px;
+    text-align: center;
+  }
+  .stat-card .value { font-size: 1.5rem; font-weight: 700; color: var(--accent); }
+  .stat-card .label { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+
+  main { padding: 0 2rem 3rem; max-width: 1400px; margin: 0 auto; }
+
+  h2.section-title {
+    font-size: 1.15rem; margin: 1.6rem 0 .8rem; padding-bottom: .3rem;
+    border-bottom: 2px solid var(--border);
+  }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1.2rem 1.4rem;
+  }
+  .card h3 { font-size: .95rem; margin-bottom: .8rem; color: var(--fg); }
+  .card.full { grid-column: 1 / -1; }
+
+  .chart-wrap { position: relative; width: 100%; }
+  .chart-wrap.bar { height: 300px; }
+  .chart-wrap.hbar { height: 380px; }
+
+  /* column info table */
+  .col-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+  .col-table th, .col-table td {
+    padding: .35rem .6rem; border-bottom: 1px solid var(--border); text-align: left;
+  }
+  .col-table th { background: #f0f4f8; font-weight: 600; position: sticky; top: 0; }
+  .col-table .null-bar { display: inline-block; height: 10px; border-radius: 2px; background: #dc3545; }
+
+  /* data table */
+  .table-wrap { overflow-x: auto; max-height: 520px; overflow-y: auto; }
+  .data-table { width: 100%; border-collapse: collapse; font-size: .8rem; }
+  .data-table th, .data-table td {
+    padding: .4rem .5rem; border-bottom: 1px solid var(--border);
+    text-align: left; white-space: nowrap; max-width: 250px; overflow: hidden; text-overflow: ellipsis;
+  }
+  .data-table th { position: sticky; top: 0; background: #f0f4f8; font-weight: 600; }
+  .data-table tbody tr:hover { background: #f0f4ff; }
+
+  .search-bar { margin-bottom: .8rem; }
+  .search-bar input {
+    font-size: .85rem; padding: .4rem .7rem; border: 1px solid var(--border);
+    border-radius: 4px; width: 100%; max-width: 400px;
+  }
+  .count-label { font-size: .8rem; color: var(--muted); margin-left: .8rem; }
+
+  footer {
+    text-align: center; padding: 1.5rem; font-size: .8rem; color: var(--muted);
+    border-top: 1px solid var(--border); margin-top: 2rem;
+  }
+</style>
+</head>
+<body>
+
+<style>
+  .site-nav {
+    position: sticky; top: 0; z-index: 100;
+    background: #212529; display: flex; align-items: center;
+    padding: 0 2rem; height: 3rem;
+  }
+  .site-nav .nav-brand {
+    color: #fff; text-decoration: none; font-weight: 600; font-size: 1rem;
+    margin-right: auto;
+  }
+  .site-nav .nav-brand:hover { color: #e9ecef; }
+  .site-nav .nav-link {
+    color: #adb5bd; text-decoration: none; font-size: .85rem;
+    padding: 0 .75rem; height: 3rem; display: flex; align-items: center;
+    background: none; border: none; cursor: pointer; font-family: inherit;
+  }
+  .site-nav .nav-link:hover, .site-nav .nav-link.active { color: #fff; }
+  .nav-dropdown { position: relative; }
+  .dropdown-menu {
+    display: none; position: absolute; top: 3rem; right: 0;
+    background: #fff; border: 1px solid var(--border); border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.12); min-width: 220px;
+    padding: .4rem 0; z-index: 200; max-height: 80vh; overflow-y: auto;
+  }
+  .nav-dropdown.open .dropdown-menu { display: block; }
+  .dropdown-menu a {
+    display: block; padding: .3rem 1rem; color: #1a1a1a;
+    text-decoration: none; font-size: .82rem;
+  }
+  .dropdown-menu a:hover { background: #f0f4f8; }
+  .dropdown-group-label {
+    padding: .4rem 1rem .15rem; font-size: .68rem; font-weight: 700;
+    color: #888; text-transform: uppercase; letter-spacing: .04em;
+  }
+  .dropdown-divider { border-top: 1px solid #eee; margin: .3rem 0; }
+  .page-header {
+    padding: .8rem 2rem; border-bottom: 1px solid var(--border); background: #fff;
+  }
+  .page-header h1 { font-size: 1.3rem; font-weight: 600; }
+  .page-header p { color: var(--muted); font-size: .85rem; margin-top: .15rem; }
+</style>
+
+<nav class="site-nav">
+  <a href="../index.html" class="nav-brand">Judicialização da Saúde</a>
+  <a href="../paper/index.html" class="nav-link">Paper</a>
+  <div class="nav-dropdown">
+    <button class="nav-link">Docs &#9662;</button>
+    <div class="dropdown-menu">
+    <div class="dropdown-group-label">Research reference</div>
+    <a href="../docs/README.html">Project Overview</a>
+    <a href="../docs/summary.html">Research Summary</a>
+    <a href="../docs/institutions.html">Institutional Background</a>
+    <a href="../docs/data.html">Data Sources</a>
+    <a href="../docs/methods.html">Empirical Methods</a>
+    <a href="../docs/literature.html">Literature</a>
+    <a href="../docs/theory.html">Theoretical Framework</a>
+    <a href="../docs/hypotheses.html">Hypotheses & Evidence</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Working notes</div>
+    <a href="../docs/thinking.html">Open Questions & Ideas</a>
+    <a href="../docs/decisions.html">Key Decisions</a>
+    <a href="../docs/qa.html">Research Q&A</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Task tracking</div>
+    <a href="../docs/todo.html">Active Tasks</a>
+    <a href="../docs/done.html">Completed Tasks</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Communication</div>
+    <a href="../docs/meetings.html">Meeting Notes</a>
+    <a href="../docs/feedback.html">External Feedback</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Court analysis</div>
+    <a href="../docs/01-stf-reasoning-templates.html">STF Reasoning Templates</a>
+    <a href="../docs/02-stj-repetitivos-patterns.html">STJ Repetitivos Patterns</a>
+    <a href="../docs/03-tjsp-plans-vs-sus.html">TJSP: Plans vs SUS</a>
+    <a href="../docs/04-conitec-pcdt-vs-courts.html">CONITEC vs Courts</a>
+    <a href="../docs/05-interfederative-responsibility.html">Interfederative Responsibility</a>
+    </div>
+  </div>
+  <div class="nav-dropdown">
+    <button class="nav-link active">Data &#9662;</button>
+    <div class="dropdown-menu">
+    <a href="../sources/tjsp.html">TJSP</a>
+    <a href="../sources/datajud.html">DataJud</a>
+    <a href="../sources/stf-stj.html">STF & STJ</a>
+    <a href="../sources/trf3.html">TRF3</a>
+    <a href="../sources/spending.html">Municipal Spending</a>
+    <a href="../sources/legislation.html">Health Legislation</a>
+    </div>
+  </div>
+  <a href="../references/index.html" class="nav-link">References</a>
+  <a href="../news/index.html" class="nav-link">News</a>
+</nav>
+<script>
+document.querySelectorAll('.nav-dropdown > .nav-link').forEach(function(btn) {
+  btn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    var dd = btn.parentElement;
+    var wasOpen = dd.classList.contains('open');
+    document.querySelectorAll('.nav-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+    if (!wasOpen) dd.classList.add('open');
+  });
+});
+document.addEventListener('click', function() {
+  document.querySelectorAll('.nav-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+});
+</script>
+
+<div class="page-header">
+  <h1>Health Legislation Corpus</h1>
+  <p>Scraped and cleaned health-related legislation from Planalto and SaudeLegis.</p>
+</div>
+
+<div class="stats-bar" id="stats-bar"></div>
+
+<main>
+
+<!-- Data source notes -->
+<div id="source-notes-section"></div>
+
+<!-- Column info -->
+<h2 class="section-title">Column Information</h2>
+<div class="card full">
+  <div style="overflow-x:auto; max-height:400px; overflow-y:auto;">
+    <table class="col-table" id="col-table"></table>
+  </div>
+</div>
+
+<!-- Distribution charts -->
+<div id="dist-section"></div>
+
+<!-- Temporal charts -->
+<div id="temporal-section"></div>
+
+<!-- Sample data -->
+<h2 class="section-title">Sample Data (50 rows)</h2>
+<div class="card full">
+  <div class="search-bar">
+    <input type="text" id="search" placeholder="Search across all columns...">
+    <span class="count-label" id="row-count"></span>
+  </div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead id="thead"></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+</main>
+
+<footer>
+  Generated by <code>bash build.sh site</code>
+</footer>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  Embedded data — replaced by build pipeline
+// ═══════════════════════════════════════════════════════════════
+const DATA = /* INJECT_DATA */ {"id":"health-legislation","name":"Health Legislation Corpus","description":"Scraped and cleaned health-related legislation from Planalto and SaudeLegis.","category":"Legislation","source_notes":"Scraped from two sources: Planalto (the federal legislation portal at planalto.gov.br) and SaudeLegis (the Ministry of Health's legislation system at saudelegis.saude.gov.br). Contains the full corpus of health-related legislation including laws, decrees, portarias, and resoluções. Key legislation for the project includes: Lei 8.080/1990 (SUS organic law), Lei 8.142/1990 (SUS funding and social participation), and Portaria 42/1999 (functional expenditure classification used by TCE-SP). Cleaned by <code>source/clean/clean_legislation.py</code>.","file_size":1788326,"row_count":7119,"col_count":9,"columns":[{"name":"fonte","dtype":"object","null_count":0,"null_pct":0.0},{"name":"tipo","dtype":"object","null_count":0,"null_pct":0.0},{"name":"orgao","dtype":"float64","null_count":7119,"null_pct":100.0},{"name":"numero","dtype":"float64","null_count":1114,"null_pct":15.6},{"name":"data","dtype":"object","null_count":1402,"null_pct":19.7},{"name":"ementa","dtype":"object","null_count":855,"null_pct":12.0},{"name":"termos_saude","dtype":"object","null_count":0,"null_pct":0.0},{"name":"url","dtype":"object","null_count":0,"null_pct":0.0},{"name":"texto_length","dtype":"int64","null_count":0,"null_pct":0.0}],"categorical":{"tipo":{"labels":["lei","decreto_lei","medida_provisoria","decreto","lei_complementar","emenda_constitucional","lei_delegada","constituicao","decreto_lei_compilado"],"values":[5411,1014,503,76,65,41,6,2,1]}},"temporal":{},"sample_columns":["fonte","tipo","orgao","numero","data","ementa","termos_saude","url","texto_length"],"sample":[["planalto","lei","","2173.0","18 de JANEIRO de 1954","Autoriza o Poder \r\nExecutivo a abrir, pelo Ministério da Agricultura, o crédito suplementar de \r\nCr$20.","\\bsaúde\\b","https://www.planalto.gov.br/ccivil_03/LEIS/1950-1969/L2173.htm","1366"],["planalto","lei","","15211.0","17 de SETEMBRO de 2025","Dispõe sobre a proteção de crianças e \r\n\t\tadolescentes em ambientes digitais (Estatuto Digital da Criança e do \r\n\t\tAdolescente).","\\bsaúde\\b, \\btratamento\\w*\\b","https://www.planalto.gov.br/ccivil_03/_Ato2023-2026/2025/Lei/L15211.htm","48733"],["planalto","medida_provisoria","","1034.0","1 de MARÇO de 2021","Altera a Lei nº 7.","\\bvacin\\w*\\b","https://www.planalto.gov.br/ccivil_03/_Ato2019-2022/2021/Mpv/mpv1034.htm","12711"],["planalto","decreto_lei","","291.0","23 de FEVEREIRO de 1938","instituida uma taxa, denominada “Expansão da \r\nPesca”, destinada a desenvolver a pesca e indústrias derivadas, a amparar a \r\nclasse dos pescadores e a ampliar o Serviço de Caça e Pesca, do Departamento \r\nNacional da Produção Animal, reajustando-o às necessidades do paiz.","\\bsaúde\\b","https://www.planalto.gov.br/ccivil_03/Decreto-Lei/1937-1946/Del0291.htm","7668"],["planalto","lei","","8764.0","","dispõe sobre os\r\n bens apreendidos e adquiridos com produtos de tráfico ilícito de drogas ou atividades\r\n correlatas, e dá outras providências.","\\bmedicament\\w*\\b","http://www.planalto.gov.br/CCIVIL_03/LEIS/L7560.htm","30693"],["planalto","lei","","15337.0","","Institui a Política Nacional de Incentivo à Produção de Cacau de Qualidade.","\\bsanitári\\w*\\b, \\bfarmac\\w*\\b","http://www.planalto.gov.br/ccivil_03/_Ato2015-2018/2018/Lei/L13710.htm","25169"],["planalto","lei","","14785.0","6 de JUNHO de 2000","dispõe sobre a pesquisa, a experimentação, a produção, a embalagem e rotulagem, o\r\n    transporte, o armazenamento, a comercialização, a propaganda comercial, a utilização,\r\n    a importação, a exportação, o destino final dos resíduos e embalagens, o registro, a\r\n    classificação, o controle, a inspeção e a fiscalização de agrotóxicos, seus\r\n    componentes e afins, e dá outras providências.","\\bsanitári\\w*\\b","http://www.planalto.gov.br/CCIVIL_03/LEIS/L9974.htm","7749"],["planalto","lei","","13587.0","2 de janeiro de 2018","Instituições Federais de Educação Profissional e Tecnológica42.","\\bsaúde\\b","http://www.planalto.gov.br/ccivil_03/_Ato2015-2018/2018/Lei/L13633.htm","85162"],["planalto","lei","","3.0","2 de DEZEMBRO de 1946","autorizado a realizar as operações de crédito que se \r\ntornarem necessárias, por antecipação de Receita, até o máximo de um bilhão e \r\nduzentos milhões de cruzeiros (Cr$1.","\\bsaúde\\b","https://www.planalto.gov.br/ccivil_03/LEIS/1930-1949/L0003.htm","5218"],["planalto","lei","","10579.0","28 de NOVEMBRO de 2002","","\\bsaúde\\b, \\bMinistério\\s+da\\s+Saúde\\b","https://www.planalto.gov.br/ccivil_03/LEIS/2002/L10579.htm","2255"],["planalto","lei","","13275.0","27 de ABRIL de 2016","","\\bsaúde\\b, \\bSUS\\b, \\batenção\\s+(básica|primária|especializada)\\b, \\bMinistério\\s+da\\s+Saúde\\b","http://www.planalto.gov.br/CCIVIL_03/_Ato2015-2018/2016/Lei/L13275.htm","43062"],["planalto","lei","","4156.0","28 de novembro de 1962","Dispõe sobre recursos da União, \r\n\testranhos ao Fundo Federal de Eletrificação, e dá outras providências.","\\btratamento\\w*\\b","http://www.planalto.gov.br/ccivil_03/LEIS/1970-1979/L6508.htm","2780"],["planalto","lei","","2391.0","7 de janeiro de 1955","Altera o art.","\\bsaúde\\b","http://www.planalto.gov.br/ccivil_03/LEIS/1950-1969/L4653.htm","1269"],["planalto","lei","","","","Autoriza o Poder Executivo a abrir, pelo Ministério das Relações Exteriores o \r\ncrédito especial de Cr$ .","\\bsaúde\\b, \\bsanitári\\w*\\b","http://www.planalto.gov.br/ccivil_03/LEIS/1950-1969/L1468.htm","1772"],["planalto","decreto_lei","","1455.0","7 de abril de 1976","Dispõe sobre \r\nalienação de mercadorias sujeitas à pena de perdimento, em especial nos casos de \r\ncalamidade pública, e dá outras providências.","\\btratamento\\w*\\b","http://www.planalto.gov.br/ccivil_03/Decreto-Lei/1965-1988/Del2061.htm","5235"],["planalto","lei","","8069.0","13 de julho de 1990","Altera os arts.","\\bsaúde\\b","http://www.planalto.gov.br/ccivil_03/_Ato2023-2026/2023/Lei/L14721.htm","1511"],["planalto","decreto_lei","","1775.0","12 de MARÇO de 1980","Altera alíquotas \r\n\tdo Imposto de Importação e dá outras providências.","\\btratamento\\w*\\b","https://www.planalto.gov.br/ccivil_03/Decreto-Lei/1965-1988/Del1775.htm","2894"],["planalto","lei","","5180.0","1 de DEZEMBRO de 1966","Autoriza \r\n\to Poder Executivo a doar à Santa Casa de Misericórdia de Guaratinguetá, \r\n\tEstado de S.","\\bsaúde\\b","https://www.planalto.gov.br/ccivil_03/LEIS/1950-1969/L5180.htm","1104"],["planalto","lei","","","","Institui a Política Nacional de Cultura Viva e dá outras providências.","\\bsaúde\\b","http://www.planalto.gov.br/ccivil_03/_Ato2011-2014/2014/Lei/L13018.htm","22838"],["planalto","lei","","6418.0","30 de MAIO de 1977","dispõe sobre o pagamento de serviços industriais ou comerciais, prestados \r\n\tpor órgãos vinculados ao Ministério dos Transportes.","\\btratamento\\w*\\b","https://www.planalto.gov.br/ccivil_03/LEIS/1970-1979/L6418.htm","3243"],["planalto","lei","","4473.0","5 de JULHO de 1955","estabelecerá condições e providências relativas \r\nao interêsse nacional e à segurança e a saúde públicas.","\\bsaúde\\b","http://www.planalto.gov.br/CCIVIL_03/LEIS/1950-1969/L2526.htm","1281"],["planalto","lei","","773.0","20 de agôsto de 1969","revogadas as disposições \r\nem contrário.","\\bsaúde\\b, \\bMinistério\\s+da\\s+Saúde\\b","http://www.planalto.gov.br/CCIVIL_03/LEIS/1970-1979/L5734.htm","2141"],["planalto","decreto_lei","","5316.0","14 de setembro de 1967","Altera a Lei nº 5.","\\bdoença\\w*\\b","http://www.planalto.gov.br/ccivil_03/Decreto-Lei/1965-1988/Del0893.htm","6418"],["planalto","lei","","3268.0","30 de setembro de 1957","Revogam-se as disposições em contrário.","\\bsaúde\\b","http://www.planalto.gov.br/CCIVIL_03/LEIS/1950-1969/L5526.htm","5019"],["planalto","lei","","13979.0","6 de FEVEREIRO de 2020","Dispõe sobre as medidas para enfrentamento da emergência\n      de saúde pública de importância internacional decorrente do coronavírus\n      responsável pelo surto de 2019.","\\bsaúde\\b","http://www.planalto.gov.br/CCIVIL_03/_Ato2019-2022/2020/Lei/L13979.htm","57276"],["planalto","lei","","14231.0","28 de OUTUBRO de 2021","","\\bsaúde\\b, \\bSUS\\b","http://www.planalto.gov.br/CCIVIL_03/_Ato2019-2022/2021/Lei/L14231.htm","1067"],["planalto","decreto_lei","","186.0","23 de FEVEREIRO de 1967","revogadas as disposições \r\nem contrário.","\\bsanitári\\w*\\b, \\bhospital\\w*\\b","https://www.planalto.gov.br/ccivil_03/Decreto-Lei/1965-1988/Del0186.htm","1697"],["planalto","decreto_lei","","292.0","23 de FEVEREIRO de 1938","Revogado pelo Decreto-Lei nº 5.","\\bsaude\\b","http://www.planalto.gov.br/CCIVIL_03/Decreto-Lei/1937-1946/Del0292.htm","3061"],["planalto","lei","","10422.0","15 de ABRIL de 2002","Autoriza\r\n    doação de imóvel de propriedade do Instituto Nacional do Seguro Social.","\\bsaúde\\b","https://www.planalto.gov.br/ccivil_03/LEIS/2002/L10422.htm","1500"],["planalto","lei","","2852.0","25 de AGOSTO de 1956","instituições constitucionais.","\\bsaúde\\b","http://www.planalto.gov.br/CCIVIL_03/LEIS/1950-1969/L2852.htm","1652"],["planalto","medida_provisoria","","1036.0","17 de MARÇO de 2021","Dispõe sobre medidas emergenciais para atenuar os efeitos da crise \r\n\t\t\tdecorrente da pandemia da\ncovid-19\nnos setores de turismo e \r\n\t\t\tde cultura.","\\bpandemi\\w*\\b","http://www.planalto.gov.br/CCIVIL_03/_Ato2019-2022/2021/Mpv/mpv1036.htm","4917"],["planalto","lei","","2920.0","13 de OUTUBRO de 1956","instituições serão, igualmente, aproveitados, \r\ncomo extranumerários, cabendo ao Poder Executivo providenciar a respeito.","\\bhospital\\w*\\b","http://www.planalto.gov.br/CCIVIL_03/LEIS/1950-1969/L2920.htm","4412"],["planalto","decreto_lei","","916.0","8 de OUTUBRO de 1969","Cria a \r\nComissão Incentivadora dos Centros Rurais Universitários de Treinamento e Ação \r\nComunitária CINCRUTAC - e dá outras providências.","\\bsaúde\\b, \\bMinistério\\s+da\\s+Saúde\\b","https://www.planalto.gov.br/ccivil_03/Decreto-Lei/1965-1988/Del0916.htm","5319"],["planalto","lei","","11960.0","29 de JUNHO de 2009","Altera e acresce \r\ndispositivos às Leis n\nos\n9.","\\btratamento\\w*\\b","https://www.planalto.gov.br/ccivil_03/_Ato2007-2010/2009/Lei/L11960.htm","11284"],["planalto","medida_provisoria","","1037.0","18 de MARÇO de 2021","autorizada, em atendimento ao disposto no\ninciso I do § 1º do art.","\\bsaúde\\b","https://www.planalto.gov.br/ccivil_03/_Ato2019-2022/2021/Mpv/mpv1037.htm","2494"],["planalto","lei","","13057.0","22 de DEZEMBRO de 2014","Cria cargos de provimento efetivo, em comissão e funções comissionadas no Tribunal de Justiça do Distrito Federal e dos Territórios - TJDFT.","\\bsaúde\\b","https://www.planalto.gov.br/ccivil_03/_Ato2011-2014/2014/Lei/L13057.htm","3963"],["planalto","lei","","1489.0","10 de DEZEMBRO de 1951","Institui normas especiais para \r\n\taplicação de créditos orçamentários e adicionais concedidos ao Ministério da \r\n\tAgricultura.","\\bsanitári\\w*\\b","http://www.planalto.gov.br/CCIVIL_03/LEIS/1950-1969/L1489.htm","5265"],["planalto","lei","","4263.0","14 de JANEIRO de 1921","","\\bmedicament\\w*\\b, \\btratamento\\w*\\b","http://www.planalto.gov.br/CCIVIL_03/LEIS/1901-1929/L4263.htm","21718"],["planalto","lei","","123.0","","Dispõe sobre\r\n o regime tributário das microempresas e das empresas de pequeno porte, institui o Sistema\r\n Integrado de Pagamento de Impostos e Contribuições das Microempresas e das Empresas de\r\n Pequeno Porte - SIMPLES e dá outras providências.","\\btratamento\\w*\\b","http://www.planalto.gov.br/ccivil_03/LEIS/L9317.htm","117413"],["planalto","decreto","","10360.0","21 de MAIO de 2020","Dispõe sobre a forma de identificação das autorizações de despesas \r\n\trelacionadas ao enfrentamento de calamidade pública nacional decorrente de \r\n\tpandemia e de seus efeitos sociais e econômicos.","\\bpandemi\\w*\\b","https://www.planalto.gov.br/ccivil_03/_Ato2019-2022/2020/Decreto/D10360.htm","5985"],["planalto","lei","","9249.0","26 de dezembro de 1995","altera a Lei nº \r\n\t\t9.","\\bsaúde\\b","http://www.planalto.gov.br/CCIVIL_03/_Ato2023-2026/2025/Lei/L15224.htm","12034"],["planalto","lei","","1632.0","30 de junho de 1952","revogadas as disposições \r\nem contrário.","\\bsaúde\\b","http://www.planalto.gov.br/ccivil_03/LEIS/1950-1969/L2327.htm","734"],["planalto","decreto_lei","","6460.0","27 de outubro de 1965","Estabelece normas para cobrança \r\n\tpelas Administrações de Portos de taxas portuárias incidentes sôbre \r\n\tmercadorias movimentadas em terminais ou embarcadouros de uso privativo e \r\n\tinstalações rudimentares, e dá outras providências.","\\btratamento\\w*\\b","http://www.planalto.gov.br/ccivil_03/Decreto-Lei/1965-1988/Del0083.htm","18915"],["planalto","medida_provisoria","","101.0","4 de maio de 2000","autorizada, em atendimento ao disposto noinciso I do § 1º do art.","\\bsaúde\\b, \\bMinistério\\s+da\\s+Saúde\\b","http://www.planalto.gov.br/ccivil_03/_Ato2019-2022/2020/Mpv/mpv969.htm","3523"],["planalto","decreto_lei","","2623.0","5 de DEZEMBRO de 1945","Revogado pela Lei nº 2.","\\bsaúde\\b","http://www.planalto.gov.br/CCIVIL_03/Decreto-Lei/1937-1946/Del8286.htm","2286"],["planalto","lei","","8171.0","17 de janeiro de 1991","Altera as Leis nºs 8.","\\bsaúde\\b","http://www.planalto.gov.br/ccivil_03/_Ato2023-2026/2024/Lei/L15077.htm","20046"],["planalto","lei","","53918.0","13 de maio de 1964","Criação do Cavalo \r\n\t\t\tNacional (C.","\\bdoença\\w*\\b","http://www.planalto.gov.br/CCIVIL_03/LEIS/1950-1969/L4848.htm","2547"],["planalto","lei","","8173.0","30 de janeiro de 1991","regulamentará\r\n esta Lei no prazo de sessenta dias, contado de sua publicação.","\\bsaúde\\b, \\bhospital\\w*\\b","http://www.planalto.gov.br/ccivil_03/LEIS/L9238.htm","4091"],["planalto","lei","","2848.0","7 de dezembro de 1940","Altera os\r\n arts.","\\bsaúde\\b","https://www.planalto.gov.br/ccivil_03/LEIS/L9777.htm","3338"],["planalto","lei","","","","","\\btratamento\\w*\\b, \\bsaude\\b, \\bhospital\\w*\\b","http://www.planalto.gov.br/ccivil_03/LEIS/1901-1929/L2290.htm","27389"]]};
+
+// ═══════════════════════════════════════════════════════════════
+//  Helpers
+// ═══════════════════════════════════════════════════════════════
+const pal = ['#0d6efd','#198754','#dc3545','#fd7e14','#6f42c1','#20c997',
+             '#0dcaf0','#d63384','#ffc107','#6610f2','#adb5bd','#e85d04',
+             '#2b9348','#4361ee','#f72585'];
+function fmtNum(n) { return n.toLocaleString('en'); }
+function fmtSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(1) + ' MB';
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Data source notes
+// ═══════════════════════════════════════════════════════════════
+(function() {
+  if (!DATA.source_notes) return;
+  const section = document.getElementById('source-notes-section');
+  const h2 = document.createElement('h2');
+  h2.className = 'section-title';
+  h2.textContent = 'About This Dataset';
+  section.appendChild(h2);
+  const card = document.createElement('div');
+  card.className = 'card full';
+  card.innerHTML = '<p style="font-size:.9rem;line-height:1.7;color:#333">' + DATA.source_notes + '</p>';
+  section.appendChild(card);
+})();
+
+// ═══════════════════════════════════════════════════════════════
+//  Stats bar
+// ═══════════════════════════════════════════════════════════════
+(function() {
+  const bar = document.getElementById('stats-bar');
+  const items = [
+    ['Rows', fmtNum(DATA.row_count)],
+    ['Columns', fmtNum(DATA.col_count)],
+    ['File Size', fmtSize(DATA.file_size)],
+  ];
+  // Add temporal ranges
+  Object.entries(DATA.temporal || {}).forEach(([col, t]) => {
+    items.push(['Date Range (' + col + ')', t.min + ' to ' + t.max]);
+  });
+  items.forEach(([label, value]) => {
+    const d = document.createElement('div');
+    d.className = 'stat-card';
+    d.innerHTML = '<div class="value">' + value + '</div><div class="label">' + label + '</div>';
+    bar.appendChild(d);
+  });
+})();
+
+// ═══════════════════════════════════════════════════════════════
+//  Column info table
+// ═══════════════════════════════════════════════════════════════
+(function() {
+  const table = document.getElementById('col-table');
+  let html = '<thead><tr><th>#</th><th>Column</th><th>Type</th><th>Nulls</th><th>Null %</th></tr></thead><tbody>';
+  DATA.columns.forEach((c, i) => {
+    const barW = Math.min(c.null_pct, 100);
+    html += '<tr><td>' + (i + 1) + '</td><td><strong>' + c.name + '</strong></td>'
+      + '<td>' + c.dtype + '</td>'
+      + '<td>' + fmtNum(c.null_count) + '</td>'
+      + '<td><span class="null-bar" style="width:' + barW + 'px"></span> ' + c.null_pct + '%</td></tr>';
+  });
+  html += '</tbody>';
+  table.innerHTML = html;
+})();
+
+// ═══════════════════════════════════════════════════════════════
+//  Categorical distribution charts
+// ═══════════════════════════════════════════════════════════════
+(function() {
+  const section = document.getElementById('dist-section');
+  const cats = Object.entries(DATA.categorical || {});
+  if (cats.length === 0) return;
+
+  const h2 = document.createElement('h2');
+  h2.className = 'section-title';
+  h2.textContent = 'Categorical Distributions (Top 15)';
+  section.appendChild(h2);
+
+  const grid = document.createElement('div');
+  grid.className = 'grid';
+  section.appendChild(grid);
+
+  cats.forEach(([col, d], idx) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    const labels = d.labels.map(s => String(s).length > 40 ? String(s).slice(0, 38) + '\u2026' : String(s));
+    card.innerHTML = '<h3>' + col + '</h3><div class="chart-wrap hbar"><canvas id="cat-' + idx + '"></canvas></div>';
+    grid.appendChild(card);
+
+    // Render after DOM insertion
+    setTimeout(() => {
+      new Chart(document.getElementById('cat-' + idx), {
+        type: 'bar',
+        data: { labels: labels, datasets: [{ data: d.values, backgroundColor: pal[idx % pal.length] }] },
+        options: {
+          indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { x: { beginAtZero: true } }
+        }
+      });
+    }, 0);
+  });
+})();
+
+// ═══════════════════════════════════════════════════════════════
+//  Temporal charts
+// ═══════════════════════════════════════════════════════════════
+(function() {
+  const section = document.getElementById('temporal-section');
+  const temps = Object.entries(DATA.temporal || {});
+  if (temps.length === 0) return;
+
+  const h2 = document.createElement('h2');
+  h2.className = 'section-title';
+  h2.textContent = 'Temporal Distribution';
+  section.appendChild(h2);
+
+  const grid = document.createElement('div');
+  grid.className = 'grid';
+  section.appendChild(grid);
+
+  temps.forEach(([col, t], idx) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = '<h3>' + col + ' by year</h3><div class="chart-wrap bar"><canvas id="temp-' + idx + '"></canvas></div>';
+    grid.appendChild(card);
+
+    setTimeout(() => {
+      new Chart(document.getElementById('temp-' + idx), {
+        type: 'bar',
+        data: {
+          labels: t.by_year.labels,
+          datasets: [{ label: 'Count', data: t.by_year.values, backgroundColor: '#0d6efd' }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+    }, 0);
+  });
+})();
+
+// ═══════════════════════════════════════════════════════════════
+//  Sample data table
+// ═══════════════════════════════════════════════════════════════
+const allRows = DATA.sample || [];
+const sampleCols = DATA.sample_columns || [];
+
+(function() {
+  document.getElementById('thead').innerHTML = '<tr>' + sampleCols.map(c => '<th>' + c + '</th>').join('') + '</tr>';
+  const searchEl = document.getElementById('search');
+  const countEl = document.getElementById('row-count');
+  const tbody = document.getElementById('tbody');
+
+  function render() {
+    const q = searchEl.value.toLowerCase();
+    const rows = q ? allRows.filter(r => r.some(v => String(v).toLowerCase().includes(q))) : allRows;
+    tbody.innerHTML = rows.map(r =>
+      '<tr>' + r.map(v => '<td>' + v + '</td>').join('') + '</tr>'
+    ).join('');
+    countEl.textContent = rows.length + ' of ' + allRows.length + ' rows';
+  }
+  searchEl.addEventListener('input', render);
+  render();
+})();
+</script>
+</body>
+</html>
