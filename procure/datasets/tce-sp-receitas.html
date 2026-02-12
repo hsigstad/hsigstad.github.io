@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="robots" content="noindex, nofollow">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TCE-SP Municipal Revenues</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+  :root {
+    --bg: #f8f9fa; --card: #fff; --fg: #1a1a1a; --muted: #666;
+    --border: #dee2e6; --accent: #0d6efd; --accent2: #198754;
+    --accent3: #dc3545; --accent4: #fd7e14;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--fg); line-height: 1.5;
+  }
+
+  .stats-bar {
+    display: flex; gap: .8rem; padding: 1rem 2rem; flex-wrap: wrap;
+  }
+  .stat-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: .75rem 1rem; flex: 1; min-width: 120px;
+    text-align: center;
+  }
+  .stat-card .value { font-size: 1.5rem; font-weight: 700; color: var(--accent); }
+  .stat-card .label { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+
+  main { padding: 0 2rem 3rem; max-width: 1400px; margin: 0 auto; }
+
+  h2.section-title {
+    font-size: 1.15rem; margin: 1.6rem 0 .8rem; padding-bottom: .3rem;
+    border-bottom: 2px solid var(--border);
+  }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1.2rem 1.4rem;
+  }
+  .card h3 { font-size: .95rem; margin-bottom: .8rem; color: var(--fg); }
+  .card.full { grid-column: 1 / -1; }
+
+  .chart-wrap { position: relative; width: 100%; }
+  .chart-wrap.bar { height: 300px; }
+  .chart-wrap.hbar { height: 380px; }
+
+  /* column info table */
+  .col-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+  .col-table th, .col-table td {
+    padding: .35rem .6rem; border-bottom: 1px solid var(--border); text-align: left;
+  }
+  .col-table th { background: #f0f4f8; font-weight: 600; position: sticky; top: 0; }
+  .col-table .null-bar { display: inline-block; height: 10px; border-radius: 2px; background: #dc3545; }
+
+  /* data table */
+  .table-wrap { overflow-x: auto; max-height: 520px; overflow-y: auto; }
+  .data-table { width: 100%; border-collapse: collapse; font-size: .8rem; }
+  .data-table th, .data-table td {
+    padding: .4rem .5rem; border-bottom: 1px solid var(--border);
+    text-align: left; white-space: nowrap; max-width: 250px; overflow: hidden; text-overflow: ellipsis;
+  }
+  .data-table th { position: sticky; top: 0; background: #f0f4f8; font-weight: 600; }
+  .data-table tbody tr:hover { background: #f0f4ff; }
+
+  .search-bar { margin-bottom: .8rem; }
+  .search-bar input {
+    font-size: .85rem; padding: .4rem .7rem; border: 1px solid var(--border);
+    border-radius: 4px; width: 100%; max-width: 400px;
+  }
+  .count-label { font-size: .8rem; color: var(--muted); margin-left: .8rem; }
+
+  footer {
+    text-align: center; padding: 1.5rem; font-size: .8rem; color: var(--muted);
+    border-top: 1px solid var(--border); margin-top: 2rem;
+  }
+</style>
+</head>
+<body>
+
+<style>
+  .site-nav {
+    position: sticky; top: 0; z-index: 100;
+    background: #212529; display: flex; align-items: center;
+    padding: 0 2rem; height: 3rem;
+  }
+  .site-nav .nav-brand {
+    color: #fff; text-decoration: none; font-weight: 600; font-size: 1rem;
+    margin-right: auto;
+  }
+  .site-nav .nav-brand:hover { color: #e9ecef; }
+  .site-nav .nav-link {
+    color: #adb5bd; text-decoration: none; font-size: .85rem;
+    padding: 0 .75rem; height: 3rem; display: flex; align-items: center;
+    background: none; border: none; cursor: pointer; font-family: inherit;
+  }
+  .site-nav .nav-link:hover, .site-nav .nav-link.active { color: #fff; }
+  .nav-dropdown { position: relative; }
+  .dropdown-menu {
+    display: none; position: absolute; top: 3rem; right: 0;
+    background: #fff; border: 1px solid var(--border); border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.12); min-width: 220px;
+    padding: .4rem 0; z-index: 200; max-height: 80vh; overflow-y: auto;
+  }
+  .nav-dropdown.open .dropdown-menu { display: block; }
+  .dropdown-menu a {
+    display: block; padding: .3rem 1rem; color: #1a1a1a;
+    text-decoration: none; font-size: .82rem;
+  }
+  .dropdown-menu a:hover { background: #f0f4f8; }
+  .dropdown-group-label {
+    padding: .4rem 1rem .15rem; font-size: .68rem; font-weight: 700;
+    color: #888; text-transform: uppercase; letter-spacing: .04em;
+  }
+  .dropdown-divider { border-top: 1px solid #eee; margin: .3rem 0; }
+  .page-header {
+    padding: .8rem 2rem; border-bottom: 1px solid var(--border); background: #fff;
+  }
+  .page-header h1 { font-size: 1.3rem; font-weight: 600; }
+  .page-header p { color: var(--muted); font-size: .85rem; margin-top: .15rem; }
+</style>
+
+<nav class="site-nav">
+  <a href="../index.html" class="nav-brand">Corruption in Procurement</a>
+  <a href="../index.html" class="nav-link">Home</a>
+  <div class="nav-dropdown">
+    <button class="nav-link">Docs &#9662;</button>
+    <div class="dropdown-menu">
+    <div class="dropdown-group-label">Reference</div>
+    <a href="../docs/README.html">Project Overview</a>
+    <a href="../docs/summary.html">Research Summary</a>
+    <a href="../docs/institutions.html">Institutional Background</a>
+    <a href="../docs/data.html">Data Sources</a>
+    <a href="../docs/methods.html">Empirical Methods</a>
+    <a href="../docs/literature.html">Literature</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Working notes</div>
+    <a href="../docs/thinking.html">Open Questions & Ideas</a>
+    <a href="../docs/decisions.html">Key Decisions</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Tasks</div>
+    <a href="../docs/todo.html">Active Tasks</a>
+    <a href="../docs/done.html">Completed Tasks</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Communication</div>
+    <a href="../docs/meetings.html">Meeting Notes</a>
+    <a href="../docs/feedback.html">External Feedback</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Briefs</div>
+    <a href="../briefs/linking.html">Linking Court Cases to Procurement Data</a>
+    </div>
+  </div>
+  <div class="nav-dropdown">
+    <button class="nav-link active">Data &#9662;</button>
+    <div class="dropdown-menu">
+    <a href="../sources/tjsp.html">TJSP Court Cases</a>
+    <a href="../sources/bec.html">BEC Procurement</a>
+    <a href="../sources/tce-sp-spending.html">TCE-SP Municipal Spending</a>
+    <a href="../sources/tce-sp-procurement.html">TCE-SP Municipal Procurement</a>
+    <a href="../sources/tce-sp-audits.html">TCE-SP Municipal Audits</a>
+    </div>
+  </div>
+</nav>
+<script>
+document.querySelectorAll('.nav-dropdown > .nav-link').forEach(function(btn) {
+  btn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    var dd = btn.parentElement;
+    var wasOpen = dd.classList.contains('open');
+    document.querySelectorAll('.nav-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+    if (!wasOpen) dd.classList.add('open');
+  });
+});
+document.addEventListener('click', function() {
+  document.querySelectorAll('.nav-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+});
+</script>
+
+<div class="page-header">
+  <h1>TCE-SP Municipal Revenues</h1>
+  <p>Revenue collection by municipality, source, and month for all 644 SP municipalities.</p>
+</div>
+
+<div class="stats-bar" id="stats-bar"></div>
+
+<main>
+
+<!-- Data source notes -->
+<div id="source-notes-section"></div>
+
+<!-- Column info -->
+<h2 class="section-title">Column Information</h2>
+<div class="card full">
+  <div style="overflow-x:auto; max-height:400px; overflow-y:auto;">
+    <table class="col-table" id="col-table"></table>
+  </div>
+</div>
+
+<!-- Distribution charts -->
+<div id="dist-section"></div>
+
+<!-- Temporal charts -->
+<div id="temporal-section"></div>
+
+<!-- Sample data -->
+<h2 class="section-title">Sample Data (50 rows)</h2>
+<div class="card full">
+  <div class="search-bar">
+    <input type="text" id="search" placeholder="Search across all columns...">
+    <span class="count-label" id="row-count"></span>
+  </div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead id="thead"></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+</main>
+
+<footer>
+  Generated by <code>bash build.sh site</code>
+</footer>
+
+<script>
+// Embedded data — replaced by build pipeline
+const DATA = /* INJECT_DATA */ {"id":"tce-sp-receitas","name":"TCE-SP Municipal Revenues","description":"Revenue collection by municipality, source, and month for all 644 SP municipalities.","category":"TCE-SP Spending","source_notes":"Municipal revenue data from São Paulo's Tribunal de Contas (TCE-SP) Audesp system. Each row is a revenue line item with municipality, organ, funding source, budget category (categoria, subcategoria, fonte, rubrica, alinea, subalinea), and collected amount. Covers all 644 SP municipalities (excluding the capital). Downloaded from the TCE-SP open data portal.","file_size":404700952,"row_count":789773,"col_count":17,"columns":[{"name":"id_rec_arrec_detalhe","dtype":"int64","null_count":0,"null_pct":0.0},{"name":"ano_exercicio","dtype":"int64","null_count":0,"null_pct":0.0},{"name":"ds_municipio","dtype":"object","null_count":0,"null_pct":0.0},{"name":"ds_orgao","dtype":"object","null_count":0,"null_pct":0.0},{"name":"mes_referencia","dtype":"int64","null_count":0,"null_pct":0.0},{"name":"mes_ref_extenso","dtype":"object","null_count":0,"null_pct":0.0},{"name":"ds_poder","dtype":"object","null_count":0,"null_pct":0.0},{"name":"ds_fonte_recurso","dtype":"object","null_count":0,"null_pct":0.0},{"name":"ds_cd_aplicacao_fixo","dtype":"object","null_count":0,"null_pct":0.0},{"name":"ds_cd_aplicacao_variavel","dtype":"object","null_count":0,"null_pct":0.0},{"name":"ds_categoria","dtype":"object","null_count":0,"null_pct":0.0},{"name":"ds_subcategoria","dtype":"object","null_count":0,"null_pct":0.0},{"name":"ds_fonte","dtype":"object","null_count":0,"null_pct":0.0},{"name":"ds_rubrica","dtype":"object","null_count":0,"null_pct":0.0},{"name":"ds_alinea","dtype":"object","null_count":0,"null_pct":0.0},{"name":"ds_subalinea","dtype":"object","null_count":0,"null_pct":0.0},{"name":"vl_arrecadacao","dtype":"object","null_count":0,"null_pct":0.0}],"categorical":{"ds_municipio":{"labels":["Praia Grande","Rio Claro","Taubaté","São Bernardo do Campo","Guarulhos","Campinas","Franca","Guarujá","Limeira","Sorocaba","Suzano","Santo André","Ribeirão Preto","Itapevi","Itapeva","Caraguatatuba","São José do Rio Preto","Lençóis Paulista","Bauru","Cabreúva"],"values":[4987,4453,4384,4327,4111,4044,4037,3822,3650,3600,3421,3396,3284,3246,3226,3166,3128,3127,3070,3007]},"ds_categoria":{"labels":["10000000 - Receitas Correntes","70000000 - Receitas Correntes - Intra OFSS","20000000 - Receitas de Capital","80000000 - Receitas de Capital - Intra OFSS"],"values":[767838,11102,10693,140]},"ds_fonte_recurso":{"labels":["01 - TESOURO","05 - TRANSFERÊNCIAS E CONVÊNIOS FEDERAIS-VINCULADOS","02 - TRANSFERÊNCIAS E CONVÊNIOS ESTADUAIS-VINCULADOS","04 - RECURSOS PRÓPRIOS DA ADMINISTRAÇÃO INDIRETA","03 - RECURSOS PRÓPRIOS DE FUNDOS ESPECIAIS DE DESPESA-VINCULADOS","06 - OUTRAS FONTES DE RECURSOS","07 - OPERAÇÕES DE CRÉDITO","15 - EMENDAS PARLAMENTARES INDIVIDUAIS","12 - TRANSFERÊNCIAS E CONVÊNIOS FEDERAIS-VINCULADOS - EXERCICIOS ANTERIORES","09 - TRANSFERÊNCIAS E CONVÊNIOS ESTADUAIS-VINCULADOS - EXERCICIOS ANTERIORES","08 - TESOURO - EXERCICIOS ANTERIORES","17 - RECURSOS EXTRAORÇAMENTÁRIOS","13 - OUTRAS FONTES DE RECURSOS - EXERCICIOS ANTERIORES","11 - RECURSOS PRÓPRIOS DA ADMINISTRAÇÃO INDIRETA - EXERCICIOS ANTERIORES","16 - EMENDAS PARLAMENTARES INDIVIDUAIS - EXERCÍCIOS ANTERIORES","10 - RECURSOS PRÓPRIOS DE FUNDOS ESPECIAIS DE DESPESA-VINCULADOS - EXERCICIOS ANTERIORES"],"values":[416275,202683,108275,36646,17216,3423,3192,1677,199,49,48,39,27,11,7,6]}},"temporal":{"ano_exercicio":{"min":"2021","max":"2021","by_year":{"labels":[2021],"values":[789773]}}},"sample_columns":["id_rec_arrec_detalhe","ano_exercicio","ds_municipio","ds_orgao","mes_referencia","mes_ref_extenso","ds_poder","ds_fonte_recurso","ds_cd_aplicacao_fixo","ds_cd_aplicacao_variavel","ds_categoria","ds_subcategoria","ds_fonte","ds_rubrica","ds_alinea","ds_subalinea","vl_arrecadacao"],"sample":[["33827158","2021","Tarumã","PREFEITURA MUNICIPAL DE TARUMÃ","8","Agosto","EXECUTIVO","01 - TESOURO","110 - GERAL","00 - CÓDIGO DE APLICAÇÃO NÃO CONTÉM/INFORMOU PARTE VARIÁVEL","10000000 - Receitas Correntes","17000000 - Transferências Correntes","17200000 - Transferências dos Estados e do Distrito Federal e de suas Entidades","17280000 - Transferências dos Estados - Específicas de Estados, DF, Municípios","17280100 - Participação na Receita dos Estados","17280111 - Cota-Parte do ICMS - Principal","-525934,47"],["33799403","2021","Lagoinha","PREFEITURA MUNICIPAL DE LAGOINHA","8","Agosto","EXECUTIVO","01 - TESOURO","140 - ROYALTIES DA EXPLORAÇÃO DO PETRÓLEO E GÁS NATURAL","00 - CÓDIGO DE APLICAÇÃO NÃO CONTÉM/INFORMOU PARTE VARIÁVEL","10000000 - Receitas Correntes","11000000 - Impostos, Taxas e Contribuições de Melhoria","11100000 - Impostos","11130000 - Impostos sobre a Renda e Proventos de Qualquer Natureza","11130300 - Imposto sobre a Renda - Retido na Fonte","11130341 - Imposto sobre a Renda - Retido na Fonte - Outros Rendimentos - Principal","15,00"],["33527557","2021","Itirapuã","PREFEITURA MUNICIPAL DE ITIRAPUÃ","4","Abril","EXECUTIVO","05 - TRANSFERÊNCIAS E CONVÊNIOS FEDERAIS-VINCULADOS","301 - ATENÇÃO BÁSICA","01 - ATENÇÃO BÁSICA FUNDO A FUNDO","10000000 - Receitas Correntes","17000000 - Transferências Correntes","17100000 - Transferências da União e de suas Entidades","17180000 - Transferências da União - Específicas de Estados, DF, Municípios","17180300 - Transferência de Recursos do Sistema Único de Saúde - SUS - Bloco Custeio das Ações e Serviços Públicos de Saúde","17180391 - Transferência de Recursos do SUS - Outros Programas Financiados por Transferências Fundo a Fundo - Principal","45964,55"],["33429493","2021","Andradina","AGÊNCIA REGULADORA DO SERVIÇO DE ÁGUA E ESGOTO DE ANDRADINA","3","Março","EXECUTIVO","04 - RECURSOS PRÓPRIOS DA ADMINISTRAÇÃO INDIRETA","110 - GERAL","00 - CÓDIGO DE APLICAÇÃO NÃO CONTÉM/INFORMOU PARTE VARIÁVEL","10000000 - Receitas Correntes","13000000 - Receita Patrimonial","13200000 - Valores Mobiliários","13210000 - Juros e Correções Monetárias","13210000 - Juros e Correções Monetárias","13210011 - Remuneração de Depósitos Bancários - Principal","230,60"],["33489051","2021","Santa Fé do Sul","PREFEITURA MUNICIPAL DE SANTA FÉ DO SUL","4","Abril","EXECUTIVO","01 - TESOURO","110 - GERAL","00 - CÓDIGO DE APLICAÇÃO NÃO CONTÉM/INFORMOU PARTE VARIÁVEL","10000000 - Receitas Correntes","19000000 - Outras Receitas Correntes","19100000 - Multas Administrativas, Contratuais e Judiciais","19100000 - Multas Administrativas, Contratuais e Judiciais","19100100 - Multas Previstas em Legislação Específica","19100114 - Multas Previstas em Legislação Específica - Dívida Ativa - Multas e Juros","41,28"],["33569283","2021","Campo Limpo Paulista","PREFEITURA MUNICIPAL DE CAMPO LIMPO PAULISTA","5","Maio","EXECUTIVO","05 - TRANSFERÊNCIAS E CONVÊNIOS FEDERAIS-VINCULADOS","100 - GERAL TOTAL","42 - CONV MIN ESPORTE INFRAEST LAZER EM DIVERSOS BAIRROS","10000000 - Receitas Correntes","13000000 - Receita Patrimonial","13200000 - Valores Mobiliários","13210000 - Juros e Correções Monetárias","13210000 - Juros e Correções Monetárias","13210011 - Remuneração de Depósitos Bancários - Principal","145,83"],["33509150","2021","Teodoro Sampaio","PREFEITURA MUNICIPAL DE TEODORO SAMPAIO","3","Março","EXECUTIVO","15 - EMENDAS PARLAMENTARES INDIVIDUAIS","310 - SAÚDE - GERAL","00 - CÓDIGO DE APLICAÇÃO NÃO CONTÉM/INFORMOU PARTE VARIÁVEL","20000000 - Receitas de Capital","24000000 - Transferências de Capital","24200000 - Transferências dos Estados e do Distrito Federal e de suas Entidades","24280000 - Transferências dos Estados, Distrito Federal e de suas Entidades","24281000 - Transferências de Convênios dos Estados e do Distrito Federal e de suas Entidades","24281011 - Transferências de Convênios dos Estados para o Sistema Único de Saúde - SUS - Principal","70,67"],["33445835","2021","Embaúba","PREFEITURA MUNICIPAL DE EMBAÚBA","3","Março","EXECUTIVO","01 - TESOURO","110 - GERAL","00 - CÓDIGO DE APLICAÇÃO NÃO CONTÉM/INFORMOU PARTE VARIÁVEL","10000000 - Receitas Correntes","17000000 - Transferências Correntes","17200000 - Transferências dos Estados e do Distrito Federal e de suas Entidades","17280000 - Transferências dos Estados - Específicas de Estados, DF, Municípios","17280100 - Participação na Receita dos Estados","17280111 - Cota-Parte do ICMS - Principal","-86844,46"],["33651022","2021","Ipeúna","PREFEITURA MUNICIPAL DE IPEÚNA","6","Junho","EXECUTIVO","01 - TESOURO","110 - GERAL","00 - CÓDIGO DE APLICAÇÃO NÃO CONTÉM/INFORMOU PARTE VARIÁVEL","10000000 - Receitas Correntes","11000000 - Impostos, Taxas e Contribuições de Melhoria","11100000 - Impostos","11180000 - Impostos Específicos de Estados, DF, Municípios","11180100 - Impostos sobre o Patrimônio para Estados, DF e Municípios","11180141 - Imposto sobre Transmissão Inter Vivos de Bens Imóveis e de Direitos Reais sobre Imóveis - Principal","87143,86"],["33742712","2021","Promissão","PREFEITURA MUNICIPAL DE PROMISSÃO","7","Julho","EXECUTIVO","02 - TRANSFERÊNCIAS E CONVÊNIOS ESTADUAIS-VINCULADOS","300 - SAÚDE - RECURSOS ESPECÍFICOS","67 - PROG.6273 - ASSISTENCIA INTEGRAL A SAUDE","10000000 - Receitas Correntes","13000000 - Receita Patrimonial","13200000 - Valores Mobiliários","13210000 - Juros e Correções Monetárias","13210000 - Juros e Correções Monetárias","13210011 - Remuneração de Depósitos Bancários - Principal","27,59"],["33886537","2021","Poá","PREFEITURA MUNICIPAL DE POÁ","9","Setembro","EXECUTIVO","01 - TESOURO","110 - GERAL","00 - CÓDIGO DE APLICAÇÃO NÃO CONTÉM/INFORMOU PARTE VARIÁVEL","10000000 - Receitas Correntes","17000000 - Transferências Correntes","17200000 - Transferências dos Estados e do Distrito Federal e de suas Entidades","17280000 - Transferências dos Estados - Específicas de Estados, DF, Municípios","17280100 - Participação na Receita dos Estados","17280111 - Cota-Parte do ICMS - Principal","2804806,33"],["33103068","2021","Torre de Pedra","PREFEITURA MUNICIPAL DE TORRE DE PEDRA","1","Janeiro","EXECUTIVO","01 - TESOURO","110 - GERAL","00 - CÓDIGO DE APLICAÇÃO NÃO CONTÉM/INFORMOU PARTE VARIÁVEL","10000000 - Receitas Correntes","17000000 - Transferências Correntes","17200000 - Transferências dos Estados e do Distrito Federal e de suas Entidades","17280000 - Transferências dos Estados - Específicas de Estados, DF, Municípios","17280100 - Participação na Receita dos Estados","17280131 - Cota-Parte do IPI - Municípios - Principal","1817,02"],["33426478","2021","Palmital","PREFEITURA MUNICIPAL DE PALMITAL","2","Fevereiro","EXECUTIVO","01 - TESOURO","110 - GERAL","00 - CÓDIGO DE APLICAÇÃO NÃO CONTÉM/INFORMOU PARTE VARIÁVEL","10000000 - Receitas Correntes","11000000 - Impostos, Taxas e Contribuições de Melhoria","11200000 - Taxas","11280000 - Taxas - Específicas de Estados, DF, Municípios","11280200 - Taxas pela Prestação de Serviços","11280297 - Taxas pela Prestação de Serviços - Outras - Dívida Ativa - Multas com Destinação Diferenciada por Legislação Pertinente","1761,34"],["34110488","2021","Ribeirão dos Índios","IMPRI","12","Dezembro","EXECUTIVO","06 - OUTRAS FONTES DE RECURSOS","600 - RPPS - RECURSOS ESPECÍFICOS - OUTRAS FONTES","01 - IMPRI","10000000 - Receitas Correntes","12000000 - Contribuições","12100000 - Contribuições Sociais","12180000 - Contribuições Sociais específicas de Estados, DF, Municípios","12180100 - Contribuição do Servidor Civil para o Plano de Seguridade Social - CPSSS - Específica de Estados, DF, Municípios","12180111 - CPSSS do Servidor Civil Ativo - Principal","143926,87"],["34065587","2021","Angatuba","PREFEITURA MUNICIPAL DE ANGATUBA","12","Dezembro","EXECUTIVO","05 - TRANSFERÊNCIAS E CONVÊNIOS FEDERAIS-VINCULADOS","280 - RECURSOS DO SALÁRIO EDUCAÇÃO - CRECHE","00 - CÓDIGO DE APLICAÇÃO NÃO CONTÉM/INFORMOU PARTE VARIÁVEL","10000000 - Receitas Correntes","17000000 - Transferências Correntes","17100000 - Transferências da União e de suas Entidades","17180000 - Transferências da União - Específicas de Estados, DF, Municípios","17180500 - Transferências de Recursos do Fundo Nacional do Desenvolvimento da Educação - FNDE","17180511 - Transferências do Salário-Educação - Principal","33523,51"],["33757976","2021","Tanabi","PREFEITURA MUNICIPAL DE TANABI","7","Julho","EXECUTIVO","01 - TESOURO","110 - GERAL","00 - CÓDIGO DE APLICAÇÃO NÃO CONTÉM/INFORMOU PARTE VARIÁVEL","10000000 - Receitas Correntes","19000000 - Outras Receitas Correntes","19100000 - Multas Administrativas, Contratuais e Judiciais","19100000 - Multas Administrativas, Contratuais e Judiciais","19100100 - Multas Previstas em Legislação Específica","19100111 - Multas Previstas em Legislação Específica - Principal","1391,80"],["34004412","2021","Campinas","FUNDAÇÃO MUNICIPAL P-EDUCÇÃO COMUNITÁRIA - FUMEC","11","Novembro","EXECUTIVO","01 - TESOURO","220 - ENSINO FUNDAMENTAL - RECURSOS ESPECÍFICOS","00 - CÓDIGO DE APLICAÇÃO NÃO CONTÉM/INFORMOU PARTE VARIÁVEL","10000000 - Receitas Correntes","13000000 - Receita Patrimonial","13200000 - Valores Mobiliários","13220000 - Dividendos","13220000 - Dividendos","13220011 - Dividendos - Principal","825,77"],["34089373","2021","Itajobi","PREFEITURA MUNICIPAL DE ITAJOBI","12","Dezembro","EXECUTIVO","05 - TRANSFERÊNCIAS E CONVÊNIOS FEDERAIS-VINCULADOS","500 - ASSISTÊNCIA SOCIAL - RECURSOS ESPECÍFICOS","30 - PFMC II","10000000 - Receitas Correntes","17000000 - Transferências Correntes","17100000 - Transferências da União e de suas Entidades","17180000 - Transferências da União - Específicas de Estados, DF, Municípios","17181200 - Transferências de Recursos do Fundo Nacional de Assistência Social - FNAS","17181211 - Transferências de Recursos do Fundo Nacional de Assistência Social - FNAS - Principal","5056,88"],["33456035","2021","Itanhaém","PREFEITURA MUNICIPAL DE ITANHAÉM","3","Março","EXECUTIVO","01 - TESOURO","110 - GERAL","00 - CÓDIGO DE APLICAÇÃO NÃO CONTÉM/INFORMOU PARTE VARIÁVEL","10000000 - Receitas Correntes","11000000 - Impostos, Taxas e Contribuições de Melhoria","11100000 - Impostos","11180000 - Impostos Específicos de Estados, DF, Municípios","11180100 - Impostos sobre o Patrimônio para Estados, DF e Municípios","11180142 - Imposto sobre Transmissão Inter Vivos de Bens Imóveis e de Direitos Reais sobre Imóveis - Multas e Juros","106,63"],["33419076","2021","Sud Mennucci","PREFEITURA MUNICIPAL DE SUD MENNUCCI","3","Março","EXECUTIVO","02 - TRANSFERÊNCIAS E CONVÊNIOS ESTADUAIS-VINCULADOS","260 - EDUCAÇÃO - FUNDEB - RECURSOS PRÓPRIOS","00 - CÓDIGO DE APLICAÇÃO NÃO CONTÉM/INFORMOU PARTE VARIÁVEL","10000000 - Receitas Correntes","17000000 - Transferências Correntes","17500000 - Transferências de Outras Instituições Públicas","17580000 - Transferências de Outras Instituições Públicas - Específicas de Estados, DF, Municípios","17580100 - Transferências de Recursos do Fundo de Manutenção e Desenvolvimento da Educação Básica e de Valorização dos Profissionais da Educação - FUNDEB","17580111 - Transferências de Recursos do Fundo de Manutenção e Desenvolvimento da Educação Básica e de Valorização dos Profissionais da Educação - FUNDEB - Principal","891357,56"],["33354822","2021","Bady Bassitt","PREFEITURA MUNICIPAL DE BADY BASSITT","2","Fevereiro","EXECUTIVO","01 - TESOURO","110 - GERAL","00 - CÓDIGO DE APLICAÇÃO NÃO CONTÉM/INFORMOU PARTE VARIÁVEL","10000000 - Receitas Correntes","11000000 - Impostos, Taxas e Contribuições de Melhoria","11100000 - Impostos","11180000 - Impostos Específicos de Estados, DF, Municípios","11180200 - Impostos sobre a Produção, circulação de Mercadorias e Serviços","11180233 - Imposto sobre Serviços de Qualquer Natureza - Dívida Ativa","3496,93"],["34110429","2021","Ribeirão do Sul","PREFEITURA MUNICIPAL DE RIBEIRÃO DO SUL","12","Dezembro","EXECUTIVO","01 - TESOURO","110 - GERAL","00 - CÓDIGO DE APLICAÇÃO NÃO CONTÉM/INFORMOU PARTE VARIÁVEL","10000000 - Receitas Correntes","12000000 - Contribuições","12400000 - Contribuição para o Custeio do Serviço de Iluminação Pública","12400000 - Contribuição para o Custeio do Serviço de Iluminação Pública","12400000 - Contribuição para o Custeio do Serviço de Iluminação Pública","12400011 - Contribuição para o Custeio do Serviço de Iluminação Pública - Principal","22567,58"],["34088493","2021","Iporanga","PREFEITURA MUNICIPAL DE IPORANGA","12","Dezembro","EXECUTIVO","01 - TESOURO","110 - GERAL","00 - CÓDIGO DE APLICAÇÃO NÃO CONTÉM/INFORMOU PARTE VARIÁVEL","10000000 - Receitas Correntes","11000000 - Impostos, Taxas e Contribuições de Melhoria","11200000 - Taxas","11280000 - Taxas - Específicas de Estados, DF, Municípios","11280200 - Taxas pela Prestação de Serviços","11280299 - Taxas pela Prestação de Serviços - Outras - Dívida Ativa - Atualização Monetária","15,92"],["33933586","2021","Dumont","PREFEITURA MUNICIPAL DE DUMONT","10","Outubro","EXECUTIVO","01 - TESOURO","110 - GERAL","00 - CÓDIGO DE APLICAÇÃO NÃO CONTÉM/INFORMOU PARTE VARIÁVEL","10000000 - Receitas Correntes","17000000 - Transferências Correntes","17100000 - Transferências da União e de suas Entidades","17180000 - Transferências da União - Específicas de Estados, DF, Municípios","17180200 - Transferência da Compensação Financeira pela Exploração de Recursos Naturais","17180261 - Cota-Parte do Fundo Especial do Petróleo - FEP - Principal","19196,35"],["33949269","2021","Macatuba","PREFEITURA MUNICIPAL DE MACATUBA","10","Outubro","EXECUTIVO","01 - TESOURO","110 - GERAL","00 - CÓDIGO DE APLICAÇÃO NÃO CONTÉM/INFORMOU PARTE VARIÁVEL","10000000 - Receitas Correntes","11000000 - Impostos, Taxas e Contribuições de Melhoria","11200000 - Taxas","11280000 - Taxas - Específicas de Estados, DF, Municípios","11280100 - Taxas de Inspeção, Controle e Fiscalização","11280119 - Taxa de Fiscalização de Vigilância Sanitária - Dívida Ativa - Atualização Monetária","13,68"],["33386293","2021","Jacareí","INSTITUTO DE PREVIDÊNCIA DO MUNICÍPIO DE JACAREÍ","2","Fevereiro","EXECUTIVO","04 - RECURSOS PRÓPRIOS DA ADMINISTRAÇÃO INDIRETA","602 - REGIME PRÓPRIO DE PREVIDÊNCIA SOCIAL - PLANO PREVIDENCIÁRIO","00 - CÓDIGO DE APLICAÇÃO NÃO CONTÉM/INFORMOU PARTE VARIÁVEL","10000000 - Receitas Correntes","12000000 - Contribuições","12100000 - Contribuições Sociais","12180000 - Contribuições Sociais específicas de Estados, DF, Municípios","12180200 - CPSSS - Parcelamentos - Específico de Estados, DF, Municípios","12180212 - CPSSS - Parcelamentos - do Servidor Civil Ativo - Multas e Juros","3736,50"],["33721790","2021","Itaí","PREFEITURA MUNICIPAL DE ITAÍ","7","Julho","EXECUTIVO","02 - TRANSFERÊNCIAS E CONVÊNIOS ESTADUAIS-VINCULADOS","500 - ASSISTÊNCIA SOCIAL - RECURSOS ESPECÍFICOS","30 - FMAS PROTEÇÃO SOCIAL ESPECIAL","10000000 - Receitas Correntes","13000000 - Receita Patrimonial","13200000 - Valores Mobiliários","13210000 - Juros e Correções Monetárias","13210000 - Juros e Correções Monetárias","13210011 - Remuneração de Depósitos Bancários - Principal","80,51"],["34091646","2021","Itararé","PREFEITURA MUNICIPAL DE ITARARÉ","12","Dezembro","EXECUTIVO","01 - TESOURO","470 - TRÂNSITO - FUNSET","00 - CÓDIGO DE APLICAÇÃO NÃO CONTÉM/INFORMOU PARTE VARIÁVEL","10000000 - Receitas Correntes","13000000 - Receita Patrimonial","13200000 - Valores Mobiliários","13210000 - Juros e Correções Monetárias","13210000 - Juros e Correções Monetárias","13210011 - Remuneração de Depósitos Bancários - Principal","416,49"],["33625687","2021","Engenheiro Coelho","PREFEITURA MUNICIPAL DE ENGENHEIRO COELHO","5","Maio","EXECUTIVO","05 - TRANSFERÊNCIAS E CONVÊNIOS FEDERAIS-VINCULADOS","312 - RECURSOS PARA COMBATE AO CORONAVIRUS - Convênios/Entidades/Fundos","50 - AÇÕES DO COVID SUAS - ALIMENTOS PORT. 369","10000000 - Receitas Correntes","13000000 - Receita Patrimonial","13200000 - Valores Mobiliários","13210000 - Juros e Correções Monetárias","13210000 - Juros e Correções Monetárias","13210011 - Remuneração de Depósitos Bancários - Principal","14,93"],["34059626","2021","Cubatão","PREFEITURA MUNICIPAL DE CUBATÃO","10","Outubro","EXECUTIVO","05 - TRANSFERÊNCIAS E CONVÊNIOS FEDERAIS-VINCULADOS","300 - SAÚDE - RECURSOS ESPECÍFICOS","12 - FMS - PAB - PROGRAMA DE CONTROLE DE CARÊNCIAS NUTRICIONAIS - PCCN","10000000 - Receitas Correntes","17000000 - Transferências Correntes","17100000 - Transferências da União e de suas Entidades","17180000 - Transferências da União - Específicas de Estados, DF, Municípios","17180300 - Transferência de Recursos do Sistema Único de Saúde - SUS - Bloco Custeio das Ações e Serviços Públicos de Saúde","17180321 - Transferência de Recursos do SUS - Atenção de Média e Alta Complexidade Ambulatorial e Hospitalar - Principal","100000,00"],["33907856","2021","Pontal","PREFEITURA MUNICIPAL DE PONTAL","9","Setembro","EXECUTIVO","01 - TESOURO","110 - GERAL","00 - CÓDIGO DE APLICAÇÃO NÃO CONTÉM/INFORMOU PARTE VARIÁVEL","10000000 - Receitas Correntes","17000000 - Transferências Correntes","17200000 - Transferências dos Estados e do Distrito Federal e de suas Entidades","17280000 - Transferências dos Estados - Específicas de Estados, DF, Municípios","17280100 - Participação na Receita dos Estados","17280121 - Cota-Parte do IPVA - Principal","171117,61"],["33755820","2021","Sebastianópolis do Sul","PREFEITURA MUNICIPAL DE SEBASTIANÓPOLIS DO SUL","7","Julho","EXECUTIVO","05 - TRANSFERÊNCIAS E CONVÊNIOS FEDERAIS-VINCULADOS","311 - SAÚDE - REMUNERAÇÃO DE APLICAÇÕES FINANCEIRAS","00 - CÓDIGO DE APLICAÇÃO NÃO CONTÉM/INFORMOU PARTE VARIÁVEL","10000000 - Receitas Correntes","13000000 - Receita Patrimonial","13200000 - Valores Mobiliários","13210000 - Juros e Correções Monetárias","13210000 - Juros e Correções Monetárias","13210011 - Remuneração de Depósitos Bancários - Principal","61,53"],["33508430","2021","Osvaldo Cruz","PREFEITURA MUNICIPAL DE OSVALDO CRUZ","3","Março","EXECUTIVO","01 - TESOURO","510 - ASSISTÊNCIA SOCIAL - GERAL","00 - CÓDIGO DE APLICAÇÃO NÃO CONTÉM/INFORMOU PARTE VARIÁVEL","10000000 - Receitas Correntes","13000000 - Receita Patrimonial","13200000 - Valores Mobiliários","13210000 - Juros e Correções Monetárias","13210000 - Juros e Correções Monetárias","13210011 - Remuneração de Depósitos Bancários - Principal","94,83"],["34032469","2021","Pedra Bela","PREFEITURA MUNICIPAL DE PEDRA BELA","11","Novembro","EXECUTIVO","01 - TESOURO","110 - GERAL","00 - CÓDIGO DE APLICAÇÃO NÃO CONTÉM/INFORMOU PARTE VARIÁVEL","10000000 - Receitas Correntes","13000000 - Receita Patrimonial","13200000 - Valores Mobiliários","13220000 - Dividendos","13220000 - Dividendos","13220011 - Dividendos - Principal","0,87"],["33796535","2021","Itu","PREFEITURA MUNICIPAL DE ITU","8","Agosto","EXECUTIVO","01 - TESOURO","200 - EDUCAÇÃO - RECURSOS ESPECÍFICOS","00 - CÓDIGO DE APLICAÇÃO NÃO CONTÉM/INFORMOU PARTE VARIÁVEL","10000000 - Receitas Correntes","11000000 - Impostos, Taxas e Contribuições de Melhoria","11100000 - Impostos","11180000 - Impostos Específicos de Estados, DF, Municípios","11180100 - Impostos sobre o Patrimônio para Estados, DF e Municípios","11180111 - Imposto sobre a Propriedade Predial e Territorial Urbana - Principal","1048536,28"],["33701805","2021","Avaí","PREFEITURA MUNICIPAL DE AVAI","7","Julho","EXECUTIVO","01 - TESOURO","110 - GERAL","00 - CÓDIGO DE APLICAÇÃO NÃO CONTÉM/INFORMOU PARTE VARIÁVEL","10000000 - Receitas Correntes","11000000 - Impostos, Taxas e Contribuições de Melhoria","11100000 - Impostos","11130000 - Impostos sobre a Renda e Proventos de Qualquer Natureza","11130300 - Imposto sobre a Renda - Retido na Fonte","11130311 - Imposto sobre a Renda - Retido na Fonte - Trabalho - Principal","15462,47"],["33873925","2021","Lençóis Paulista","PREFEITURA MUNICIPAL DE LENÇÓIS PAULISTA","9","Setembro","EXECUTIVO","03 - RECURSOS PRÓPRIOS DE FUNDOS ESPECIAIS DE DESPESA-VINCULADOS","100 - GERAL TOTAL","41 - FUNDO ESPECIAL DE URBANIZACAO","10000000 - Receitas Correntes","13000000 - Receita Patrimonial","13200000 - Valores Mobiliários","13210000 - Juros e Correções Monetárias","13210000 - Juros e Correções Monetárias","13210011 - Remuneração de Depósitos Bancários - Principal","773,93"],["33573301","2021","Descalvado","PREFEITURA MUNICIPAL DE DESCALVADO","5","Maio","EXECUTIVO","01 - TESOURO","110 - GERAL","00 - CÓDIGO DE APLICAÇÃO NÃO CONTÉM/INFORMOU PARTE VARIÁVEL","10000000 - Receitas Correntes","17000000 - Transferências Correntes","17200000 - Transferências dos Estados e do Distrito Federal e de suas Entidades","17280000 - Transferências dos Estados - Específicas de Estados, DF, Municípios","17280100 - Participação na Receita dos Estados","17280111 - Cota-Parte do ICMS - Principal","-782831,89"],["33818421","2021","Santa Cruz das Palmeiras","PREFEITURA MUNICIPAL DE SANTA CRUZ DAS PALMEIRAS","8","Agosto","EXECUTIVO","02 - TRANSFERÊNCIAS E CONVÊNIOS ESTADUAIS-VINCULADOS","300 - SAÚDE - RECURSOS ESPECÍFICOS","13 - Saúde - Qualis Mais","10000000 - Receitas Correntes","13000000 - Receita Patrimonial","13200000 - Valores Mobiliários","13210000 - Juros e Correções Monetárias","13210000 - Juros e Correções Monetárias","13210011 - Remuneração de Depósitos Bancários - Principal","31,10"],["33970907","2021","São Bernardo do Campo","PREFEITURA MUNICIPAL DE SÃO BERNARDO DO CAMPO","10","Outubro","EXECUTIVO","01 - TESOURO","100 - GERAL TOTAL","27 - LEI MUNICIPAL 6901 DE 18 DE JUNHO DE 2020","10000000 - Receitas Correntes","13000000 - Receita Patrimonial","13200000 - Valores Mobiliários","13210000 - Juros e Correções Monetárias","13210000 - Juros e Correções Monetárias","13210011 - Remuneração de Depósitos Bancários - Principal","3,94"],["33953987","2021","Nova Campina","PREFEITURA MUNICIPAL DE NOVA CAMPINA","10","Outubro","EXECUTIVO","05 - TRANSFERÊNCIAS E CONVÊNIOS FEDERAIS-VINCULADOS","500 - ASSISTÊNCIA SOCIAL - RECURSOS ESPECÍFICOS","17 - API - ABRIGO","10000000 - Receitas Correntes","17000000 - Transferências Correntes","17100000 - Transferências da União e de suas Entidades","17180000 - Transferências da União - Específicas de Estados, DF, Municípios","17181200 - Transferências de Recursos do Fundo Nacional de Assistência Social - FNAS","17181211 - Transferências de Recursos do Fundo Nacional de Assistência Social - FNAS - Principal","3516,00"],["33742445","2021","Presidente Bernardes","PREFEITURA MUNICIPAL DE PRESIDENTE BERNARDES","7","Julho","EXECUTIVO","01 - TESOURO","110 - GERAL","00 - CÓDIGO DE APLICAÇÃO NÃO CONTÉM/INFORMOU PARTE VARIÁVEL","10000000 - Receitas Correntes","11000000 - Impostos, Taxas e Contribuições de Melhoria","11100000 - Impostos","11180000 - Impostos Específicos de Estados, DF, Municípios","11180200 - Impostos sobre a Produção, circulação de Mercadorias e Serviços","11180231 - Imposto sobre Serviços de Qualquer Natureza - Principal","220921,05"],["33426048","2021","Ibirarema","SERVIÇO AUTONOMO DE AGUA E ESGOTO DE IBIRAREMA","2","Fevereiro","EXECUTIVO","04 - RECURSOS PRÓPRIOS DA ADMINISTRAÇÃO INDIRETA","110 - GERAL","00 - CÓDIGO DE APLICAÇÃO NÃO CONTÉM/INFORMOU PARTE VARIÁVEL","10000000 - Receitas Correntes","13000000 - Receita Patrimonial","13200000 - Valores Mobiliários","13210000 - Juros e Correções Monetárias","13210000 - Juros e Correções Monetárias","13210011 - Remuneração de Depósitos Bancários - Principal","6,17"],["33643393","2021","Dolcinópolis","PREFEITURA MUNICIPAL DE  DOLCINOPOLIS","6","Junho","EXECUTIVO","02 - TRANSFERÊNCIAS E CONVÊNIOS ESTADUAIS-VINCULADOS","210 - EDUCAÇÃO INFANTIL - RECURSOS ESPECÍFICOS","00 - CÓDIGO DE APLICAÇÃO NÃO CONTÉM/INFORMOU PARTE VARIÁVEL","10000000 - Receitas Correntes","13000000 - Receita Patrimonial","13200000 - Valores Mobiliários","13210000 - Juros e Correções Monetárias","13210000 - Juros e Correções Monetárias","13210011 - Remuneração de Depósitos Bancários - Principal","116,53"],["33873371","2021","Lavínia","PREFEITURA MUNICIPAL DE LAVÍNIA","9","Setembro","EXECUTIVO","01 - TESOURO","110 - GERAL","00 - CÓDIGO DE APLICAÇÃO NÃO CONTÉM/INFORMOU PARTE VARIÁVEL","10000000 - Receitas Correntes","17000000 - Transferências Correntes","17100000 - Transferências da União e de suas Entidades","17180000 - Transferências da União - Específicas de Estados, DF, Municípios","17180200 - Transferência da Compensação Financeira pela Exploração de Recursos Naturais","17180211 - Cota-parte da Compensação Financeira de Recursos Hídricos - Principal","4014,91"],["34129618","2021","Auriflama","PREFEITURA MUNICIPAL DE AURIFLAMA","12","Dezembro","EXECUTIVO","01 - TESOURO","110 - GERAL","00 - CÓDIGO DE APLICAÇÃO NÃO CONTÉM/INFORMOU PARTE VARIÁVEL","10000000 - Receitas Correntes","11000000 - Impostos, Taxas e Contribuições de Melhoria","11100000 - Impostos","11180000 - Impostos Específicos de Estados, DF, Municípios","11180200 - Impostos sobre a Produção, circulação de Mercadorias e Serviços","11180233 - Imposto sobre Serviços de Qualquer Natureza - Dívida Ativa","6349,31"],["33421255","2021","Tatuí","PREFEITURA MUNICIPAL DE TATUÍ","2","Fevereiro","EXECUTIVO","01 - TESOURO","100 - GERAL TOTAL","28 - COMPENSACAO FINANCEIRA EXTRACAO MINERAL","10000000 - Receitas Correntes","13000000 - Receita Patrimonial","13200000 - Valores Mobiliários","13210000 - Juros e Correções Monetárias","13210000 - Juros e Correções Monetárias","13210011 - Remuneração de Depósitos Bancários - Principal","8,74"],["33871458","2021","Jambeiro","PREFEITURA MUNICIPAL DE JAMBEIRO","9","Setembro","EXECUTIVO","01 - TESOURO","110 - GERAL","00 - CÓDIGO DE APLICAÇÃO NÃO CONTÉM/INFORMOU PARTE VARIÁVEL","10000000 - Receitas Correntes","17000000 - Transferências Correntes","17100000 - Transferências da União e de suas Entidades","17180000 - Transferências da União - Específicas de Estados, DF, Municípios","17180100 - Participação na Receita da União","17180121 - Cota-Parte do Fundo de Participação dos Municípios - Cota Mensal - Principal","-143439,51"],["33421976","2021","Tietê","PREFEITURA MUNICIPAL DE TIETÊ","2","Fevereiro","EXECUTIVO","05 - TRANSFERÊNCIAS E CONVÊNIOS FEDERAIS-VINCULADOS","312 - RECURSOS PARA COMBATE AO CORONAVIRUS - Convênios/Entidades/Fundos","01 - ENFRENT.EMERG.SAUDE NAC.CORONAVIRUS(COVID-19)","10000000 - Receitas Correntes","19000000 - Outras Receitas Correntes","19200000 - Indenizações, Restituições e Ressarcimentos","19280000 - Indenizações, Restituições e Ressarcimentos  - Específicas de Estados, DF, Municípios","19280200 - Restituições - Específicas de Estados, DF, Municípios","19280211 - Restituições de Recursos Recebidos do SUS - Específicas de Estados, DF, Municípios - Principal","70584,90"],["34018395","2021","Itapeva","PREFEITURA MUNICIPAL DE ITAPEVA","11","Novembro","EXECUTIVO","02 - TRANSFERÊNCIAS E CONVÊNIOS ESTADUAIS-VINCULADOS","100 - GERAL TOTAL","19 - RECAPEAMENTO ASFALTICO RUAS JD.EUROPA(SERGIO M.ITA","10000000 - Receitas Correntes","13000000 - Receita Patrimonial","13200000 - Valores Mobiliários","13210000 - Juros e Correções Monetárias","13210000 - Juros e Correções Monetárias","13210011 - Remuneração de Depósitos Bancários - Principal","0,06"]]};
+
+// Helpers
+const pal = ['#0d6efd','#198754','#dc3545','#fd7e14','#6f42c1','#20c997',
+             '#0dcaf0','#d63384','#ffc107','#6610f2','#adb5bd','#e85d04',
+             '#2b9348','#4361ee','#f72585'];
+function fmtNum(n) { return n.toLocaleString('en'); }
+function fmtSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(1) + ' MB';
+}
+
+// Data source notes
+(function() {
+  if (!DATA.source_notes) return;
+  const section = document.getElementById('source-notes-section');
+  const h2 = document.createElement('h2');
+  h2.className = 'section-title';
+  h2.textContent = 'About This Dataset';
+  section.appendChild(h2);
+  const card = document.createElement('div');
+  card.className = 'card full';
+  card.innerHTML = '<p style="font-size:.9rem;line-height:1.7;color:#333">' + DATA.source_notes + '</p>';
+  section.appendChild(card);
+})();
+
+// Stats bar
+(function() {
+  const bar = document.getElementById('stats-bar');
+  const items = [
+    ['Rows', fmtNum(DATA.row_count)],
+    ['Columns', fmtNum(DATA.col_count)],
+    ['File Size', fmtSize(DATA.file_size)],
+  ];
+  // Add temporal ranges
+  Object.entries(DATA.temporal || {}).forEach(([col, t]) => {
+    items.push(['Date Range (' + col + ')', t.min + ' to ' + t.max]);
+  });
+  items.forEach(([label, value]) => {
+    const d = document.createElement('div');
+    d.className = 'stat-card';
+    d.innerHTML = '<div class="value">' + value + '</div><div class="label">' + label + '</div>';
+    bar.appendChild(d);
+  });
+})();
+
+// Column info table
+(function() {
+  const table = document.getElementById('col-table');
+  let html = '<thead><tr><th>#</th><th>Column</th><th>Type</th><th>Nulls</th><th>Null %</th></tr></thead><tbody>';
+  DATA.columns.forEach((c, i) => {
+    const barW = Math.min(c.null_pct, 100);
+    html += '<tr><td>' + (i + 1) + '</td><td><strong>' + c.name + '</strong></td>'
+      + '<td>' + c.dtype + '</td>'
+      + '<td>' + fmtNum(c.null_count) + '</td>'
+      + '<td><span class="null-bar" style="width:' + barW + 'px"></span> ' + c.null_pct + '%</td></tr>';
+  });
+  html += '</tbody>';
+  table.innerHTML = html;
+})();
+
+// Categorical distribution charts
+(function() {
+  const section = document.getElementById('dist-section');
+  const cats = Object.entries(DATA.categorical || {});
+  if (cats.length === 0) return;
+
+  const h2 = document.createElement('h2');
+  h2.className = 'section-title';
+  h2.textContent = 'Categorical Distributions (Top 15)';
+  section.appendChild(h2);
+
+  const grid = document.createElement('div');
+  grid.className = 'grid';
+  section.appendChild(grid);
+
+  cats.forEach(([col, d], idx) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    const labels = d.labels.map(s => String(s).length > 40 ? String(s).slice(0, 38) + '\u2026' : String(s));
+    card.innerHTML = '<h3>' + col + '</h3><div class="chart-wrap hbar"><canvas id="cat-' + idx + '"></canvas></div>';
+    grid.appendChild(card);
+
+    // Render after DOM insertion
+    setTimeout(() => {
+      new Chart(document.getElementById('cat-' + idx), {
+        type: 'bar',
+        data: { labels: labels, datasets: [{ data: d.values, backgroundColor: pal[idx % pal.length] }] },
+        options: {
+          indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { x: { beginAtZero: true } }
+        }
+      });
+    }, 0);
+  });
+})();
+
+// Temporal charts
+(function() {
+  const section = document.getElementById('temporal-section');
+  const temps = Object.entries(DATA.temporal || {});
+  if (temps.length === 0) return;
+
+  const h2 = document.createElement('h2');
+  h2.className = 'section-title';
+  h2.textContent = 'Temporal Distribution';
+  section.appendChild(h2);
+
+  const grid = document.createElement('div');
+  grid.className = 'grid';
+  section.appendChild(grid);
+
+  temps.forEach(([col, t], idx) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = '<h3>' + col + ' by year</h3><div class="chart-wrap bar"><canvas id="temp-' + idx + '"></canvas></div>';
+    grid.appendChild(card);
+
+    setTimeout(() => {
+      new Chart(document.getElementById('temp-' + idx), {
+        type: 'bar',
+        data: {
+          labels: t.by_year.labels,
+          datasets: [{ label: 'Count', data: t.by_year.values, backgroundColor: '#0d6efd' }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+    }, 0);
+  });
+})();
+
+// Sample data table
+const allRows = DATA.sample || [];
+const sampleCols = DATA.sample_columns || [];
+
+(function() {
+  document.getElementById('thead').innerHTML = '<tr>' + sampleCols.map(c => '<th>' + c + '</th>').join('') + '</tr>';
+  const searchEl = document.getElementById('search');
+  const countEl = document.getElementById('row-count');
+  const tbody = document.getElementById('tbody');
+
+  function render() {
+    const q = searchEl.value.toLowerCase();
+    const rows = q ? allRows.filter(r => r.some(v => String(v).toLowerCase().includes(q))) : allRows;
+    tbody.innerHTML = rows.map(r =>
+      '<tr>' + r.map(v => '<td>' + v + '</td>').join('') + '</tr>'
+    ).join('');
+    countEl.textContent = rows.length + ' of ' + allRows.length + ' rows';
+  }
+  searchEl.addEventListener('input', render);
+  render();
+})();
+</script>
+</body>
+</html>

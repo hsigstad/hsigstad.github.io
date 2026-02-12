@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="robots" content="noindex, nofollow">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TCE-SP Municipal Contracts</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+  :root {
+    --bg: #f8f9fa; --card: #fff; --fg: #1a1a1a; --muted: #666;
+    --border: #dee2e6; --accent: #0d6efd; --accent2: #198754;
+    --accent3: #dc3545; --accent4: #fd7e14;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--fg); line-height: 1.5;
+  }
+
+  .stats-bar {
+    display: flex; gap: .8rem; padding: 1rem 2rem; flex-wrap: wrap;
+  }
+  .stat-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: .75rem 1rem; flex: 1; min-width: 120px;
+    text-align: center;
+  }
+  .stat-card .value { font-size: 1.5rem; font-weight: 700; color: var(--accent); }
+  .stat-card .label { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+
+  main { padding: 0 2rem 3rem; max-width: 1400px; margin: 0 auto; }
+
+  h2.section-title {
+    font-size: 1.15rem; margin: 1.6rem 0 .8rem; padding-bottom: .3rem;
+    border-bottom: 2px solid var(--border);
+  }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1.2rem 1.4rem;
+  }
+  .card h3 { font-size: .95rem; margin-bottom: .8rem; color: var(--fg); }
+  .card.full { grid-column: 1 / -1; }
+
+  .chart-wrap { position: relative; width: 100%; }
+  .chart-wrap.bar { height: 300px; }
+  .chart-wrap.hbar { height: 380px; }
+
+  /* column info table */
+  .col-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+  .col-table th, .col-table td {
+    padding: .35rem .6rem; border-bottom: 1px solid var(--border); text-align: left;
+  }
+  .col-table th { background: #f0f4f8; font-weight: 600; position: sticky; top: 0; }
+  .col-table .null-bar { display: inline-block; height: 10px; border-radius: 2px; background: #dc3545; }
+
+  /* data table */
+  .table-wrap { overflow-x: auto; max-height: 520px; overflow-y: auto; }
+  .data-table { width: 100%; border-collapse: collapse; font-size: .8rem; }
+  .data-table th, .data-table td {
+    padding: .4rem .5rem; border-bottom: 1px solid var(--border);
+    text-align: left; white-space: nowrap; max-width: 250px; overflow: hidden; text-overflow: ellipsis;
+  }
+  .data-table th { position: sticky; top: 0; background: #f0f4f8; font-weight: 600; }
+  .data-table tbody tr:hover { background: #f0f4ff; }
+
+  .search-bar { margin-bottom: .8rem; }
+  .search-bar input {
+    font-size: .85rem; padding: .4rem .7rem; border: 1px solid var(--border);
+    border-radius: 4px; width: 100%; max-width: 400px;
+  }
+  .count-label { font-size: .8rem; color: var(--muted); margin-left: .8rem; }
+
+  footer {
+    text-align: center; padding: 1.5rem; font-size: .8rem; color: var(--muted);
+    border-top: 1px solid var(--border); margin-top: 2rem;
+  }
+</style>
+</head>
+<body>
+
+<style>
+  .site-nav {
+    position: sticky; top: 0; z-index: 100;
+    background: #212529; display: flex; align-items: center;
+    padding: 0 2rem; height: 3rem;
+  }
+  .site-nav .nav-brand {
+    color: #fff; text-decoration: none; font-weight: 600; font-size: 1rem;
+    margin-right: auto;
+  }
+  .site-nav .nav-brand:hover { color: #e9ecef; }
+  .site-nav .nav-link {
+    color: #adb5bd; text-decoration: none; font-size: .85rem;
+    padding: 0 .75rem; height: 3rem; display: flex; align-items: center;
+    background: none; border: none; cursor: pointer; font-family: inherit;
+  }
+  .site-nav .nav-link:hover, .site-nav .nav-link.active { color: #fff; }
+  .nav-dropdown { position: relative; }
+  .dropdown-menu {
+    display: none; position: absolute; top: 3rem; right: 0;
+    background: #fff; border: 1px solid var(--border); border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.12); min-width: 220px;
+    padding: .4rem 0; z-index: 200; max-height: 80vh; overflow-y: auto;
+  }
+  .nav-dropdown.open .dropdown-menu { display: block; }
+  .dropdown-menu a {
+    display: block; padding: .3rem 1rem; color: #1a1a1a;
+    text-decoration: none; font-size: .82rem;
+  }
+  .dropdown-menu a:hover { background: #f0f4f8; }
+  .dropdown-group-label {
+    padding: .4rem 1rem .15rem; font-size: .68rem; font-weight: 700;
+    color: #888; text-transform: uppercase; letter-spacing: .04em;
+  }
+  .dropdown-divider { border-top: 1px solid #eee; margin: .3rem 0; }
+  .page-header {
+    padding: .8rem 2rem; border-bottom: 1px solid var(--border); background: #fff;
+  }
+  .page-header h1 { font-size: 1.3rem; font-weight: 600; }
+  .page-header p { color: var(--muted); font-size: .85rem; margin-top: .15rem; }
+</style>
+
+<nav class="site-nav">
+  <a href="../index.html" class="nav-brand">Corruption in Procurement</a>
+  <a href="../index.html" class="nav-link">Home</a>
+  <div class="nav-dropdown">
+    <button class="nav-link">Docs &#9662;</button>
+    <div class="dropdown-menu">
+    <div class="dropdown-group-label">Reference</div>
+    <a href="../docs/README.html">Project Overview</a>
+    <a href="../docs/summary.html">Research Summary</a>
+    <a href="../docs/institutions.html">Institutional Background</a>
+    <a href="../docs/data.html">Data Sources</a>
+    <a href="../docs/methods.html">Empirical Methods</a>
+    <a href="../docs/literature.html">Literature</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Working notes</div>
+    <a href="../docs/thinking.html">Open Questions & Ideas</a>
+    <a href="../docs/decisions.html">Key Decisions</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Tasks</div>
+    <a href="../docs/todo.html">Active Tasks</a>
+    <a href="../docs/done.html">Completed Tasks</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Communication</div>
+    <a href="../docs/meetings.html">Meeting Notes</a>
+    <a href="../docs/feedback.html">External Feedback</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Briefs</div>
+    <a href="../briefs/linking.html">Linking Court Cases to Procurement Data</a>
+    </div>
+  </div>
+  <div class="nav-dropdown">
+    <button class="nav-link active">Data &#9662;</button>
+    <div class="dropdown-menu">
+    <a href="../sources/tjsp.html">TJSP Court Cases</a>
+    <a href="../sources/bec.html">BEC Procurement</a>
+    <a href="../sources/tce-sp-spending.html">TCE-SP Municipal Spending</a>
+    <a href="../sources/tce-sp-procurement.html">TCE-SP Municipal Procurement</a>
+    <a href="../sources/tce-sp-audits.html">TCE-SP Municipal Audits</a>
+    </div>
+  </div>
+</nav>
+<script>
+document.querySelectorAll('.nav-dropdown > .nav-link').forEach(function(btn) {
+  btn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    var dd = btn.parentElement;
+    var wasOpen = dd.classList.contains('open');
+    document.querySelectorAll('.nav-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+    if (!wasOpen) dd.classList.add('open');
+  });
+});
+document.addEventListener('click', function() {
+  document.querySelectorAll('.nav-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+});
+</script>
+
+<div class="page-header">
+  <h1>TCE-SP Municipal Contracts</h1>
+  <p>Contract-level data linking procurement processes to awarded firms across SP municipalities.</p>
+</div>
+
+<div class="stats-bar" id="stats-bar"></div>
+
+<main>
+
+<!-- Data source notes -->
+<div id="source-notes-section"></div>
+
+<!-- Column info -->
+<h2 class="section-title">Column Information</h2>
+<div class="card full">
+  <div style="overflow-x:auto; max-height:400px; overflow-y:auto;">
+    <table class="col-table" id="col-table"></table>
+  </div>
+</div>
+
+<!-- Distribution charts -->
+<div id="dist-section"></div>
+
+<!-- Temporal charts -->
+<div id="temporal-section"></div>
+
+<!-- Sample data -->
+<h2 class="section-title">Sample Data (50 rows)</h2>
+<div class="card full">
+  <div class="search-bar">
+    <input type="text" id="search" placeholder="Search across all columns...">
+    <span class="count-label" id="row-count"></span>
+  </div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead id="thead"></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+</main>
+
+<footer>
+  Generated by <code>bash build.sh site</code>
+</footer>
+
+<script>
+// Embedded data — replaced by build pipeline
+const DATA = /* INJECT_DATA */ {"id":"tce-sp-ajustes","name":"TCE-SP Municipal Contracts","description":"Contract-level data linking procurement processes to awarded firms across SP municipalities.","category":"TCE-SP Procurement","source_notes":"Municipal contract (ajuste) data from TCE-SP's Audesp licitação system. Each row is a contract item linked to a procurement process, with municipality, bidding modality, contract instrument type, value, contracted firm (CNPJ and name), and contract validity dates. Covers all 644 SP municipalities from 2018 to 2022 (~4M rows total).","file_size":1925783656,"row_count":3991407,"col_count":27,"columns":[{"name":"Município","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Entidade","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Código da Licitação","dtype":"int64","null_count":0,"null_pct":0.0},{"name":"Código do Ajuste","dtype":"float64","null_count":1,"null_pct":0.0},{"name":"Modalidade de licitação","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Número do processo licitatório","dtype":"object","null_count":372439,"null_pct":9.3},{"name":"Ano do processo licitatório","dtype":"float64","null_count":372430,"null_pct":9.3},{"name":"Objeto da licitação","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Descrição do objeto da licitação","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Valor da declaração de existência de recursos total do processo","dtype":"object","null_count":2519365,"null_pct":63.1},{"name":"Fundamento Legal - dispensa de licitação","dtype":"object","null_count":3618996,"null_pct":90.7},{"name":"Instrumento","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Nº do contrato","dtype":"object","null_count":3551721,"null_pct":89.0},{"name":"Ano do contrato","dtype":"float64","null_count":3551720,"null_pct":89.0},{"name":"Valor total do contrato","dtype":"object","null_count":3551720,"null_pct":89.0},{"name":"Descrição do objeto contratado","dtype":"object","null_count":3551720,"null_pct":89.0},{"name":"Quantidade do objeto contratado","dtype":"object","null_count":3551720,"null_pct":89.0},{"name":"Unidade do objeto contratado","dtype":"object","null_count":3551720,"null_pct":89.0},{"name":"Nota de Empenho/Documento Similar","dtype":"object","null_count":439753,"null_pct":11.0},{"name":"Data da Nota de Empenho/Documento Similar","dtype":"object","null_count":439753,"null_pct":11.0},{"name":"Valor da Nota de Empenho/Documento Similar","dtype":"object","null_count":439753,"null_pct":11.0},{"name":"CNPJ da empresa contratada","dtype":"object","null_count":29240,"null_pct":0.7},{"name":"Nome da empresa contratada","dtype":"object","null_count":54,"null_pct":0.0},{"name":"Vigência do contrato - Data início","dtype":"object","null_count":3587322,"null_pct":89.9},{"name":"Vigência do contrato - Data Término","dtype":"object","null_count":3587322,"null_pct":89.9},{"name":"Vigência do contrato - Data Assinatura","dtype":"object","null_count":3551725,"null_pct":89.0},{"name":"Modo de fornecimento","dtype":"object","null_count":0,"null_pct":0.0}],"categorical":{"Município":{"labels":["São Paulo","Ribeirão Preto","Praia Grande","Indaiatuba","Catanduva","Bauru","São José dos Campos","Campinas","Araçatuba","Marília","São José do Rio Preto","Jundiaí","Botucatu","Mogi das Cruzes","Atibaia","São Manuel","Santana de Parnaíba","Cajati","Mirante do Paranapanema","Registro"],"values":[126307,58399,55319,48465,42900,42627,41726,38213,35712,34641,34547,34212,32163,29918,29531,28305,26701,26371,24996,24505]},"Modalidade de licitação":{"labels":["Pregao Presencial","Pregao Eletronico","Contratacao Direta - Dispensa de licitacao","Convite","Contratacao Direta - Inexigibilidade de licitacao","Concorrencia","Tomada de Precos","Licitação SABESP","REGULAMENTO DA FAEPA - COMPRA DIRETA","REGULAMENTO DA FAEPA - 3 ORÇAMENTOS","Licitação Sabesp","CHAMADA PÚBLICA","Chamamento Público","CREDENCIAMENTO","Chamada Pública","Regulamento Interno para a área de compras e contratação de serviços de terceiros e obras.","Regulamento Interno para área de compras e contratação de serviços de terceiros e obras.","REG. COMPRAS - INCISO I","Concorrencia Internacional","CHAMAMENTO PÚBLICO"],"values":[2446911,1002053,322476,91530,49776,28834,25388,6695,4122,1424,1140,599,581,463,455,416,351,350,319,289]},"Instrumento":{"labels":["Nota de Empenho","Contrato"],"values":[3551720,439687]}},"temporal":{"Ano do processo licitatório":{"min":"1969","max":"2023","by_year":{"labels":[1969,2002,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,2020,2021,2022,2023],"values":[1,1,5,1,6,35,3,11,29,95,471,1218,22800,347631,643369,767345,625082,827294,383553,3]}}},"sample_columns":["Município","Entidade","Código da Licitação","Código do Ajuste","Modalidade de licitação","Número do processo licitatório","Ano do processo licitatório","Objeto da licitação","Descrição do objeto da licitação","Valor da declaração de existência de recursos total do processo","Fundamento Legal - dispensa de licitação","Instrumento","Nº do contrato","Ano do contrato","Valor total do contrato","Descrição do objeto contratado","Quantidade do objeto contratado","Unidade do objeto contratado","Nota de Empenho/Documento Similar","Data da Nota de Empenho/Documento Similar","Valor da Nota de Empenho/Documento Similar","CNPJ da empresa contratada","Nome da empresa contratada","Vigência do contrato - Data início","Vigência do contrato - Data Término","Vigência do contrato - Data Assinatura","Modo de fornecimento"],"sample":[["Indaiatuba","PREFEITURA MUNICIPAL DE INDAIATUBA ","2018000000061","2018000006341.0","Pregao Presencial","23","2018.0","Outras prestacoes de servico","Contratação de empresa para prestação de serviço de arbitragem para eventos com participação da Secretaria Municipal de Esportes, com equipe de arbitragem composta de árbitro, auxiliares, anotadores e representante para jogos de futebol categorias de base, futsal categorias de base, futebol amador 1ª, 2ª e 3ª divisão, futsal adulto, sub 20, feminino e máster 1ª, 2ª e 3ª divisão, através do Sistema de Registro de Preços, com entregas parceladas pelo prazo de 12 (doze) meses.","","","Nota de Empenho","","","","","","","28083","23/10/2018","17098,0","00.106.528/0001-40","ASSOCIAÇÃO INDAIATUBANA DE ÁRBITROS","","","","Entrega imediata"],["São Paulo","SECRETARIA DA SAUDE / HOSPITAL REGIONAL SUL","2022157003652","2022445190741.0","Pregao Eletronico","298","2022.0","Medicamentos","AQUISIÇÃO DE MEDICAMENTOS","42741,0","","Nota de Empenho","","","","","","","090157000012022NE01364","24/11/2022","1050,0","43.607.262/0001-21","INPHARMA HOSPITALAR LTDA","","","","Entrega fracionada"],["Adamantina","PREFEITURA MUNICIPAL DE ADAMANTINA","2019000000016","2019000002540.0","Pregao Presencial","5","2019.0","Outros materiais de consumo","AQUISIÇÃO DE GÁS DE COZINHA PARA USO DO DEPARTAMENTO DE MERENDA ESCOLAR E DEMAIS SECRETARIAS DO MUNICIPIO","","","Nota de Empenho","","","","","","","7471","13/08/2019","270,0","00.314.066/0001-56","JOAO AUGUSTO DOS SANTOS  ADAMANTINA- EPP.","","","","Entrega imediata"],["Sandovalina","PREFEITURA MUNICIPAL DE SANDOVALINA","2019190001929","2019900006439.0","Pregao Presencial","29","2019.0","Outros materiais de consumo","AQUISIÇÃO DE GENEROS ALIMENTICIOS PARA TODOS OS SETORES","","","Nota de Empenho","","","","","","","9298","04/12/2019","1932,09","05.359.854/0001-82","CRUZ & PONTES LTDA - ME","","","","Entrega fracionada"],["Marília","PREFEITURA MUNICIPAL DE MARÍLIA","2021211300013","2021000002941.0","Pregao Eletronico","13","2021.0","Outros materiais de consumo","Registro de Preços visando eventual Aquisição de Material Médico, enfermagem e outros afins, para atendimento de mandado judicial, destinados à Secretaria Municipal da Saúde  Prazo 12 meses.","","","Nota de Empenho","","","","","","","11303/2021","20/07/2021","3391,2","14.770.109/0001-12","ELETRIDAL COMÉRCIO DE MATERIAIS E EQUIPAMENTOS E SERVIÇOS EIRELI","","","","Entrega imediata"],["Bauru","UNIVERSIDADE DE SAO PAULO / USP DO HOSPITAL REAB.ANOMALIAS CRANIO-FACIAIS BAURU","2022149000720","2022132497935.0","Pregao Eletronico","061/2021","2021.0","Equipamentos e material permanente","MICROCOMPUTADOR.","1579300,0","","Contrato","145","2021.0","901500,0","MICROCOMPUTADOR","250,0","UNIDADE","","","","13.977.867/0001-43"," MBM TECNOLOGIA E INDUSTRIA DE INFORMÁTICA LTDA  ","09/12/2021","07/03/2022","09/12/2021","Entrega fracionada"],["Jundiaí","PREFEITURA MUNICIPAL DE JUNDIAÍ","2022014000351","2022112240544.0","Pregao Eletronico","351","2022.0","Outros materiais de consumo","BICA CORRIDA FAIXA II DO DNER ES-303/97 - RP","","","Nota de Empenho","","","","","","","40544","22/12/2022","54999,0","35.373.188/0001-06","A.V.P ROSOLEN ME","","","","Entrega fracionada"],["Louveira","PREFEITURA MUNICIPAL DE LOUVEIRA","2021000000062","2021000008198.0","Pregao Eletronico","000009","2021.0","Outros materiais de consumo","Registro de Preços de Produtos de Limpeza e Descartáveis","","","Nota de Empenho","","","","","","","8198","20/10/2021","9058,0","00.504.095/0001-80","PAPA LIX PLASTICOS E DESCARTAVEIS LTDA","","","","Entrega fracionada"],["Bastos","PREFEITURA MUNICIPAL DE BASTOS","2020200001805","2020900009618.0","Pregao Eletronico","32","2020.0","Generos alimenticios","REGISTRO DE PREÇOS PARA EVENTUAL AQUISIÇÃO DE GÊNEROS ALIMENTÍCIOS","980906,15","","Nota de Empenho","","","","","","","8954","18/11/2020","3953,29","23.589.959/0001-00","SANTO ANTONIO PRBI ALIMENTOS LTDA","","","","Entrega fracionada"],["Mogi Guaçu","HOSPITAL MUNICIPAL DR. TABAJARA RAMOS","2018170000875","2018000002610.0","Pregao Presencial","000042","2017.0","Material hospitalar, ambulatorial ou odontolÃ³gico","Registro de Preços para possível aquisição de fios cirúrgicos por um período de 12 (doze) meses","144645,84","","Nota de Empenho","","","","","","","2610","26/10/2018","362,88","08.476.098/0001-60","SUPRIHEALTH SUPRIMENTOS MÉDICOS LTDA","","","","Entrega fracionada"],["Cássia dos Coqueiros","PREFEITURA MUNICIPAL DE  CÁSSIA DOS COQUEIROS","2019000201927","2020000000074.0","Pregao Presencial","2","2019.0","Outros materiais de consumo","REGISTRO DE PREÇO PARA FORNECIMENTO DE MATERIAIS DE LIMPEZA E HIGIENE PARA MANUTENÇÃO DAS SECRETARIAS DO MUNICIPIO DE CÁSSIA DOS COQUEIROS.","","","Nota de Empenho","","","","","","","146","02/01/2020","123,3","05.307.679/0001-80","GIMENES E PAVAN","","","","Entrega fracionada"],["General Salgado","PREFEITURA MUNICIPAL DE GENERAL SALGADO","2018000000047","2018000000306.0","Pregao Presencial","19","2018.0","Generos alimenticios","AQUISIÇÃO DE PRODUTOS SEMI-PERECÍVEIS, CARNES, FILÉ DE PEIXE E LEITE PARA A MERENDA ESCOLAR E CRECHES DO MUNICÍPIO","","","Nota de Empenho","","","","","","","4964","29/06/2018","90,0","00.547.176/0001-68","LEITE RITANIA LTDA EPP","","","","Entrega imediata"],["São Paulo","SECRETARIA DA SAUDE / CENTRO DE REFERENCIA DA SAUDE DA MULHER","2022109002980","2022220173079.0","Pregao Eletronico","222","2022.0","Material hospitalar, ambulatorial ou odontolÃ³gico","AQUISIÇÃO DE DISPOSITIVO EXCLUSIVO PARA COLETA DE SANGUE A VÁCUO","37000,0","","Nota de Empenho","","","","","","","090109000012022NE00729","04/08/2022","19250,0","14.336.329/0001-32","SOL-MILLENNIUM BRASIL IMPORTACAO E EXPORTACAO LTDA","","","","Entrega fracionada"],["Mairiporã","PREFEITURA MUNICIPAL DE MAIRIPORÃ","2019000000086","2019000014942.0","Pregao Presencial","G00019","2019.0","Generos alimenticios","AQUISICAO DE AGUA MINERAL","","","Nota de Empenho","","","","","","","7659","21/11/2019","320,0","19.239.910/0001-50","MAIRIPORA COMERCIO DE GAS E AGUA LTDA ME","","","","Entrega fracionada"],["Turiúba","PREFEITURA MUNICIPAL DE TURIÚBA","2019000000013","2019000000008.0","Pregao Presencial","55","2018.0","Outros materiais de consumo","Registro de preços para futura e eventual aquisição de MATERIAL DE HIGIENE E LIMPEZA, para os Setores da Administração, no exercício de 2019.","","","Contrato","8","2019.0","64876,22","Registro de preços para futura e eventual aquisição de MATERIAL DE HIGIENE E LIMPEZA, para os Setores da Administração, no exercício de 2019.","39,0","lote/item","","","","17.606.253/0001-06","CARLOS DONIZETE GARDIOLI COMERCIAL DE ALIMENT","02/01/2019","31/12/2019","02/01/2019","Entrega fracionada"],["Votuporanga","PREFEITURA MUNICIPAL DE VOTUPORANGA","2021202100022","2021030005146.0","Pregao Eletronico","8","2021.0","Equipamentos e material permanente","Aquisição de equipamentos, utensílios domésticos e materiais diversos para utilização no Lar Bem Viver a serem adquiridos com Recursos Federais através do Convênio 888209/2019 e proposta Siconv 039398/2019","106533,74","","Nota de Empenho","","","","","","","5146","15/03/2021","984,5","38.771.655/0001-36","COMERCIAL DE INFORMATICA BARRETOS LTDA - ME","","","","Entrega imediata"],["Jacupiranga","PREFEITURA MUNICIPAL DE JACUPIRANGA","2018000000028","2018000001303.0","Pregao Presencial","16","2018.0","Combustiveis e lubrificantes","CONTRATAÇÃO DE EMPRESA ESPECIALIZADA PARA FORNECIMENTO DE COMBUSTÍVEIS DE FORMA PARCELADA, EM POSTO DE SERVIÇO PRÓPRIO, NA MODALIDADE PREGÃO, POR MEIO DE SISTEMA PRESENCIAL, COM VISTAS AO ATENDIMENTO DAS NECESSIDADES DE ABASTECIMENTOS DOS VEÍCULOS E EQUIPAMENTOS OFICIAIS PERTENCENTES À PREFEITURA DO MUNICÍPIO DE JACUPIRANGA, ATRAVÉS DE SRP (SISTEMA DE REGISTRO DE PREÇOS), PELO PERÍODO DE 12 (DOZE) MESES.","","","Nota de Empenho","","","","","","","5658","28/08/2018","427,6","19.443.208/0001-03","POSTO DE COMBUSTIVEIS VALE LTDA - EPP","","","","Entrega imediata"],["Jundiaí","PREFEITURA MUNICIPAL DE JUNDIAÍ","2019014000248","2019000004528.0","Pregao Eletronico","248","2019.0","Material de expediente","CANETA ESFEROGRÁFICA, CANETA PINCEL ATÔMICO, TINTA PARA CARIMBO E OUTROS - UGE","422175,88","","Nota de Empenho","","","","","","","29818","17/10/2019","628,91","30.084.600/0001-46","dz7 tecnologia e marketing eireli epp","","","","Entrega imediata"],["Nuporanga","PREFEITURA MUNICIPAL DE NUPORANGA","2018000000241","2019180000890.0","Pregao Presencial","28","2018.0","Medicamentos","MEDICAMENTOS DA FARMÁCIA BÁSICA MUNICIPAL","","","Nota de Empenho","","","","","","","3969","17/06/2019","182,4","65.817.900/0001-71","AGLON COMERCIO E REPRESENTAÇÕES LTDA","","","","Entrega fracionada"],["Tabatinga","PREFEITURA MUNICIPAL DE TABATINGA","2019000000017","2019000002603.0","Pregao Presencial","10","2019.0","Medicamentos","Registro de Preços para futura e eventual Aquisição de Medicamentos para o Pronto Atendimento Municipal (PAM).","","","Nota de Empenho","","","","","","","2975","10/05/2019","3211,0","49.228.695/0001-52","LUMAR COMÉRCIO DE PRODUTOS FARMACÊUTICOS LTDA","","","","Entrega fracionada"],["Ibirarema","PREFEITURA MUNICIPAL DE IBIRAREMA","2022000000019","2022000000831.0","Pregao Presencial","17","2022.0","Outros materiais de consumo","REGISTRO DE PREÇOS PARA AQUISIÇÃO DE MATERIAIS HIGIENE E LIMPEZA P2","","","Nota de Empenho","","","","","","","4488","16/05/2022","177,0","15.693.064/0001-92","EMERSON LUIZ DA SILVA","","","","Entrega fracionada"],["Ariranha","PREFEITURA MUNICIPAL DE ARIRANHA","2021000000003","2022000000284.0","Pregao Presencial","2","2021.0","Generos alimenticios","REGISTRO DE PREÇOS PARA AQUISIÇÃO DE GÊNEROS ALIMENTÍCIOS PERECÍVEIS, DESTINADOS À MANUTENÇÃO DA MERENDA ESCOLAR MUNICIPAL","597839,46","","Nota de Empenho","","","","","","","1169","16/02/2022","11495,49","08.443.120/0001-75","MARIA CASANOVA DE LIMA SUPERMERCADO - ME","","","","Entrega fracionada"],["Mirassol","PREFEITURA MUNICIPAL DE MIRASSOL","2020200000206","2022900007546.0","Pregao Presencial","35","2020.0","Outras prestacoes de servico","Registro de preços visando a contratação de serviços de mão de obra mecânica e fornecimento de peças, genuínas e originais novas, para a manutenção mecânica e elétrica, funilaria e pintura nas máquinas e tratores pesados da linha diesel da frota municipal da Prefeitura do Município de Mirassol/SP.","","","Nota de Empenho","","","","","","","4681","01/08/2022","5086,4","03.649.918/0001-54","N. BILLACHI JUNIOR - ME","","","","Entrega imediata"],["Nova Campina","PREFEITURA MUNICIPAL DE NOVA CAMPINA","2019000000076","2020000005739.0","Pregao Presencial","G00034","2019.0","Outros materiais de consumo","PRODUTOS DE LIMPEZA EM GERAL,HIGIENE PESSOAL, COPA E COZINHA","432448,54","","Nota de Empenho","","","","","","","1384","04/03/2020","125,52","09.284.892/0001-74","MARIANO PRESTES FERRAZ NETO - ME","","","","Entrega imediata"],["Jardinópolis","PREFEITURA MUNICIPAL DE JARDINÓPOLIS","2021000202131","2022000000300.0","Pregao Presencial","1","2021.0","Combustiveis e lubrificantes","AQUISIÇÃO DE COMBUSTIVEIS PARA ABASTECIMENTO DA FROTA MUNICIPAL.","","","Nota de Empenho","","","","","","","1243","10/02/2022","4453,82","02.008.609/0001-32","INICIAL COMERCIO DE COMBUSTIVEIS LTDA","","","","Entrega fracionada"],["Piquete","PREFEITURA MUNICIPAL DE PIQUETE","2019000000019","2019000002426.0","Pregao Presencial","G00003","2019.0","Outras prestacoes de servico","AQUISICAO DE PECAS PARA MANUTENCAO E MAODE OBRA MECANICA","","","Nota de Empenho","","","","","","","3265","23/05/2019","1317,0","24.183.845/0001-28","O R R DE OLIVEIRA POSTO DE MOLAS ME","","","","Entrega imediata"],["Sertãozinho","PREFEITURA MUNICIPAL DE SERTÃOZINHO","2021000000352","2021000000741.0","Contratacao Direta - Dispensa de licitacao","","","Obras e servicos de engenharia","SERVIÇOS PARA INSTALAÇÃO DE CONJUNTOS DE ILUMINAÇÃO PÚBLICA COM MATERIAL E MÃO-DE-OBRA.","","Art. 24, I, Lei 8666/93 - obras e serviços de engenharia de valor ate 10% (dez por cento) do limite previsto na alínea \"a\", do inciso I do artigo anterior, desde que não se refiram a parcelas de uma mesma obra ou serviço ou ainda para obras e serviços da mesma natureza e no mesmo local que possam ser realizadas conjunta e concomitantemente.","Nota de Empenho","","","","","","","14463","18/11/2021","30960,0","02.992.144/0001-05","NICOLUCCI LOCACOES E SERVICOS ELETRICOS LTDA.","","","","Entrega fracionada"],["Bauru","PREFEITURA MUNICIPAL DE BAURU","2019191200027","2020000006374.0","Pregao Eletronico","27","2019.0","Material hospitalar, ambulatorial ou odontolÃ³gico","Aquisição estimada anual de diversos materiais hospitalares e correlatos  padronizados para atendimento dos serviços de atenção básica, atendimento especializado e de urgência e emergência. ","","","Nota de Empenho","","","","","","","6374","31/03/2020","7632,0","05.216.859/0001-56","BIOBASE INDUSTRIA E COMÉRCIO LTDA","","","","Entrega fracionada"],["Jundiaí","PREFEITURA MUNICIPAL DE JUNDIAÍ","2020014000112","2020000005006.0","Pregao Eletronico","112","2020.0","Material hospitalar, ambulatorial ou odontolÃ³gico","ALGODAO HIDROFILO, SONDA URETRAL,COLETOR DE URINA E OUTROS - RP - UGPS","","","Nota de Empenho","","","","","","","32357","01/12/2020","6100,0","82.641.325/0021-61","CREMER S/A\r ","","","","Entrega imediata"],["Lins","PREFEITURA MUNICIPAL DE LINS","2017000000152","2020000004919.0","Pregao Presencial","36","2017.0","Outros materiais de consumo","REGISTRO DE PREÇOS para a aquisição futura de CONCRETO ASFÁLTICO USINADO À QUENTE","","","Nota de Empenho","","","","","","","368","02/01/2018","67500,0","17.368.769/0001-60","SABIMIX CONCRETO LTDA - ME","","","","Entrega fracionada"],["Tatuí","PREFEITURA MUNICIPAL DE TATUÍ","2022000000468","2022000003738.0","Pregao Eletronico","72","2022.0","Outros materiais de consumo","PREGAÕ ELETRÔNICO DE REGISTRO DE PREÇOS PARA EVENTUAL AQUISIÇÃO DE SUPLEMENTOS ALIMENTARES SOLICITADO PELA SECRETARIA DA SAÚDE.  ","","","Nota de Empenho","","","","","","","13364","03/11/2022","7771,5","03.612.312/0001-44","Nutriport Comercial Ltda","","","","Entrega imediata"],["Itapetininga","SECRETARIA DA ADMINISTRACAO PENITENCIARIA / PENITENCIARIA II DE ITAPETININGA","2021136000640","2021313436478.0","Contratacao Direta - Dispensa de licitacao","","","Outros materiais de consumo","MATERIAIS DE CONSUMO DIVERSOS PARA USO DESTA UNIDADE PRISIONAL E CENTRO DE RESSOCIALIZAÇÃO DE ITAPETININGA","17597,58","Art. 24, II, Lei 8666/93 - outros serviços e compras de valor ate 10% (dez por cento) do limite previsto na alínea \"a\", do inciso II do artigo anterior e para alienacões, nos casos previstos nesta Lei, desde que não se refiram a parcelas de um mesmo serviço, compra ou alienação de maior vulto que possa ser realizada de uma só vez.","Nota de Empenho","","","","","","","2021NE00807","01/06/2021","5056,0","32.610.096/0001-04","EDILAINE G. COM. VAREJISTA DE PROD. DE LIMPEZA","","","","Entrega imediata"],["Capão Bonito","PREFEITURA MUNICIPAL DE CAPÃO BONITO","2022000000219","2022000002350.0","Pregao Eletronico","3","2022.0","Material de expediente","SISTEMA REGISTRO DE PREÇOS  Aquisição de Material de Escritório em atendimento ao Almoxarifado Central vinculado à Secretaria Municipal de Administração e Finanças, desse município, conforme especificação constante do Anexo I  Termo de Referência.","","","Nota de Empenho","","","","","","","5942","06/05/2022","653,0","03.998.017/0001-78","SANDRO JOSE DE PAIVA  CIA LTDA - EPP","","","","Entrega fracionada"],["Ribeirão Preto","SECRETARIA DA SAUDE / HOSPITAL CLINICAS FAC MEDICINA RIBEIRAO PRETO USP","2022201000960","2022000004859.0","Pregao Eletronico","82","2022.0","Medicamentos","CONSTITUIÇÃO DE SISTEMA DE REGISTRO DE PREÇOS PARA AQUISIÇÃO FUTURA E EVENTUAL DE MEDICAMENTO","558831,0","","Nota de Empenho","","","","","","","2022NE04859","05/09/2022","3144,1","08.231.734/0001-93","FUTURA COMÉRCIO DE PRDUTOS MÉDICOS E HOSPITALARES EIRELI","","","","Entrega fracionada"],["Taubaté","UNIVERSIDADE DE TAUBATE","2020000000063","2020000000217.0","Contratacao Direta - Dispensa de licitacao","","","Outros materiais de consumo","AQUISIÇÃO DE EPIS","8875,2","Art. 24, II, Lei 8666/93 - outros serviços e compras de valor ate 10% (dez por cento) do limite previsto na alínea \"a\", do inciso II do artigo anterior e para alienacões, nos casos previstos nesta Lei, desde que não se refiram a parcelas de um mesmo serviço, compra ou alienação de maior vulto que possa ser realizada de uma só vez.","Nota de Empenho","","","","","","","1069","24/04/2020","8525,2","12.059.278/0001-13","HABIATAR COMÉRCIO E SERVIÇOS DE MANUTENÇÃO LTDA EPP","","","","Entrega imediata"],["Votuporanga","PREFEITURA MUNICIPAL DE VOTUPORANGA","2020202000352","2020090018714.0","Pregao Eletronico","72","2020.0","Compras de TI","Aquisição de materiais e suprimentos de informática para utilização nas atividades desenvolvidas no Órgão Gestor e nos Programas e Projetos da Secretaria Municipal de Assistência Social e seus Setores","34588,94","","Nota de Empenho","","","","","","","18714","18/09/2020","658,8","10.820.186/0001-89","NBB COMERCIO DE EQUIPAMENTOS DE INFORMATICA LTDA -","","","","Entrega imediata"],["Guarulhos","PREFEITURA MUNICIPAL DE GUARULHOS","2017000000374","2018000000525.0","Pregao Eletronico","96","2017.0","Generos alimenticios","FORNECIMENTO DE PÃO COM MARGARINA","","","Contrato","150SS17","2018.0","19113,0","FORNECIMENTO DE PÃO FRANCÊS COM MARGARINA","27700,0","UNIDADE","","","","46.319.224/0001-61","GUARU PÃO INDUSTRIA E COMÉRCIO LTDA - EPP","29/03/2018","30/10/2018","29/03/2018","Entrega fracionada"],["Rinópolis","PREFEITURA MUNICIPAL DE RINÓPOLIS","2019000000016","2019000000718.0","Pregao Presencial","1","2019.0","Medicamentos","AQUIÇÃO  DE   MEDICAMENTOS A SEREM UTILIZADO NO CENTRO DE SAÚDE","","","Nota de Empenho","","","","","","","5155","03/09/2019","235,44","65.817.900/0001-71","AGLON COMERCIO E REPRESENTAÇÃO LTDA","","","","Entrega imediata"],["Descalvado","PREFEITURA MUNICIPAL DE DESCALVADO","2022000002659","2022000010266.0","Pregao Eletronico","000021","2022.0","Outros materiais de consumo","Registro de Preços, para eventuais aquisições parceladas de materiais de limpeza, higiene e descartáveis, para atender as Secretarias Municipais, da Prefeitura do Município de Descavado, Estado de São Paulo, pelo período de 12 meses.","2984504,06","","Nota de Empenho","","","","","","","10266","25/10/2022","472,32","02.573.131/0001-93","RICARDO GONÇALVES ITAPIRA","","","","Entrega fracionada"],["Novo Horizonte","PREFEITURA MUNICIPAL DE NOVO HORIZONTE","2018000000113","2019201812818.0","Pregao Presencial","75","2018.0","Outros materiais de consumo","REGISTRO DE PREÇOS para eventual aquisição de MATERIAIS DE COPA, COZINHA, LIMPEZA e HIGIENE para atender a todas as Secretarias, Diretorias e Divisões desta Prefeitura, por um período de 12 (doze) meses, conforme especificações técnicas e quantidades descritas no Termo de Referência - ANEXO I.","","","Nota de Empenho","","","","","","","3298","12/03/2019","299,3","49.235.435/0001-04","H. D. C. COMERCIAL LTDA - ME","","","","Entrega fracionada"],["São Luiz do Paraitinga","PREFEITURA MUNICIPAL DE SÃO LUIZ DO PARAITINGA","2021000000090","2022210003067.0","Pregao Presencial","61","2021.0","Outros materiais de consumo","REGISTRO DE PREÇOS PARA AQUISIÇÃO FUTURA E PARCELADA DE MATERIAIS DE CONSTRUÇÃO E ARTEFATOS DE CIMENTO, NOS TERMOS DO EDITAL E SEUS ANEXOS.","","","Nota de Empenho","","","","","","","3485","22/07/2022","4644,4","07.558.271/0001-06","BLOMIK INDUSTRIA E COM. ARTEFATOS DE CIMENTO LTDA","","","","Entrega fracionada"],["Bom Jesus dos Perdões","PREFEITURA MUNICIPAL DE BOM JESUS DOS PERDÕES","2021000000031","2021000000894.0","Pregao Presencial","72","2020.0","Outros materiais de consumo","AQUISIÇÃO DE MATERIAIS DE ENFERMAGEM NÃO PADRONIZADOS PARA A UMS","","","Nota de Empenho","","","","","","","7284","19/08/2021","10950,0","07.118.264/0001-93","QUALITY MEDICAL COM.E DISTR.MED.LTDA","","","","Entrega fracionada"],["Guararema","PREFEITURA MUNICIPAL DE GUARAREMA","2020100000421","2020100001821.0","Pregao Presencial","69","2020.0","Outros materiais de consumo","FORNECIMENTO DE INSUMOS PARA OS LANCHES DOS ALUNOS DOS CURSOS ETEC NA ESCOLA PROFISSIONALIZANTE E JOVEM EM FOCO REALIZADO PELO BALCAO DE EMPREGOS","49300,04","","Contrato","95","2020.0","34649,12","FORNECIMENTO DE INSUMOS PARA OS LANCHES DOS ALUNOS DOS CURSOS ETEC NA ESCOLA PROFISSIONALIZANTE E JOVEM EM FOCO REALIZADO PELO BALCAO DE EMPREGOS","16461,75","Unidade","","","","25.194.943/0001-23","PONTO DO REAL MERCADORIAS EM GERAL EIRELI - ME","25/08/2020","24/08/2021","25/08/2020","Entrega fracionada"],["Garça","PREFEITURA MUNICIPAL DE GARÇA","2019000000061","2020202094044.0","Concorrencia","10","2019.0","Outros materiais de consumo","REGISTRO DE PREÇOS PARA FUTURAS AQUISIÇÕES DE MATERIAIS DE LIMPEZA, HIGIENE, COPA E COZINHA PARA OS DIVERSOS SETORES DA PREFEITURA MUNICIPAL DE GARÇA.","","","Nota de Empenho","","","","","","","11043","26/08/2020","39,6","05.971.158/0001-22","INDÚSTRIA E COM. DE PROD. DE LIMPEZA MACATUBA LTDA","","","","Entrega imediata"],["Presidente Prudente","PREFEITURA MUNICIPAL DE PRESIDENTE PRUDENTE","2022000000006","2022000002347.0","Pregao Eletronico","12","2022.0","Medicamentos","REGISTRO DE PREÇOS PARA AQUISIÇÕES FUTURAS DE INSUMOS E MEDICAMENTOS INCLUÍDOS NA RENAME (RELAÇÃO NACIONAL DE MEDICAMENTOS ESSENCIAIS) PARA 24 (VINTE E QUATRO) MUNICÍPIOS CONSORCIADOS PELO PRAZO DE 06 (SEIS) MESES.","","","Nota de Empenho","","","","","","","14442","10/08/2022","123864,0","02.520.829/0001-40","DIMASTER COMÉRCIO DE PRODUTOS HOSPITALARES LTDA","","","","Entrega fracionada"],["Sud Mennucci","PREFEITURA MUNICIPAL DE SUD MENNUCCI","2021000000037","2021000006496.0","Pregao Presencial","4","2021.0","Generos alimenticios","SOLICITAÇÃO GERADA PARA COTAÇÃO DE VÁRIAS SOLICITAÇÕES","1094767,0","","Nota de Empenho","","","","","","","6496","07/07/2021","881,0","08.528.442/0001-17","NUTRICIONALE COM. ALIMENTOS LTDA","","","","Entrega imediata"],["Bastos","PREFEITURA MUNICIPAL DE BASTOS","2019190003833","2020900008951.0","Pregao Eletronico","96","2019.0","Outras prestacoes de servico","SERVIÇOS GRÁFICOS DESTINADOS AO FUNDO MUNICIPAL DE SAÚDE","77983,33","","Nota de Empenho","","","","","","","6060","03/08/2020","774,0","07.193.603/0001-04","GRAFICA MULTI CORES DE BASTOS LTDA ME","","","","Entrega imediata"],["Araçatuba","PREFEITURA MUNICIPAL DE ARAÇATUBA","2021000000331","2021000003639.0","Pregao Presencial","33","2021.0","Equipamentos e material permanente","Registro formal de preços para eventuais e futras aquisições de extintores, cargas de extintores e material de combate a incendio.","","","Nota de Empenho","","","","","","","12548","03/08/2021","20,0","35.148.044/0001-48","EXTINTORES PLATINUM LTDA","","","","Entrega fracionada"],["Nova Canaã Paulista","PREFEITURA MUNICIPAL DE NOVA CANAÃ PAULISTA","2019000000013","2019201800353.0","Pregao Presencial","6","2019.0","Generos alimenticios","A presente licitação tem por objeto o Registro de Preço para futuras aquisições de gêneros alimentícios, conforme descrito no Anexo I do edital.","","","Nota de Empenho","","","","","","","2984","30/07/2019","193,52","10.688.949/0001-80","MICHELINI SILVA & DA SILVA LTDA","","","","Entrega fracionada"],["São Bernardo do Campo","PREFEITURA MUNICIPAL DE SÃO BERNARDO DO CAMPO","2018010050318","2018010016018.0","Pregao Eletronico","PE 503","2018.0","Outros materiais de consumo","REFIL DE TINTA PARA IMPRESSORA EPSON","42960,0","","Contrato","160","2018.0","62477,88","FORNECIMENTO E INSTALAÇÃO DE CARDIOVERSOR COM MONITOR CARDIACO INCORPORADO, INCLUINDO GARANTIA PELO PERÍODO DE 24 (VINTE E QUATRO) MESES.","1,0","FORNECIMENTO ","","","","58.295.213/0021-11","PHILIPS MEDICAL SYSTEMS LTDA.","14/12/2018","13/03/2019","14/12/2018","Entrega fracionada"]]};
+
+// Helpers
+const pal = ['#0d6efd','#198754','#dc3545','#fd7e14','#6f42c1','#20c997',
+             '#0dcaf0','#d63384','#ffc107','#6610f2','#adb5bd','#e85d04',
+             '#2b9348','#4361ee','#f72585'];
+function fmtNum(n) { return n.toLocaleString('en'); }
+function fmtSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(1) + ' MB';
+}
+
+// Data source notes
+(function() {
+  if (!DATA.source_notes) return;
+  const section = document.getElementById('source-notes-section');
+  const h2 = document.createElement('h2');
+  h2.className = 'section-title';
+  h2.textContent = 'About This Dataset';
+  section.appendChild(h2);
+  const card = document.createElement('div');
+  card.className = 'card full';
+  card.innerHTML = '<p style="font-size:.9rem;line-height:1.7;color:#333">' + DATA.source_notes + '</p>';
+  section.appendChild(card);
+})();
+
+// Stats bar
+(function() {
+  const bar = document.getElementById('stats-bar');
+  const items = [
+    ['Rows', fmtNum(DATA.row_count)],
+    ['Columns', fmtNum(DATA.col_count)],
+    ['File Size', fmtSize(DATA.file_size)],
+  ];
+  // Add temporal ranges
+  Object.entries(DATA.temporal || {}).forEach(([col, t]) => {
+    items.push(['Date Range (' + col + ')', t.min + ' to ' + t.max]);
+  });
+  items.forEach(([label, value]) => {
+    const d = document.createElement('div');
+    d.className = 'stat-card';
+    d.innerHTML = '<div class="value">' + value + '</div><div class="label">' + label + '</div>';
+    bar.appendChild(d);
+  });
+})();
+
+// Column info table
+(function() {
+  const table = document.getElementById('col-table');
+  let html = '<thead><tr><th>#</th><th>Column</th><th>Type</th><th>Nulls</th><th>Null %</th></tr></thead><tbody>';
+  DATA.columns.forEach((c, i) => {
+    const barW = Math.min(c.null_pct, 100);
+    html += '<tr><td>' + (i + 1) + '</td><td><strong>' + c.name + '</strong></td>'
+      + '<td>' + c.dtype + '</td>'
+      + '<td>' + fmtNum(c.null_count) + '</td>'
+      + '<td><span class="null-bar" style="width:' + barW + 'px"></span> ' + c.null_pct + '%</td></tr>';
+  });
+  html += '</tbody>';
+  table.innerHTML = html;
+})();
+
+// Categorical distribution charts
+(function() {
+  const section = document.getElementById('dist-section');
+  const cats = Object.entries(DATA.categorical || {});
+  if (cats.length === 0) return;
+
+  const h2 = document.createElement('h2');
+  h2.className = 'section-title';
+  h2.textContent = 'Categorical Distributions (Top 15)';
+  section.appendChild(h2);
+
+  const grid = document.createElement('div');
+  grid.className = 'grid';
+  section.appendChild(grid);
+
+  cats.forEach(([col, d], idx) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    const labels = d.labels.map(s => String(s).length > 40 ? String(s).slice(0, 38) + '\u2026' : String(s));
+    card.innerHTML = '<h3>' + col + '</h3><div class="chart-wrap hbar"><canvas id="cat-' + idx + '"></canvas></div>';
+    grid.appendChild(card);
+
+    // Render after DOM insertion
+    setTimeout(() => {
+      new Chart(document.getElementById('cat-' + idx), {
+        type: 'bar',
+        data: { labels: labels, datasets: [{ data: d.values, backgroundColor: pal[idx % pal.length] }] },
+        options: {
+          indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { x: { beginAtZero: true } }
+        }
+      });
+    }, 0);
+  });
+})();
+
+// Temporal charts
+(function() {
+  const section = document.getElementById('temporal-section');
+  const temps = Object.entries(DATA.temporal || {});
+  if (temps.length === 0) return;
+
+  const h2 = document.createElement('h2');
+  h2.className = 'section-title';
+  h2.textContent = 'Temporal Distribution';
+  section.appendChild(h2);
+
+  const grid = document.createElement('div');
+  grid.className = 'grid';
+  section.appendChild(grid);
+
+  temps.forEach(([col, t], idx) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = '<h3>' + col + ' by year</h3><div class="chart-wrap bar"><canvas id="temp-' + idx + '"></canvas></div>';
+    grid.appendChild(card);
+
+    setTimeout(() => {
+      new Chart(document.getElementById('temp-' + idx), {
+        type: 'bar',
+        data: {
+          labels: t.by_year.labels,
+          datasets: [{ label: 'Count', data: t.by_year.values, backgroundColor: '#0d6efd' }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+    }, 0);
+  });
+})();
+
+// Sample data table
+const allRows = DATA.sample || [];
+const sampleCols = DATA.sample_columns || [];
+
+(function() {
+  document.getElementById('thead').innerHTML = '<tr>' + sampleCols.map(c => '<th>' + c + '</th>').join('') + '</tr>';
+  const searchEl = document.getElementById('search');
+  const countEl = document.getElementById('row-count');
+  const tbody = document.getElementById('tbody');
+
+  function render() {
+    const q = searchEl.value.toLowerCase();
+    const rows = q ? allRows.filter(r => r.some(v => String(v).toLowerCase().includes(q))) : allRows;
+    tbody.innerHTML = rows.map(r =>
+      '<tr>' + r.map(v => '<td>' + v + '</td>').join('') + '</tr>'
+    ).join('');
+    countEl.textContent = rows.length + ' of ' + allRows.length + ' rows';
+  }
+  searchEl.addEventListener('input', render);
+  render();
+})();
+</script>
+</body>
+</html>

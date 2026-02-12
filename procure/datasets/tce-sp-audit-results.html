@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="robots" content="noindex, nofollow">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TCE-SP Audit Analysis Results</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+  :root {
+    --bg: #f8f9fa; --card: #fff; --fg: #1a1a1a; --muted: #666;
+    --border: #dee2e6; --accent: #0d6efd; --accent2: #198754;
+    --accent3: #dc3545; --accent4: #fd7e14;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--fg); line-height: 1.5;
+  }
+
+  .stats-bar {
+    display: flex; gap: .8rem; padding: 1rem 2rem; flex-wrap: wrap;
+  }
+  .stat-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: .75rem 1rem; flex: 1; min-width: 120px;
+    text-align: center;
+  }
+  .stat-card .value { font-size: 1.5rem; font-weight: 700; color: var(--accent); }
+  .stat-card .label { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+
+  main { padding: 0 2rem 3rem; max-width: 1400px; margin: 0 auto; }
+
+  h2.section-title {
+    font-size: 1.15rem; margin: 1.6rem 0 .8rem; padding-bottom: .3rem;
+    border-bottom: 2px solid var(--border);
+  }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1.2rem 1.4rem;
+  }
+  .card h3 { font-size: .95rem; margin-bottom: .8rem; color: var(--fg); }
+  .card.full { grid-column: 1 / -1; }
+
+  .chart-wrap { position: relative; width: 100%; }
+  .chart-wrap.bar { height: 300px; }
+  .chart-wrap.hbar { height: 380px; }
+
+  /* column info table */
+  .col-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+  .col-table th, .col-table td {
+    padding: .35rem .6rem; border-bottom: 1px solid var(--border); text-align: left;
+  }
+  .col-table th { background: #f0f4f8; font-weight: 600; position: sticky; top: 0; }
+  .col-table .null-bar { display: inline-block; height: 10px; border-radius: 2px; background: #dc3545; }
+
+  /* data table */
+  .table-wrap { overflow-x: auto; max-height: 520px; overflow-y: auto; }
+  .data-table { width: 100%; border-collapse: collapse; font-size: .8rem; }
+  .data-table th, .data-table td {
+    padding: .4rem .5rem; border-bottom: 1px solid var(--border);
+    text-align: left; white-space: nowrap; max-width: 250px; overflow: hidden; text-overflow: ellipsis;
+  }
+  .data-table th { position: sticky; top: 0; background: #f0f4f8; font-weight: 600; }
+  .data-table tbody tr:hover { background: #f0f4ff; }
+
+  .search-bar { margin-bottom: .8rem; }
+  .search-bar input {
+    font-size: .85rem; padding: .4rem .7rem; border: 1px solid var(--border);
+    border-radius: 4px; width: 100%; max-width: 400px;
+  }
+  .count-label { font-size: .8rem; color: var(--muted); margin-left: .8rem; }
+
+  footer {
+    text-align: center; padding: 1.5rem; font-size: .8rem; color: var(--muted);
+    border-top: 1px solid var(--border); margin-top: 2rem;
+  }
+</style>
+</head>
+<body>
+
+<style>
+  .site-nav {
+    position: sticky; top: 0; z-index: 100;
+    background: #212529; display: flex; align-items: center;
+    padding: 0 2rem; height: 3rem;
+  }
+  .site-nav .nav-brand {
+    color: #fff; text-decoration: none; font-weight: 600; font-size: 1rem;
+    margin-right: auto;
+  }
+  .site-nav .nav-brand:hover { color: #e9ecef; }
+  .site-nav .nav-link {
+    color: #adb5bd; text-decoration: none; font-size: .85rem;
+    padding: 0 .75rem; height: 3rem; display: flex; align-items: center;
+    background: none; border: none; cursor: pointer; font-family: inherit;
+  }
+  .site-nav .nav-link:hover, .site-nav .nav-link.active { color: #fff; }
+  .nav-dropdown { position: relative; }
+  .dropdown-menu {
+    display: none; position: absolute; top: 3rem; right: 0;
+    background: #fff; border: 1px solid var(--border); border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.12); min-width: 220px;
+    padding: .4rem 0; z-index: 200; max-height: 80vh; overflow-y: auto;
+  }
+  .nav-dropdown.open .dropdown-menu { display: block; }
+  .dropdown-menu a {
+    display: block; padding: .3rem 1rem; color: #1a1a1a;
+    text-decoration: none; font-size: .82rem;
+  }
+  .dropdown-menu a:hover { background: #f0f4f8; }
+  .dropdown-group-label {
+    padding: .4rem 1rem .15rem; font-size: .68rem; font-weight: 700;
+    color: #888; text-transform: uppercase; letter-spacing: .04em;
+  }
+  .dropdown-divider { border-top: 1px solid #eee; margin: .3rem 0; }
+  .page-header {
+    padding: .8rem 2rem; border-bottom: 1px solid var(--border); background: #fff;
+  }
+  .page-header h1 { font-size: 1.3rem; font-weight: 600; }
+  .page-header p { color: var(--muted); font-size: .85rem; margin-top: .15rem; }
+</style>
+
+<nav class="site-nav">
+  <a href="../index.html" class="nav-brand">Corruption in Procurement</a>
+  <a href="../index.html" class="nav-link">Home</a>
+  <div class="nav-dropdown">
+    <button class="nav-link">Docs &#9662;</button>
+    <div class="dropdown-menu">
+    <div class="dropdown-group-label">Reference</div>
+    <a href="../docs/README.html">Project Overview</a>
+    <a href="../docs/summary.html">Research Summary</a>
+    <a href="../docs/institutions.html">Institutional Background</a>
+    <a href="../docs/data.html">Data Sources</a>
+    <a href="../docs/methods.html">Empirical Methods</a>
+    <a href="../docs/literature.html">Literature</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Working notes</div>
+    <a href="../docs/thinking.html">Open Questions & Ideas</a>
+    <a href="../docs/decisions.html">Key Decisions</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Tasks</div>
+    <a href="../docs/todo.html">Active Tasks</a>
+    <a href="../docs/done.html">Completed Tasks</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Communication</div>
+    <a href="../docs/meetings.html">Meeting Notes</a>
+    <a href="../docs/feedback.html">External Feedback</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Briefs</div>
+    <a href="../briefs/linking.html">Linking Court Cases to Procurement Data</a>
+    </div>
+  </div>
+  <div class="nav-dropdown">
+    <button class="nav-link active">Data &#9662;</button>
+    <div class="dropdown-menu">
+    <a href="../sources/tjsp.html">TJSP Court Cases</a>
+    <a href="../sources/bec.html">BEC Procurement</a>
+    <a href="../sources/tce-sp-spending.html">TCE-SP Municipal Spending</a>
+    <a href="../sources/tce-sp-procurement.html">TCE-SP Municipal Procurement</a>
+    <a href="../sources/tce-sp-audits.html">TCE-SP Municipal Audits</a>
+    </div>
+  </div>
+</nav>
+<script>
+document.querySelectorAll('.nav-dropdown > .nav-link').forEach(function(btn) {
+  btn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    var dd = btn.parentElement;
+    var wasOpen = dd.classList.contains('open');
+    document.querySelectorAll('.nav-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+    if (!wasOpen) dd.classList.add('open');
+  });
+});
+document.addEventListener('click', function() {
+  document.querySelectorAll('.nav-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+});
+</script>
+
+<div class="page-header">
+  <h1>TCE-SP Audit Analysis Results</h1>
+  <p>Fiscal compliance indicators for SP municipalities: budget execution, FUNDEB, health and education spending.</p>
+</div>
+
+<div class="stats-bar" id="stats-bar"></div>
+
+<main>
+
+<!-- Data source notes -->
+<div id="source-notes-section"></div>
+
+<!-- Column info -->
+<h2 class="section-title">Column Information</h2>
+<div class="card full">
+  <div style="overflow-x:auto; max-height:400px; overflow-y:auto;">
+    <table class="col-table" id="col-table"></table>
+  </div>
+</div>
+
+<!-- Distribution charts -->
+<div id="dist-section"></div>
+
+<!-- Temporal charts -->
+<div id="temporal-section"></div>
+
+<!-- Sample data -->
+<h2 class="section-title">Sample Data (50 rows)</h2>
+<div class="card full">
+  <div class="search-bar">
+    <input type="text" id="search" placeholder="Search across all columns...">
+    <span class="count-label" id="row-count"></span>
+  </div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead id="thead"></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+</main>
+
+<footer>
+  Generated by <code>bash build.sh site</code>
+</footer>
+
+<script>
+// Embedded data — replaced by build pipeline
+const DATA = /* INJECT_DATA */ {"id":"tce-sp-audit-results","name":"TCE-SP Audit Analysis Results","description":"Fiscal compliance indicators for SP municipalities: budget execution, FUNDEB, health and education spending.","category":"TCE-SP Audits","source_notes":"Summary fiscal compliance indicators from TCE-SP's Audesp audit system. Each row is one municipality-year with key ratios: budget execution result, FUNDEB education spending share, health spending share (constitutional minimum is 15%), and personnel expenditure share. These are the metrics TCE-SP uses to flag municipalities for potential fiscal irregularities.","file_size":1098051,"row_count":4508,"col_count":13,"columns":[{"name":"Exercício","dtype":"int64","null_count":0,"null_pct":0.0},{"name":"Código IBGE","dtype":"int64","null_count":0,"null_pct":0.0},{"name":"Município","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Resultado da Execução Orçamentária (Valor)","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Resultado da Execução Orçamentária (%)","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Despesa Empenhada FUNDEB (%)","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Despesa Empenhada FUNDEB Profissionais da Educação (%)","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Despesa Empenhada Ensino","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Despesa Empenhada Ensino (%)","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Despesa Empenhada Saúde","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Despesa Empenhada Saúde (%)","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Despesa com Pessoal Poder Executivo","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Despesa com Pessoal Poder Executivo (%)","dtype":"object","null_count":0,"null_pct":0.0}],"categorical":{"Município":{"labels":["Adamantina                                                                                          ","Paraíso                                                                                             ","Peruíbe                                                                                             ","Piacatu                                                                                             ","Piedade                                                                                             ","Pilar do Sul                                                                                        ","Pindamonhangaba                                                                                     ","Pindorama                                                                                           ","Pinhalzinho                                                                                         ","Piquerobi                                                                                           ","Piquete                                                                                             ","Piracaia                                                                                            ","Piracicaba                                                                                          ","Piraju                                                                                              ","Pirajuí                                                                                             ","Pirangi                                                                                             ","Pirapora do Bom Jesus                                                                               ","Pirapozinho                                                                                         ","Pirassununga                                                                                        ","Pereiras                                                                                            "],"values":[7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7]}},"temporal":{"Exercício":{"min":"2016","max":"2022","by_year":{"labels":[2016,2017,2018,2019,2020,2021,2022],"values":[644,644,644,644,644,644,644]}}},"sample_columns":["Exercício","Código IBGE","Município","Resultado da Execução Orçamentária (Valor)","Resultado da Execução Orçamentária (%)","Despesa Empenhada FUNDEB (%)","Despesa Empenhada FUNDEB Profissionais da Educação (%)","Despesa Empenhada Ensino","Despesa Empenhada Ensino (%)","Despesa Empenhada Saúde","Despesa Empenhada Saúde (%)","Despesa com Pessoal Poder Executivo","Despesa com Pessoal Poder Executivo (%)"],"sample":[["2017","3510500","Caraguatatuba                                                                                       ","78622434,41","0,1167","1,000000000000","0,876363902410","123186915,07","0,294594084411","99104106,67","0,237001499301","222130585,61","0,352685312227"],["2018","3500204","Adolfo                                                                                              ","954237,07","0,0370","1,000000000000","0,821743270100","6798644,96","0,378598129494","3944089,01","0,228189239182","11149642,44","0,521162742335"],["2021","3525904","Jundiaí                                                                                             ","296166559,41","0,1023","0,949380446537","0,904495674046","526498222,99","0,273888477166","514081670,73","0,268444106324","945564731,12","0,398102263364"],["2017","3526407","Laranjal Paulista                                                                                   ","-1098033,14","-0,0139","1,000000000000","0,916633891061","14095585,63","0,265014710337","15677989,08","0,303402548744","37743244,42","0,499621010140"],["2020","3554755","Trabiju                                                                                             ","-379979,13","-0,0280","0,999999285027","0,999999285027","3780380,00","0,332962241059","2989799,30","0,281032464714","6717105,51","0,503918733710"],["2018","3522901","Itapuí                                                                                              ","466487,71","0,0104","1,000023326874","0,804277157805","9589424,96","0,285602005868","9759835,49","0,300725479355","20940812,11","0,474943696797"],["2021","3555703","União Paulista                                                                                      ","298880,28","0,0161","0,999054514413","0,732822094928","4302454,85","0,261489028002","3838184,29","0,246470335551","7340644,70","0,436929129945"],["2022","3543501","Riversul                                                                                            ","99156,63","0,0027","0,998352939136","0,990803850699","7191994,16","0,264263039127","6396799,44","0,245213225379","11612997,01","0,354655281211"],["2016","3517307","Guaimbê                                                                                             ","2936913,88","0,1356","1,000985990429","0,607817543808","3499195,13","0,262204318567","3011938,09","0,225692807950","8000447,91","0,407791310954"],["2020","3510500","Caraguatatuba                                                                                       ","25653831,41","0,0324","1,000000000000","0,932856139751","145275946,64","0,327368756468","141586131,24","0,321994512543","306961416,69","0,440904135404"],["2018","3536000","Parapuã                                                                                             ","571538,81","0,0176","1,000000000000","0,782706426648","6453792,58","0,262161896095","6115848,82","0,257834239450","15744531,12","0,528710348036"],["2017","3542909","Ribeirão Bonito                                                                                     ","233239,01","0,0069","1,017463964527","0,820288099975","6994599,02","0,320307668431","7406054,52","0,339149685177","16640446,26","0,498599795834"],["2021","3526407","Laranjal Paulista                                                                                   ","7354191,74","0,0594","0,971721156344","0,803697223598","22217018,51","0,267051097586","23506745,56","0,289712960771","51300573,00","0,422398214559"],["2016","3548005","Santo Antônio de Posse                                                                              ","-2330142,79","-0,0309","1,111675535608","0,867831840853","12184541,85","0,257688520193","17281010,15","0,365472743072","36839647,11","0,547768512661"],["2020","3500808","Alfredo Marcondes                                                                                   ","453891,17","0,0261","0,959408721579","0,761855983333","3898707,36","0,271399629850","2961610,46","0,216967218145","9146975,27","0,546030094597"],["2020","3524501","Jaci                                                                                                ","64571,39","0,0021","0,974230209108","0,729209745965","6493425,24","0,281809389494","6677401,63","0,299076275018","12446771,19","0,412735407169"],["2017","3503000","Aramina                                                                                             ","-591387,60","-0,0278","1,000000000000","0,884120989794","4524493,55","0,274001315062","4835596,42","0,292841566364","9978459,26","0,490980114764"],["2019","3555901","Uru                                                                                                 ","757514,39","0,0492","0,902265699655","0,891120384361","4274663,01","0,309063827523","3733146,27","0,284784425203","7324756,98","0,499360748631"],["2018","3503109","Arandu                                                                                              ","-42138,31","-0,0014","1,000000000000","0,719108437006","5918943,51","0,268097901550","5567644,36","0,252185844817","12128531,90","0,450820297368"],["2018","3509304","Cajobi                                                                                              ","-600393,17","-0,0186","1,000000000000","0,681611136297","5436248,09","0,272340901355","6310849,84","0,323518746568","15152185,52","0,494039059868"],["2022","3557105","Votuporanga                                                                                         ","46164804,15","0,0937","0,999890444322","0,912805218445","72810336,62","0,271057943053","76979772,61","0,294061625974","165164441,74","0,389990121359"],["2017","3517208","Guaiçara                                                                                            ","371172,92","0,0123","1,000000000000","0,641647555436","6648976,58","0,300179046168","4935611,09","0,222826326943","15351563,29","0,525358523434"],["2016","3539004","Pirangi                                                                                             ","-331126,93","-0,0114","1,000000000000","0,829014614873","6133231,99","0,278961335576","6332767,73","0,288036934969","12890573,32","0,455053985228"],["2018","3501202","Álvares Florence                                                                                    ","390830,37","0,0201","1,028003416560","0,820862994062","5097780,50","0,295174982081","3864621,11","0,232847220009","9460285,82","0,509786830606"],["2017","3553005","Taguaí                                                                                              ","-223856,81","-0,0072","1,000000000000","0,616781073475","6219569,27","0,290377811071","7009992,98","0,327280930365","15631492,77","0,507369820509"],["2019","3531605","Monte Castelo                                                                                       ","3451840,82","0,1397","0,927654889580","0,805962582081","4427504,01","0,269700482976","3648457,11","0,232473989157","8985343,90","0,471792067224"],["2022","3523602","Itirapina                                                                                           ","12244383,09","0,1008","1,000000000000","0,742078249950","27939176,30","0,311221748821","22715657,72","0,260963639075","50875456,49","0,426976915814"],["2018","3543808","Rinópolis                                                                                           ","179205,38","0,0059","1,000000000000","0,860652682298","5958613,11","0,278063357941","5956893,70","0,286998326988","14366962,06","0,508761895754"],["2020","3511508","Cerquilho                                                                                           ","4032410,28","0,0217","0,992080456156","0,992080456156","23559233,33","0,253872349227","29675521,36","0,328212118320","71025646,83","0,445443897674"],["2021","3509601","Campo Limpo Paulista                                                                                ","55090199,40","0,1900","0,978286569930","0,765891803583","46592881,63","0,260719465108","48990190,21","0,280589770622","106907683,44","0,384338717302"],["2016","3539509","Pitangueiras                                                                                        ","10550608,05","0,0959","0,988340301017","0,858891857463","17251531,84","0,255593186915","20690567,29","0,306544837976","47119784,32","0,470327374089"],["2022","3549201","São João das Duas Pontes                                                                            ","1170140,72","0,0444","1,000000000000","1,000000000000","7956077,53","0,383657268237","3622751,08","0,185685180907","10563221,62","0,485923714855"],["2016","3514106","Dois Córregos                                                                                       ","3721845,53","0,0497","0,959610476228","0,703138571516","12800510,34","0,256141814155","12039001,27","0,240903803364","26936928,38","0,376184104116"],["2016","3536604","Paulo de Faria                                                                                      ","111110,80","0,0031","1,087628287990","0,750994822051","7099111,86","0,292707943185","6782424,29","0,279650398935","14649882,78","0,448506989995"],["2022","3532405","Nazaré Paulista                                                                                     ","10614819,76","0,1198","1,000000000000","0,885935120982","17179957,97","0,259057043085","16550358,37","0,258985472510","34616051,57","0,408849709881"],["2020","3512506","Coroados                                                                                            ","1362391,56","0,0574","1,000000000000","0,767361484899","4836540,90","0,261626437908","5011648,53","0,282008239420","10666409,48","0,459027609968"],["2021","3517000","Getulina                                                                                            ","794454,90","0,0210","1,000000000000","0,879989348321","8684356,79","0,260806591511","6842271,55","0,213000197067","16818886,56","0,452803002608"],["2017","3543238","Ribeirão dos Índios                                                                                 ","1433682,14","0,1026","0,997426971126","0,997426971126","3812690,71","0,336071743396","2048798,60","0,191548235728","6283425,69","0,497451141360"],["2019","3542008","Quintana                                                                                            ","477198,61","0,0186","1,000000000000","0,624622698570","6374148,18","0,316690888005","4704795,43","0,242452492643","10386601,61","0,419912213287"],["2016","3527801","Lupércio                                                                                            ","-1644229,55","-0,1023","0,914843812364","0,661451885951","3307980,66","0,278821978044","2408661,59","0,203020470187","7394282,12","0,486048325819"],["2019","3541703","Quatá                                                                                               ","294192,54","0,0052","0,999890217185","0,637567537581","11664977,17","0,294805361411","12021714,67","0,313355016032","22576629,76","0,466727974163"],["2018","3552700","Tabatinga                                                                                           ","2387080,67","0,0555","1,000000000000","0,836764830184","7516593,70","0,269159843950","7961763,64","0,297033593826","19644312,84","0,475003111839"],["2021","3505351","Barra do Chapéu                                                                                     ","1681794,95","0,0623","1,071296428724","0,782633263476","5089837,09","0,275194042245","3481254,39","0,197637102549","8841690,08","0,339555577769"],["2020","3522109","Itanhaém                                                                                            ","8118439,30","0,0168","0,995587968518","0,938568843920","67082827,71","0,296802175083","68262545,75","0,306876734912","223179950,33","0,537493090560"],["2021","3531209","Monte Alegre do Sul                                                                                 ","943447,41","0,0261","0,995253954774","0,828200812307","6085271,17","0,251962644917","5205640,38","0,223702130709","16512055,44","0,478744050930"],["2022","3543253","Ribeirão Grande                                                                                     ","2232382,87","0,0480","1,004501875779","0,771092345590","7101309,27","0,302080656385","4528343,84","0,202344410341","16802775,86","0,490509357760"],["2016","3555703","União Paulista                                                                                      ","1756801,64","0,1297","0,976815554648","0,673987981262","3148092,42","0,281948129433","2562013,28","0,229457955964","6270181,78","0,456865320704"],["2019","3533403","Nova Odessa                                                                                         ","12299074,22","0,0603","0,999950725973","0,727656792950","45069157,60","0,259515971887","51834563,25","0,298472342851","93704823,48","0,469002276688"],["2020","3543204","Ribeirão do Sul                                                                                     ","531344,63","0,0245","1,000000000000","0,741046683155","5010037,79","0,289706513544","3991179,87","0,240746654180","9896233,63","0,478700103241"],["2019","3519303","Ibaté                                                                                               ","-1996506,55","-0,0197","1,000000000000","0,733339213122","16098692,08","0,262058906597","18740158,21","0,314932243818","45065589,67","0,484285720578"]]};
+
+// Helpers
+const pal = ['#0d6efd','#198754','#dc3545','#fd7e14','#6f42c1','#20c997',
+             '#0dcaf0','#d63384','#ffc107','#6610f2','#adb5bd','#e85d04',
+             '#2b9348','#4361ee','#f72585'];
+function fmtNum(n) { return n.toLocaleString('en'); }
+function fmtSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(1) + ' MB';
+}
+
+// Data source notes
+(function() {
+  if (!DATA.source_notes) return;
+  const section = document.getElementById('source-notes-section');
+  const h2 = document.createElement('h2');
+  h2.className = 'section-title';
+  h2.textContent = 'About This Dataset';
+  section.appendChild(h2);
+  const card = document.createElement('div');
+  card.className = 'card full';
+  card.innerHTML = '<p style="font-size:.9rem;line-height:1.7;color:#333">' + DATA.source_notes + '</p>';
+  section.appendChild(card);
+})();
+
+// Stats bar
+(function() {
+  const bar = document.getElementById('stats-bar');
+  const items = [
+    ['Rows', fmtNum(DATA.row_count)],
+    ['Columns', fmtNum(DATA.col_count)],
+    ['File Size', fmtSize(DATA.file_size)],
+  ];
+  // Add temporal ranges
+  Object.entries(DATA.temporal || {}).forEach(([col, t]) => {
+    items.push(['Date Range (' + col + ')', t.min + ' to ' + t.max]);
+  });
+  items.forEach(([label, value]) => {
+    const d = document.createElement('div');
+    d.className = 'stat-card';
+    d.innerHTML = '<div class="value">' + value + '</div><div class="label">' + label + '</div>';
+    bar.appendChild(d);
+  });
+})();
+
+// Column info table
+(function() {
+  const table = document.getElementById('col-table');
+  let html = '<thead><tr><th>#</th><th>Column</th><th>Type</th><th>Nulls</th><th>Null %</th></tr></thead><tbody>';
+  DATA.columns.forEach((c, i) => {
+    const barW = Math.min(c.null_pct, 100);
+    html += '<tr><td>' + (i + 1) + '</td><td><strong>' + c.name + '</strong></td>'
+      + '<td>' + c.dtype + '</td>'
+      + '<td>' + fmtNum(c.null_count) + '</td>'
+      + '<td><span class="null-bar" style="width:' + barW + 'px"></span> ' + c.null_pct + '%</td></tr>';
+  });
+  html += '</tbody>';
+  table.innerHTML = html;
+})();
+
+// Categorical distribution charts
+(function() {
+  const section = document.getElementById('dist-section');
+  const cats = Object.entries(DATA.categorical || {});
+  if (cats.length === 0) return;
+
+  const h2 = document.createElement('h2');
+  h2.className = 'section-title';
+  h2.textContent = 'Categorical Distributions (Top 15)';
+  section.appendChild(h2);
+
+  const grid = document.createElement('div');
+  grid.className = 'grid';
+  section.appendChild(grid);
+
+  cats.forEach(([col, d], idx) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    const labels = d.labels.map(s => String(s).length > 40 ? String(s).slice(0, 38) + '\u2026' : String(s));
+    card.innerHTML = '<h3>' + col + '</h3><div class="chart-wrap hbar"><canvas id="cat-' + idx + '"></canvas></div>';
+    grid.appendChild(card);
+
+    // Render after DOM insertion
+    setTimeout(() => {
+      new Chart(document.getElementById('cat-' + idx), {
+        type: 'bar',
+        data: { labels: labels, datasets: [{ data: d.values, backgroundColor: pal[idx % pal.length] }] },
+        options: {
+          indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { x: { beginAtZero: true } }
+        }
+      });
+    }, 0);
+  });
+})();
+
+// Temporal charts
+(function() {
+  const section = document.getElementById('temporal-section');
+  const temps = Object.entries(DATA.temporal || {});
+  if (temps.length === 0) return;
+
+  const h2 = document.createElement('h2');
+  h2.className = 'section-title';
+  h2.textContent = 'Temporal Distribution';
+  section.appendChild(h2);
+
+  const grid = document.createElement('div');
+  grid.className = 'grid';
+  section.appendChild(grid);
+
+  temps.forEach(([col, t], idx) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = '<h3>' + col + ' by year</h3><div class="chart-wrap bar"><canvas id="temp-' + idx + '"></canvas></div>';
+    grid.appendChild(card);
+
+    setTimeout(() => {
+      new Chart(document.getElementById('temp-' + idx), {
+        type: 'bar',
+        data: {
+          labels: t.by_year.labels,
+          datasets: [{ label: 'Count', data: t.by_year.values, backgroundColor: '#0d6efd' }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+    }, 0);
+  });
+})();
+
+// Sample data table
+const allRows = DATA.sample || [];
+const sampleCols = DATA.sample_columns || [];
+
+(function() {
+  document.getElementById('thead').innerHTML = '<tr>' + sampleCols.map(c => '<th>' + c + '</th>').join('') + '</tr>';
+  const searchEl = document.getElementById('search');
+  const countEl = document.getElementById('row-count');
+  const tbody = document.getElementById('tbody');
+
+  function render() {
+    const q = searchEl.value.toLowerCase();
+    const rows = q ? allRows.filter(r => r.some(v => String(v).toLowerCase().includes(q))) : allRows;
+    tbody.innerHTML = rows.map(r =>
+      '<tr>' + r.map(v => '<td>' + v + '</td>').join('') + '</tr>'
+    ).join('');
+    countEl.textContent = rows.length + ' of ' + allRows.length + ' rows';
+  }
+  searchEl.addEventListener('input', render);
+  render();
+})();
+</script>
+</body>
+</html>

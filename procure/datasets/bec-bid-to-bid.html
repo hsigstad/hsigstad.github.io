@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="robots" content="noindex, nofollow">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BEC Individual Bids</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+  :root {
+    --bg: #f8f9fa; --card: #fff; --fg: #1a1a1a; --muted: #666;
+    --border: #dee2e6; --accent: #0d6efd; --accent2: #198754;
+    --accent3: #dc3545; --accent4: #fd7e14;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--fg); line-height: 1.5;
+  }
+
+  .stats-bar {
+    display: flex; gap: .8rem; padding: 1rem 2rem; flex-wrap: wrap;
+  }
+  .stat-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: .75rem 1rem; flex: 1; min-width: 120px;
+    text-align: center;
+  }
+  .stat-card .value { font-size: 1.5rem; font-weight: 700; color: var(--accent); }
+  .stat-card .label { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+
+  main { padding: 0 2rem 3rem; max-width: 1400px; margin: 0 auto; }
+
+  h2.section-title {
+    font-size: 1.15rem; margin: 1.6rem 0 .8rem; padding-bottom: .3rem;
+    border-bottom: 2px solid var(--border);
+  }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1.2rem 1.4rem;
+  }
+  .card h3 { font-size: .95rem; margin-bottom: .8rem; color: var(--fg); }
+  .card.full { grid-column: 1 / -1; }
+
+  .chart-wrap { position: relative; width: 100%; }
+  .chart-wrap.bar { height: 300px; }
+  .chart-wrap.hbar { height: 380px; }
+
+  /* column info table */
+  .col-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+  .col-table th, .col-table td {
+    padding: .35rem .6rem; border-bottom: 1px solid var(--border); text-align: left;
+  }
+  .col-table th { background: #f0f4f8; font-weight: 600; position: sticky; top: 0; }
+  .col-table .null-bar { display: inline-block; height: 10px; border-radius: 2px; background: #dc3545; }
+
+  /* data table */
+  .table-wrap { overflow-x: auto; max-height: 520px; overflow-y: auto; }
+  .data-table { width: 100%; border-collapse: collapse; font-size: .8rem; }
+  .data-table th, .data-table td {
+    padding: .4rem .5rem; border-bottom: 1px solid var(--border);
+    text-align: left; white-space: nowrap; max-width: 250px; overflow: hidden; text-overflow: ellipsis;
+  }
+  .data-table th { position: sticky; top: 0; background: #f0f4f8; font-weight: 600; }
+  .data-table tbody tr:hover { background: #f0f4ff; }
+
+  .search-bar { margin-bottom: .8rem; }
+  .search-bar input {
+    font-size: .85rem; padding: .4rem .7rem; border: 1px solid var(--border);
+    border-radius: 4px; width: 100%; max-width: 400px;
+  }
+  .count-label { font-size: .8rem; color: var(--muted); margin-left: .8rem; }
+
+  footer {
+    text-align: center; padding: 1.5rem; font-size: .8rem; color: var(--muted);
+    border-top: 1px solid var(--border); margin-top: 2rem;
+  }
+</style>
+</head>
+<body>
+
+<style>
+  .site-nav {
+    position: sticky; top: 0; z-index: 100;
+    background: #212529; display: flex; align-items: center;
+    padding: 0 2rem; height: 3rem;
+  }
+  .site-nav .nav-brand {
+    color: #fff; text-decoration: none; font-weight: 600; font-size: 1rem;
+    margin-right: auto;
+  }
+  .site-nav .nav-brand:hover { color: #e9ecef; }
+  .site-nav .nav-link {
+    color: #adb5bd; text-decoration: none; font-size: .85rem;
+    padding: 0 .75rem; height: 3rem; display: flex; align-items: center;
+    background: none; border: none; cursor: pointer; font-family: inherit;
+  }
+  .site-nav .nav-link:hover, .site-nav .nav-link.active { color: #fff; }
+  .nav-dropdown { position: relative; }
+  .dropdown-menu {
+    display: none; position: absolute; top: 3rem; right: 0;
+    background: #fff; border: 1px solid var(--border); border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.12); min-width: 220px;
+    padding: .4rem 0; z-index: 200; max-height: 80vh; overflow-y: auto;
+  }
+  .nav-dropdown.open .dropdown-menu { display: block; }
+  .dropdown-menu a {
+    display: block; padding: .3rem 1rem; color: #1a1a1a;
+    text-decoration: none; font-size: .82rem;
+  }
+  .dropdown-menu a:hover { background: #f0f4f8; }
+  .dropdown-group-label {
+    padding: .4rem 1rem .15rem; font-size: .68rem; font-weight: 700;
+    color: #888; text-transform: uppercase; letter-spacing: .04em;
+  }
+  .dropdown-divider { border-top: 1px solid #eee; margin: .3rem 0; }
+  .page-header {
+    padding: .8rem 2rem; border-bottom: 1px solid var(--border); background: #fff;
+  }
+  .page-header h1 { font-size: 1.3rem; font-weight: 600; }
+  .page-header p { color: var(--muted); font-size: .85rem; margin-top: .15rem; }
+</style>
+
+<nav class="site-nav">
+  <a href="../index.html" class="nav-brand">Corruption in Procurement</a>
+  <a href="../index.html" class="nav-link">Home</a>
+  <div class="nav-dropdown">
+    <button class="nav-link">Docs &#9662;</button>
+    <div class="dropdown-menu">
+    <div class="dropdown-group-label">Reference</div>
+    <a href="../docs/README.html">Project Overview</a>
+    <a href="../docs/summary.html">Research Summary</a>
+    <a href="../docs/institutions.html">Institutional Background</a>
+    <a href="../docs/data.html">Data Sources</a>
+    <a href="../docs/methods.html">Empirical Methods</a>
+    <a href="../docs/literature.html">Literature</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Working notes</div>
+    <a href="../docs/thinking.html">Open Questions & Ideas</a>
+    <a href="../docs/decisions.html">Key Decisions</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Tasks</div>
+    <a href="../docs/todo.html">Active Tasks</a>
+    <a href="../docs/done.html">Completed Tasks</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Communication</div>
+    <a href="../docs/meetings.html">Meeting Notes</a>
+    <a href="../docs/feedback.html">External Feedback</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Briefs</div>
+    <a href="../briefs/linking.html">Linking Court Cases to Procurement Data</a>
+    </div>
+  </div>
+  <div class="nav-dropdown">
+    <button class="nav-link active">Data &#9662;</button>
+    <div class="dropdown-menu">
+    <a href="../sources/tjsp.html">TJSP Court Cases</a>
+    <a href="../sources/bec.html">BEC Procurement</a>
+    <a href="../sources/tce-sp-spending.html">TCE-SP Municipal Spending</a>
+    <a href="../sources/tce-sp-procurement.html">TCE-SP Municipal Procurement</a>
+    <a href="../sources/tce-sp-audits.html">TCE-SP Municipal Audits</a>
+    </div>
+  </div>
+</nav>
+<script>
+document.querySelectorAll('.nav-dropdown > .nav-link').forEach(function(btn) {
+  btn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    var dd = btn.parentElement;
+    var wasOpen = dd.classList.contains('open');
+    document.querySelectorAll('.nav-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+    if (!wasOpen) dd.classList.add('open');
+  });
+});
+document.addEventListener('click', function() {
+  document.querySelectorAll('.nav-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+});
+</script>
+
+<div class="page-header">
+  <h1>BEC Individual Bids</h1>
+  <p>Bid-level data from São Paulo state procurement with proposal values, winner flags, and supplier details.</p>
+</div>
+
+<div class="stats-bar" id="stats-bar"></div>
+
+<main>
+
+<!-- Data source notes -->
+<div id="source-notes-section"></div>
+
+<!-- Column info -->
+<h2 class="section-title">Column Information</h2>
+<div class="card full">
+  <div style="overflow-x:auto; max-height:400px; overflow-y:auto;">
+    <table class="col-table" id="col-table"></table>
+  </div>
+</div>
+
+<!-- Distribution charts -->
+<div id="dist-section"></div>
+
+<!-- Temporal charts -->
+<div id="temporal-section"></div>
+
+<!-- Sample data -->
+<h2 class="section-title">Sample Data (50 rows)</h2>
+<div class="card full">
+  <div class="search-bar">
+    <input type="text" id="search" placeholder="Search across all columns...">
+    <span class="count-label" id="row-count"></span>
+  </div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead id="thead"></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+</main>
+
+<footer>
+  Generated by <code>bash build.sh site</code>
+</footer>
+
+<script>
+// Embedded data — replaced by build pipeline
+const DATA = /* INJECT_DATA */ {"id":"bec-bid-to-bid","name":"BEC Individual Bids","description":"Bid-level data from São Paulo state procurement with proposal values, winner flags, and supplier details.","category":"Procurement","source_notes":"Individual bid records from São Paulo's BEC electronic procurement system. Each row is one supplier's bid on a procurement item, with proposed unit price, negotiated price, winner flag, proposal status, and supplier municipality. Covers all phases of the electronic auction process.","file_size":1567443333,"row_count":2277912,"col_count":52,"columns":[{"name":"Mês Ano Encerramento","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Dia Mês Encerramento","dtype":"int64","null_count":0,"null_pct":0.0},{"name":"Descrição Procedimento Compra","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Numero da OC","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Ata Registro De Preço","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Data OC Agendamento","dtype":"object","null_count":5082,"null_pct":0.2},{"name":"Data OC Criacao","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Data OC Encerramento","dtype":"object","null_count":655009,"null_pct":28.8},{"name":"Código Categoria","dtype":"int64","null_count":0,"null_pct":0.0},{"name":"Desc Categoria Item","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Código Classe","dtype":"int64","null_count":0,"null_pct":0.0},{"name":"Desc Classe Item","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Código Grupo","dtype":"int64","null_count":0,"null_pct":0.0},{"name":"Desc Grupo Item","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Código Item","dtype":"int64","null_count":0,"null_pct":0.0},{"name":"Desc Item","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Selo Verde","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Desc Unidade Fornecimento","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Valor Unitário Proposta","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Flag Vencedor","dtype":"int64","null_count":0,"null_pct":0.0},{"name":"Data Hr Proposta","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Valor Unitario Negociado","dtype":"object","null_count":1595751,"null_pct":70.1},{"name":"Valor Total Proposta","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Quantidade de Item","dtype":"int64","null_count":0,"null_pct":0.0},{"name":"Valor Unitário Referência","dtype":"object","null_count":1595751,"null_pct":70.1},{"name":"Proposta Vencedor - Primeiro","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Quantidade Item Vencedor","dtype":"int64","null_count":0,"null_pct":0.0},{"name":"Quantidade de Itens (Sequência)","dtype":"int64","null_count":0,"null_pct":0.0},{"name":"Valor Mínimo Unitário Proposta","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Valor Máximo Unitário Proposta","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Quantidade de Fornecedor Participante","dtype":"int64","null_count":0,"null_pct":0.0},{"name":"Código Fornecedor","dtype":"int64","null_count":0,"null_pct":0.0},{"name":"Descrição Enquadramento","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Descrição Proposta Status","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Descrição Grupo Proposta Status","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Descrição Enquadramento.1","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Descrição Fases OC","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Descrição Fornecedor Status","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Descrição Gestão","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Descrição ADM","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Descrição Órgão","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Código Unidade Compradora","dtype":"int64","null_count":0,"null_pct":0.0},{"name":"Descrição Unidade Compradora","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Descrição Município Fornecedor","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Descrição UF Fornecedor","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Descrição Bairro Fornecedor","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Descrição Endereço Fornecedor","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Descrição País Fornecedor","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Descrição Tipo Endereço Fornecedor","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Código CEP Fornecedor","dtype":"object","null_count":49772,"null_pct":2.2},{"name":"Razão Social","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Dia Mês Agendamento","dtype":"int64","null_count":0,"null_pct":0.0}],"categorical":{"Descrição Órgão":{"labels":["SECRETARIA DA SAUDE","SECRETARIA ADMINISTRACAO PENITENCIARIA","SECRETARIA DA SEGURANCA PUBLICA","SEC.DESENV. ECONOMICO, CIENCIA,TECN. INOVACA","ENTIDADES CONVENIADAS","SECRETARIA DA EDUCACAO","SECRETARIA DE AGRICULTURA E ABASTECIMENTO","SECRETARIA DOS TRANSPORTES METROPOLITANOS","SECRETARIA DE PLANEJAMENTO E GESTAO","SEC.DA JUSTICA E DA DEFESA DA CIDADANIA","SECRETARIA DO MEIO AMBIENTE","SECRETARIA DE GOVERNO","SECRETARIA DE LOGISTICA E TRANSPORTES","SECRETARIA DA FAZENDA","TRIBUNAL DE JUSTICA","PROCURADORIA GERAL DO ESTADO","ASSEMBLEIA LEGISLATIVA","TRIBUNAL DE CONTAS DO ESTADO","MINISTERIO PUBLICO","SECRETARIA DE DESENVOLVIMENTO SOCIAL"],"values":[694272,521243,400864,235740,66309,63544,43658,41736,39709,29744,26013,24346,23078,13486,11803,6363,5230,4993,4003,3758]},"Desc Grupo Item":{"labels":["EQUIPAMENTOS E ARTIGOS DE USO MEDICO, ODONTOLOGICO E HOSPITALAR","GENEROS ALIMENTICIOS","INFORMATICA","ARTIGOS E UTENSILIOS DE ESCRITORIOS,DIDATICOS E PSICOLOGICOS","ARTIGOS DE HIGIENE","SERVICOS DE MANUTENCOES/CONSERVACOES DE BENS MOVEIS E IMOVEIS","EQUIPAMENTOS E MATERIAIS PARA LIMPEZA, DEDETIZACAO E ESTERILIZACAO DE","EQUIPAMENTOS E UTENSILIOS PARA REFEITORIO,COPA E COZINHA","MOBILIARIOS EM GERAL","SERVICOS GERAIS","VESTUARIOS GERAL, UNIFORMES MILITAR, EQUIPAMENTOS INDIVIDUAIS","SERVICOS TERCEIRIZADOS - CADTERC","LAMPADAS  PARA ILUMINACAO DE AMBIENTE E APARELHOS DE ILUMINACAO","PECAS E ACESSORIOS PARA AUTOMOVEIS, MOTOCICLETAS, CICLOMOTORES, MOTONE","EQUIPAMENTOS DE INSTALACOES HIDRAULICAS, SANITARIAS E DE CALEFACAO","PINCEIS, TINTAS, VEDANTES E ADESIVOS","RECIPIENTES E MATERIAIS PARA ACONDICIONAMENTO E EMBALAGEM","CONDUTORES ELETRICOS E EQUIPAMENTOS DE FORCA E DISTRIBUICAO","SERVICOS ESPECIALIZADOS","MATERIAIS PARA CONSTRUCAO E PAVIMENTACAO"],"values":[541608,438025,184955,126260,73338,58772,54704,51628,48850,48290,44341,42124,38893,38847,34867,27778,26500,25979,23807,22324]},"Descrição Fases OC":{"labels":["LANCES","ANÁLISE DE PROPOSTAS","NÃO SE APLICA","NEGOCIAÇÃO","PREFERÊNCIA ME-EPP","ADESÃO A MELHOR OFERTA","REALINHAMENTO DE PREÇO COOPERATIVA"],"values":[1445534,728311,49815,48859,5083,309,1]},"Flag Vencedor":{"labels":[0,1],"values":[1645495,632417]}},"temporal":{"Mês Ano Encerramento":{"min":"2017-07-01","max":"2017-12-01","by_year":{"labels":[2017],"values":[2277912]}}},"sample_columns":["Mês Ano Encerramento","Dia Mês Encerramento","Descrição Procedimento Compra","Numero da OC","Ata Registro De Preço","Data OC Agendamento","Data OC Criacao","Data OC Encerramento","Código Categoria","Desc Categoria Item","Código Classe","Desc Classe Item","Código Grupo","Desc Grupo Item","Código Item","Desc Item","Selo Verde","Desc Unidade Fornecimento","Valor Unitário Proposta","Flag Vencedor","Data Hr Proposta","Valor Unitario Negociado","Valor Total Proposta","Quantidade de Item","Valor Unitário Referência","Proposta Vencedor - Primeiro","Quantidade Item Vencedor","Quantidade de Itens (Sequência)","Valor Mínimo Unitário Proposta","Valor Máximo Unitário Proposta","Quantidade de Fornecedor Participante","Código Fornecedor","Descrição Enquadramento","Descrição Proposta Status","Descrição Grupo Proposta Status","Descrição Enquadramento.1","Descrição Fases OC","Descrição Fornecedor Status","Descrição Gestão","Descrição ADM","Descrição Órgão","Código Unidade Compradora","Descrição Unidade Compradora","Descrição Município Fornecedor","Descrição UF Fornecedor","Descrição Bairro Fornecedor","Descrição Endereço Fornecedor","Descrição País Fornecedor","Descrição Tipo Endereço Fornecedor","Código CEP Fornecedor","Razão Social","Dia Mês Agendamento"],"sample":[["08/2017","10","DISPENSA DE LICITAÇÃO","180160000012017OC00436","N","08/08/17","07/08/17","","1","MATERIAL","5190","PECAS E MATERIAIS DE REPOSICAO OU MANUTENCAO DE FERRAMENTAS MANUAIS","51","FERRAMENTAS MANUAIS","173118","SERRA CIRCULAR,VIDIA,200 MM,60 DENTES","N","UNIDADE UNIDADE","64,3","0","2017-08-10 15:03:25","","0","1","","0","0","1","64,3","64,3","1","8843007000187","Outros","VÁLIDO","VÁLIDO","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","LANCES","ATUALIZAÇÃO CADASTRAL - AGUARDANDO DOCUMENTAÇÃO","GOVERNO DO ESTADO DE SAO PAULO","D","SECRETARIA DA SEGURANCA PUBLICA","180160","COMANDO POLIC.INT.-5 SJRIO PRETO","SAO PAULO","SÃO PAULO","TATUAPÉ","RUA CANTAGALO, 2.335","BRASIL","SEDE","03319002","LICICOM COMÉRCIO DE EQUIPAMENTOS INDUSTRIAIS LTDA.","8"],["08/2017","9","PREGÃO ELETRÔNICO","090141000012017OC00298","N","24/07/17","14/07/17","14/07/17","1","MATERIAL","6526","MATERIAIS DE USO TECNICO HOSPITALAR COM NOTIFICACAO/REGISTRO NA ANVISA DO PRODUTO","65","EQUIPAMENTOS E ARTIGOS DE USO MEDICO, ODONTOLOGICO E HOSPITALAR","3786986","BISTURI DESCARTAVEL Nº15 ACO INOX OU ACO CARBONO SISTEMA DE SEGURANÇA","N","UNIDADE UNIDADE","1,94","0","2017-08-03 09:21:53","","0","1","","0","0","1","1,94","1,94","1","61418042000131","Outros","VÁLIDO E CONFIRMADO","VÁLIDO","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","LANCES","ATUALIZAÇÃO CADASTRAL - EM ANÁLISE","GOVERNO DO ESTADO DE SAO PAULO","D","SECRETARIA DA SAUDE","90141","HOSP. GUILHERME ALVARO, SANTOS","SANTANA DE PARNAIBA","SÃO PAULO","TAMBORE","ALM AFRICA, 570","BRASIL","SEDE","06543306","CIRURGICA FERNANDES COMERCIO DE MATERIAIS CIRURGICOS E HOSPITALARES SOCIEDADE LIMITADA","14"],["07/2017","12","CONVITE","380256000012017OC00108","N","26/06/17","26/06/17","","1","MATERIAL","7920","UTENSILIOS DE LIMPEZA","79","EQUIPAMENTOS E MATERIAIS PARA LIMPEZA, DEDETIZACAO E ESTERILIZACAO DE","3669637","PANO DE LIMPEZA,100%ALGODAO ALVEJADO,MED.(74X45)CM,NA COR BRANCA","N","UNIDADE UNIDADE","3,1","0","2017-07-02 00:00:00","","0","1","","0","0","1","3,1","3,1","1","19387086000185","ME","NÃO SE APLICA","NÃO SE APLICA","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","ANÁLISE DE PROPOSTAS","ATIVO","GOVERNO DO ESTADO DE SAO PAULO","D","SECRETARIA ADMINISTRACAO PENITENCIARIA","380256","PENITENCIARIA DE CAPELA DO ALTO","RIO DAS PEDRAS","SÃO PAULO","SAO CRISTOVAO","RUA ANTONIO ARZOLLA SOBRINHO, 436","BRASIL","SEDE","13390000","RUZAM ALIMENTOS LTDA. - ME","26"],["08/2017","11","DISPENSA DE LICITAÇÃO","162114160552017OC00127","N","09/08/17","08/08/17","","1","MATERIAL","8695","SUPRIMENTOS DE INFORMATICA","86","INFORMATICA","2892103","CARTUCHO DE TINTA PARA IMPRESSORA HP, COMPATIVEL COM SERIE:D4260/C4280","N","UNIDADE UNIDADE","42","0","2017-08-11 14:47:32","","0","1","","0","0","1","42","42","1","8235248000143","ME","INVÁLIDO: LANCE SUPERIOR OU IGUAL A OUTRO JÁ REGISTRADO","INVÁLIDO","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","LANCES","ATUALIZAÇÃO CADASTRAL - EM ELABORAÇÃO","DEPTO. DE ESTRADAS E RODAGEM","I","SECRETARIA DE LOGISTICA E TRANSPORTES","162114","DR.12 - PRESIDENTE PRUDENTE","PRESIDENTE PRUDENTE","SÃO PAULO","BOSQUE","RUA DESBRAVADOR CEARA, 386","BRASIL","SEDE","19015190","FERNANDO GOMES DE LIMA CARTUCHOS - ME","9"],["09/2017","26","PREGÃO ELETRÔNICO","102202100592017OC00325","S","03/08/17","14/07/17","14/07/17","1","MATERIAL","6508","INSUMOS PARA EQUIPAMENTOS MEDICO HOSPITALARES COM NOTIFICACAO/REGISTRO NA ANVISA DO PRODUTO","65","EQUIPAMENTOS E ARTIGOS DE USO MEDICO, ODONTOLOGICO E HOSPITALAR","4024567","UMIDIFICADOR CONDENSADOR, USO ADULTO, VOLUME CORRENTE: 300 A 1500 ML","N","UNIDADE UNIDADE","6,84","0","2017-08-21 10:29:09","","0","1","","0","0","1","6,84","6,84","1","61418042000131","Outros","VÁLIDO E CONFIRMADO","VÁLIDO","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","LANCES","ATUALIZAÇÃO CADASTRAL - EM ANÁLISE","UNIVERSIDADE ESTADUAL DE CAMPINAS","I","SEC.DESENV. ECONOMICO, CIENCIA,TECN. INOVACA","102202","UNICAMP/HOSPITAL DE CLINICAS","SANTANA DE PARNAIBA","SÃO PAULO","TAMBORE","ALM AFRICA, 570","BRASIL","SEDE","06543306","CIRURGICA FERNANDES COMERCIO DE MATERIAIS CIRURGICOS E HOSPITALARES SOCIEDADE LIMITADA","14"],["10/2017","5","PREGÃO ELETRÔNICO","090168000012017OC00263","N","31/08/17","29/08/17","29/08/17","1","MATERIAL","8970","BEBIDAS NAO ALCOOLICAS","89","GENEROS ALIMENTICIOS","4415922","AGUA MINERAL SEM GAS, EM GARRAFA PET COM TAMPA DE ROSCA","N","PACOTE 6 GARRAFAS        1,50 LITRO","13155","0","2017-09-14 11:39:13","","0","1","","0","0","1","13155","13155","1","17507085000100","EPP","VÁLIDO E CONFIRMADO","VÁLIDO","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","LANCES","ATIVO","GOVERNO DO ESTADO DE SAO PAULO","D","SECRETARIA DA SAUDE","90168","HOSP.MAT.INTERLAGOS-WALDEMAR SEYSSEL-ARRELIA","SAO JOSE DOS CAMPOS","SÃO PAULO","VILA MARIA","AV VINTE E TRES DE MAIO, 508","BRASIL","SEDE","12209410","D. DUARTE DINIZ EIRELI","29"],["09/2017","19","DISPENSA DE LICITAÇÃO","092101090552017OC00284","N","15/09/17","15/09/17","","1","MATERIAL","6140","BATERIAS RECARREGAVEIS","61","CONDUTORES ELETRICOS E EQUIPAMENTOS DE FORCA E DISTRIBUICAO","4454243","BATERIA RECARREGÁVEL LITIO ION,  3.7 V, 4200 MAH, ICR18650","N","UNIDADE UNIDADE","15","0","2017-09-19 14:35:35","","0","1","","0","0","1","15","15","1","18538963000109","ME","VÁLIDO","VÁLIDO","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","LANCES","ATUALIZAÇÃO CADASTRAL - AGUARDANDO DOCUMENTAÇÃO","SUPERINT. DE CONTROLE DE ENDEMIAS","I","SECRETARIA DA SAUDE","92101","SUPERIN. DE CONTROLE DE ENDEMIAS-SUCEN","PRAIA GRANDE","SÃO PAULO","BOQUEIRAO","RUA DAIR BORGES, 77","BRASIL","SEDE","11701210","PAULINA JORGINA DA SILVA CASONATO 26790517855","15"],["11/2017","17","PREGÃO ELETRÔNICO","090139000012017OC00115","N","07/08/17","03/08/17","03/08/17","2","SERVIÇO","302","CONTROLE, OPERACAO E FISCALIZACAO DE PORTARIAS E EDIFICIOS -VOLUME 02","3","SERVICOS TERCEIRIZADOS - CADTERC","162515","POSTO 12 HORAS DIARIAS - DIURNO SEGUNDA A SEXTA-FEIRA","N","POSTO DIA POSTO","178","0","2017-08-17 14:29:57","","0","1","","0","0","1","178","178","1","24514350000134","Outros","VÁLIDO E CONFIRMADO","VÁLIDO","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","LANCES","ATIVO","GOVERNO DO ESTADO DE SAO PAULO","D","SECRETARIA DA SAUDE","90139","DEPTO.REG.SAUDE - DRS-XVI SOROCABA","SAO PAULO","SÃO PAULO","JARDIM VILA FORMOSA","RUA OLIVEIRA CATRAMBI, 725","BRASIL","SEDE","03461010","KAMUR PRESTADORA DE SERVIÇOS TERCEIRIZADOS - EIRELI EPP","3"],["09/2017","6","CONVITE","080275000012017OC00120","N","24/08/17","23/08/17","","1","MATERIAL","8530","ARTIGOS DE PAPEL PARA HIGIENE PESSOAL","85","ARTIGOS DE HIGIENE","2948257","TOALHA DE PAPEL-SIMPLES-INTERF.INST,CLASSE1,2DOB,MED(21,5X22,5)CM,BRAN","N","PACOTE 1000.00 UNIDADE","0","0","2017-09-06 00:00:00","0","0","1","5,88","0","0","1","0","0","0","-1","Enquadramento não cadastrado no CAUFESP","NÃO SE APLICA","NÃO SE APLICA","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","NÃO SE APLICA","NÃO SE APLICA","GOVERNO DO ESTADO DE SAO PAULO","D","SECRETARIA DA EDUCACAO","80275","DIR.ENS.REG.CARAPICUIBA","SEM GANHADOR","SEM GANHADOR","SEM GANHADOR","SEM GANHADOR","SEM GANHADOR","SEM GANHADOR","","SEM CADASTRO NO CAUFESP","24"],["09/2017","1","PREGÃO ELETRÔNICO","180378000012017OC00222","N","16/08/17","14/08/17","14/08/17","1","MATERIAL","8910","LEITES, LATICINIOS E SEUS DERIVADOS","89","GENEROS ALIMENTICIOS","1484044","LEITE UHT/UAT,INTEGRAL CAIXA CARTONADA","N","LITRO","46,9","0","2017-08-26 00:00:00","","0","1","","0","0","1","46,9","46,9","1","54087978000161","EPP","CLASSIFICADA","CLASSIFICADA","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","ANÁLISE DE PROPOSTAS","ATIVO","GOVERNO DO ESTADO DE SAO PAULO","D","SECRETARIA DA SEGURANCA PUBLICA","180378","CTO. INTEGRADO DE APOIO FINANCEIRO - CIAF","JACAREI","SÃO PAULO","JARDIM ESPERANCA","AV LUCAS NOGUEIRA GARCEZ, 684","BRASIL","SEDE","12324000","JOAQUIM LOURENCO FILHO JACAREI","14"],["10/2017","23","PREGÃO ELETRÔNICO","380136000012017OC00295","N","09/10/17","05/10/17","05/10/17","1","MATERIAL","8925","MASSAS ALIMENTICIAS E PRODUTOS DE PANIFICACAO","89","GENEROS ALIMENTICIOS","4587081","PAO FRANCES, CRU CONGELADO, COM SAL","N","QUILOGRAMA","4,35","1","2017-10-23 09:44:49","4,35","95595,6","1","4,4","0","1","1","4,35","4,35","1","8834443000190","Outros","VÁLIDO E CONFIRMADO","VÁLIDO","OUTROS","NEGOCIAÇÃO","ATIVO","GOVERNO DO ESTADO DE SAO PAULO","D","SECRETARIA ADMINISTRACAO PENITENCIARIA","380136","PENIT.\"ASP MARIA F.DE SOUSA DIAS-ITAPETINING","ITAPETININGA","SÃO PAULO","JARDIM PAULISTA","FLORA PRESTES CESAR, 232","BRASIL","SEDE","18214450","PAULISPAN INDUSTRIA DE PANIFICAÇÃO LTDA","5"],["11/2017","23","DISPENSA DE LICITAÇÃO","380163000012017OC00308","N","21/11/17","17/11/17","","1","MATERIAL","6270","SUPRIMENTOS PARA CONDUCAO ELETRICA E DE ILUMINACAO","62","LAMPADAS  PARA ILUMINACAO DE AMBIENTE E APARELHOS DE ILUMINACAO","4277759","ELETRODUTO DE ACO-CARBONO COM ROSCA BSP, DN 25MM","N","BARRA        3,00 METRO","0","0","2017-11-23 00:00:00","0","0","1","10,29","0","0","1","0","0","0","-1","Enquadramento não cadastrado no CAUFESP","NÃO SE APLICA","NÃO SE APLICA","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","NÃO SE APLICA","NÃO SE APLICA","GOVERNO DO ESTADO DE SAO PAULO","D","SECRETARIA ADMINISTRACAO PENITENCIARIA","380163","PENIT. OZIAS LUCIO DOS SANTOS - PACAEMBU","SEM GANHADOR","SEM GANHADOR","SEM GANHADOR","SEM GANHADOR","SEM GANHADOR","SEM GANHADOR","","SEM CADASTRO NO CAUFESP","21"],["09/2017","12","PREGÃO ELETRÔNICO","180154000012017OC00902","S","22/08/17","16/08/17","16/08/17","1","MATERIAL","7110","MOBILIARIOS DE HOTELARIA E ALOJAMENTOS","71","MOBILIARIOS EM GERAL","3955389","ARMARIO VESTIARIO,EM ACO,COR CINZA,MED.(2100X1000X500)MM =(AXLXP)","N","UNIDADE UNIDADE","169900","0","2017-09-01 09:58:29","","0","1","","0","0","1","169900","169900","1","5312963000144","ME","INVÁLIDO: NÃO ATINGIU A REDUÇÃO MÍNIMA ENTRE LANCES OU VALOR SUPERIOR A OUTRO JÁ REGISTRADO","INVÁLIDO","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","LANCES","ATUALIZAÇÃO CADASTRAL - AGUARDANDO DOCUMENTAÇÃO","GOVERNO DO ESTADO DE SAO PAULO","D","SECRETARIA DA SEGURANCA PUBLICA","180154","COMANDO POLIC.INT.-6 SANTOS","PONTA GROSSA","PARANÁ","ORFÃS","RUA RIO GRANDE DO SUL","BRASIL","SEDE","84015020","COMERCIAL MORBRAS EIRELI - ME","17"],["11/2017","1","CONVITE","180159000012017OC01060","N","17/10/17","16/10/17","","1","MATERIAL","6145","CONDUTORES, FIOS E CABOS ELETRICOS","61","CONDUTORES ELETRICOS E EQUIPAMENTOS DE FORCA E DISTRIBUICAO","4678320","CABO ELETRICO, COBRE NU, 6MM2, 750V,EXTRA FLEXIVEL,CLASSE 4/5,VERMELHO","N","ROLO      100,00 METRO","216","0","2017-10-21 00:00:00","","0","1","","0","0","1","216","216","1","52245412000195","EPP","NÃO SE APLICA","NÃO SE APLICA","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","ANÁLISE DE PROPOSTAS","ATUALIZAÇÃO CADASTRAL - AGUARDANDO DOCUMENTAÇÃO","GOVERNO DO ESTADO DE SAO PAULO","D","SECRETARIA DA SEGURANCA PUBLICA","180159","COMANDO POLIC.INT.-4 BAURU","CAMPINAS","SÃO PAULO","JD. GUANABARA","RUA PRIMEIRO DE MARCO, 294","BRASIL","SEDE","13075250","FIOLUZ COMERCIO DE MATERIAIS ELETRICOS LTDA","17"],["10/2017","19","PREGÃO ELETRÔNICO","180223000012017OC00337","N","04/10/17","29/09/17","29/09/17","1","MATERIAL","5610","MATERIAIS USINADOS E DE ORIGEM MINERAL A GRANEL","56","MATERIAIS PARA CONSTRUCAO E PAVIMENTACAO","4400909","PEDRA BRITADA TIPO BRITA 01, PASSANTE MALHA 25MM, RETIDA MALHA 12,5MM","N","TONELADA","94","0","2017-10-17 10:19:22","","0","1","","0","0","1","94","94","1","2885591000157","ME","INVÁLIDO: NÃO ATINGIU A REDUÇÃO MÍNIMA ENTRE LANCES OU VALOR SUPERIOR A OUTRO JÁ REGISTRADO","INVÁLIDO","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","LANCES","ATIVO","GOVERNO DO ESTADO DE SAO PAULO","D","SECRETARIA DA SEGURANCA PUBLICA","180223","COM.POLIC.AREA METROPOLITANA-9","SAO PAULO","SÃO PAULO","VILA CLEMENTINO","RUA LEANDRO DUPRE, 204","BRASIL","SEDE","04025010","CENTURY COMERCIAL EIRELI - ME","29"],["09/2017","15","PREGÃO ELETRÔNICO","090101000012017OC00065","S","11/08/17","09/08/17","09/08/17","1","MATERIAL","6526","MATERIAIS DE USO TECNICO HOSPITALAR COM NOTIFICACAO/REGISTRO NA ANVISA DO PRODUTO","65","EQUIPAMENTOS E ARTIGOS DE USO MEDICO, ODONTOLOGICO E HOSPITALAR","3744485","BISTURI DESCARTAVEL Nº23 ACO INOX OU ACO CARBONO SISTEMA DE SEGURANÇA","N","UNIDADE UNIDADE","2,05","1","2017-08-23 10:35:29","1,25","164062,5","1","1,2626","0","1","1","2,05","2,05","1","82641325001866","Outros","VÁLIDO E CONFIRMADO","VÁLIDO","OUTROS","LANCES","ATUALIZAÇÃO CADASTRAL - EM ANÁLISE","GOVERNO DO ESTADO DE SAO PAULO","D","SECRETARIA DA SAUDE","90101","GABINETE DO SECRETARIO E ASSESSORIAS","JUNDIAI","SÃO PAULO","DISTRITO INDUSTRIAL","AVENIDA ANTONIO FREDERICO OZANAN, 11000-GALPÃO B5","BRASIL","FILIAL","13213030","CREMER S/A","9"],["11/2017","1","PREGÃO ELETRÔNICO","380145000012017OC00116","N","19/10/17","17/10/17","17/10/17","1","MATERIAL","3225","MAQUINAS E EQUIPAMENTOS PARA OFICINAS ELETROMECANICAS","32","MAQUINAS E EQUIPAMENTOS DE OFICINAS EM GERAL","3335747","ALICATE ELETRONICO,AMPERIMETRO DIGITAL,CAT IV-600V,TENSAO DC ATE 1000V","N","UNIDADE UNIDADE","1019,5","0","2017-10-31 15:27:45","","0","1","","0","0","1","1019,5","1019,5","1","5517300000166","EPP","VÁLIDO E CONFIRMADO","VÁLIDO","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","LANCES","ATIVO","GOVERNO DO ESTADO DE SAO PAULO","D","SECRETARIA ADMINISTRACAO PENITENCIARIA","380145","CENTRO PROGR.PENIT.PROF.NOE AZEVEDO","SAO PAULO","SÃO PAULO","SE","RUA JOSE  BONIFACIO, 250","BRASIL","SEDE","01003000","PROJETHIC  COMERCIO  E  GERENCIAMENTO  DE  PROJETOS LTDA","17"],["11/2017","10","PREGÃO ELETRÔNICO","090118000012017OC00166","N","27/10/17","25/10/17","25/10/17","1","MATERIAL","7330","ARTIGOS PARA SERVICOS DE MESA","73","EQUIPAMENTOS E UTENSILIOS PARA REFEITORIO,COPA E COZINHA","3798410","COPO DESCARTAVEL POLIESTIRENO,200ML,BRANCO,CD COPO 1,80G,EM MANGAS","N","PACOTE      100,00 UNIDADE","71,5","0","2017-11-10 09:26:31","","0","1","","0","0","1","71,5","71,5","1","28116072000118","ME","VÁLIDO E CONFIRMADO","VÁLIDO","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","LANCES","SUSPENSÃO TEMPORÁRIA","GOVERNO DO ESTADO DE SAO PAULO","D","SECRETARIA DA SAUDE","90118","HOSP.GERAL PREF. MIGUEL GUALDA DE PROMISSAO","COTIA","SÃO PAULO","CENTRO (CAUCAIA DO ALTO)","AV INOCENCIO PIRES DE OLIVEIRA, 350","BRASIL","SEDE","06725105","THAMIRES DE SOUZA CORREIA - ME","25"],["07/2017","7","PREGÃO ELETRÔNICO","090110000012017OC00124","N","26/06/17","23/06/17","23/06/17","1","MATERIAL","5530","COMPENSADOS E FOLHEADOS","55","TABUAS, COMPENSADOS DE MADEIRA, ESQUADRIAS E PORTAS DE MADEIRA, FERROS","4341880","LAMINADO DECORATIVO POSTFORMING BRANCO TEXT, MED 3,08X1,25M, ESP 0,6MM","N","UNIDADE","130","1","2017-07-06 11:27:07","124,62","2492,4","1","124,62","0","1","1","130","130","1","20853918000190","Outros","VÁLIDO E CONFIRMADO","VÁLIDO","ME","LANCES","ATUALIZAÇÃO CADASTRAL - AGUARDANDO DOCUMENTAÇÃO","GOVERNO DO ESTADO DE SAO PAULO","D","SECRETARIA DA SAUDE","90110","CTO. REFERENCIA E TREINAMENTO-DST/AIDS","SAO PAULO","SÃO PAULO","JARDIM ESMERALDA","RUA DOUTOR ELIAS LUIS DE OLIVEIRA, 58","BRASIL","SEDE","05366130","M.F. COMERCIO, GERENCIAMENTO E SERVICOS EIRELI  - ME","26"],["07/2017","13","PREGÃO ELETRÔNICO","090182000012017OC00097","N","08/06/17","02/06/17","02/06/17","1","MATERIAL","5315","PREGOS, CHAVETAS E PINOS","53","FERRAGENS E ABRASIVOS","282715","PREGO COM CABECA,ACO,MED.18X24","N","PACOTE 1.00 QUILOGRAMA","20,1","0","2017-06-22 11:13:11","","0","1","","0","0","1","20,1","20,1","1","2167676000108","EPP","VÁLIDO E CONFIRMADO","VÁLIDO","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","LANCES","ATIVO","GOVERNO DO ESTADO DE SAO PAULO","D","SECRETARIA DA SAUDE","90182","INST. LAURO DE SOUZA LIMA, EM BAURU","OSVALDO CRUZ","SÃO PAULO","CENTRO","AV MAX WIRTH, 1140","BRASIL","SEDE","17700000","ROBERTO HARUO UENO - ME","2"],["07/2017","4","PREGÃO ELETRÔNICO","092201090562017OC00128","S","23/03/17","22/03/17","22/03/17","1","MATERIAL","6526","MATERIAIS DE USO TECNICO HOSPITALAR COM NOTIFICACAO/REGISTRO NA ANVISA DO PRODUTO","65","EQUIPAMENTOS E ARTIGOS DE USO MEDICO, ODONTOLOGICO E HOSPITALAR","3143325","SONDA NUTRICAO ENTERAL POLIURETANO RADIOPACO SILICONIZADA Nº 08/ 100CM","N","UNIDADE UNIDADE","7,28","1","2017-04-05 14:30:52","7,28","32614,4","1","12,5617","0","1","1","7,28","7,28","1","1571702000198","Outros","VÁLIDO E CONFIRMADO","VÁLIDO","OUTROS","LANCES","ATIVO","HOSP. DAS CLINICAS DA MED. DE RIBEIRAO PRETO","I","SECRETARIA DA SAUDE","92201","HOSP. DAS CLINICAS, RIB.PRETO","GOIANIA","GOIÁS","CHÁCARA RETIRO","RODOVIA BR 153 KM 3 S/N","BRASIL","SEDE","74775027","HALEX ISTAR INDÚSTRIA FARMACÊUTICA SA.","22"],["11/2017","6","PREGÃO ELETRÔNICO","180312000012017OC00030","N","18/10/17","13/10/17","13/10/17","1","MATERIAL","4130","EQUIPAMENTOS DE VENTILACAO E CIRCULACAO DE AR","41","EQUIPAMENTOS PARA REFRIGERACAO,CONDICIONAMENTO E PURIFICA   CAO DE AR","3913252","VENTILADOR, TIPO COLUNA, 3 HELICES, 60 CM DE DIAMETRO, 110 V","N","UNIDADE UNIDADE","500","0","2017-10-30 00:00:00","","0","1","","0","0","1","500","500","1","20531237000106","ME","DESCLASSIFICADA","DESCLASSIFICADA","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","ANÁLISE DE PROPOSTAS","ATIVO","GOVERNO DO ESTADO DE SAO PAULO","D","SECRETARIA DA SEGURANCA PUBLICA","180312","DELEG.SECC.POLICIA DE NOVO HORIZONTE","ALTINOPOLIS","SÃO PAULO","JARDIM ESPLANADA","RUA GUIDO BERNADINHO DA COSTA, 1165","BRASIL","SEDE","14350000","CONFIANCE COMERCIO VAREJISTA - EIRELI - ME","16"],["07/2017","14","DISPENSA DE LICITAÇÃO","133101130902017OC00202","N","12/07/17","11/07/17","","1","MATERIAL","2490","MATERIAIS, PECAS E ACESSORIOS PARA REPOSICAO OU MANUTENCAO  DE TRATORES","24","TRATORES","4900677","FILTRO DE OLEO, CODIGO REFERENCIA FABRICANTE 6505510-5028A","N","UNIDADE","53","0","2017-07-14 15:19:31","","0","1","","0","0","1","53","53","1","12347576000109","Outros","VÁLIDO","VÁLIDO","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","LANCES","SUSPENSÃO TEMPORÁRIA","CIA DE DESENVOLVIMENTO AGRICOLA DE SAO PAULO","I","SECRETARIA DE AGRICULTURA E ABASTECIMENTO","133101","CIA.DESENV.AGRICOLA S.P. - CODASP","ITAPETININGA","SÃO PAULO","JD. ITALIA","RUA SALVADOR DE OLIVEIRA LEME, 411","BRASIL","SEDE","18201650","GALDINO COMERCIAL LTDA-ME","12"],["08/2017","22","DISPENSA DE LICITAÇÃO","080324000012017OC00064","N","18/08/17","17/08/17","","1","MATERIAL","7810","EQUIPAMENTOS, MATERIAIS E UNIFORMES ESPORTIVOS","78","EQUIPAMENTOS E MATERIAIS PARA RECREACAO E DESPORTO","4755146","BOLA DE BASQUETE OFICIAL 75 A 78 CM MARRON TERRA","N","UNIDADE","186","0","2017-08-22 15:20:57","","0","1","","0","0","1","186","186","1","60699188000130","EPP","VÁLIDO","VÁLIDO","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","LANCES","ATIVO","GOVERNO DO ESTADO DE SAO PAULO","D","SECRETARIA DA EDUCACAO","80324","DIR.ENS.REG.MOGI MIRIM","SAO PAULO","SÃO PAULO","VILA IPOJUCA","RUA HAROLDO PACHECO E SILVA, 205","BRASIL","SEDE","05055030","MEGA DADOS COMERCIAL LTDA","18"],["08/2017","15","DISPENSA DE LICITAÇÃO","133101130902017OC00293","N","11/08/17","10/08/17","","1","MATERIAL","8421","EQUIPAMENTOS DE PROTECAO INDIVIDUAL - EPI'S","84","VESTUARIOS GERAL, UNIFORMES MILITAR, EQUIPAMENTOS INDIVIDUAIS","2224011","LUVA SEGURANCA,PVC,PADRAO,VERDE,USUARIO PRODS.QUIMICOS,LONGO +-36CM","N","PAR","19","0","2017-08-15 15:08:27","","0","1","","0","0","1","19","19","1","14365828000158","EPP","INVÁLIDO: LANCE MAIOR QUE O VALOR UNITÁRIO PREVISTO","INVÁLIDO","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","LANCES","ATIVO","CIA DE DESENVOLVIMENTO AGRICOLA DE SAO PAULO","I","SECRETARIA DE AGRICULTURA E ABASTECIMENTO","133101","CIA.DESENV.AGRICOLA S.P. - CODASP","PRESIDENTE PRUDENTE","SÃO PAULO","JARDIM NOVO BONGIOVANI","RUA CAROLINA LANER BONGIOVANI, 599","BRASIL","SEDE","19026660","COMERCIAL DISCON LTDA","11"],["07/2017","7","PREGÃO ELETRÔNICO","090110000012017OC00113","N","23/06/17","22/06/17","22/06/17","1","MATERIAL","6250","REATORES, SUPORTES PARA LAMPADAS E ELEMENTOS DE PARTIDA","62","LAMPADAS  PARA ILUMINACAO DE AMBIENTE E APARELHOS DE ILUMINACAO","2506823","REATOR PARA LAMPADAS FLUORESCENTES, ELETRONICO, BIVOLT, LAMPADA 32 W","N","UNIDADE UNIDADE","11,85","0","2017-07-06 13:27:39","","0","1","","0","0","1","11,85","11,85","1","23412832000110","EPP","VÁLIDO E CONFIRMADO","VÁLIDO","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","LANCES","ATIVO","GOVERNO DO ESTADO DE SAO PAULO","D","SECRETARIA DA SAUDE","90110","CTO. REFERENCIA E TREINAMENTO-DST/AIDS","VALINHOS","SÃO PAULO","VILA SAO JOSE","RUA FILOMENA PASTORI MOLON, 267","BRASIL","SEDE","13270290","BULTEC TECNOLOGIA DE INFORMACAO LTDA.","22"],["11/2017","1","DISPENSA DE LICITAÇÃO","180375000012017OC00037","N","30/10/17","30/10/17","","1","MATERIAL","7810","EQUIPAMENTOS, MATERIAIS E UNIFORMES ESPORTIVOS","78","EQUIPAMENTOS E MATERIAIS PARA RECREACAO E DESPORTO","3679535","BOMBA DE AR PARA BOLA","N","UNIDADE UNIDADE","19","1","2017-11-01 15:27:52","14,8","38","1","20","0","1","1","19","19","1","10016003000177","ME","VÁLIDO","VÁLIDO","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","LANCES","ATUALIZAÇÃO CADASTRAL - AGUARDANDO DOCUMENTAÇÃO","GOVERNO DO ESTADO DE SAO PAULO","D","SECRETARIA DA SEGURANCA PUBLICA","180375","20. GRUPAMENTO DE BOMBEIROS (20.GB)","PIRATININGA","SÃO PAULO","CENTRO","RUA ERCILIA VASCONCELOS DOS SANTOS, 26","BRASIL","SEDE","17490000","SANDRA REGINA MIQUE DA SILVA - ME","30"],["07/2017","11","DISPENSA DE LICITAÇÃO","400116000012017OC00012","N","07/07/17","07/07/17","","1","MATERIAL","8950","ALIMENTOS DIETETICOS E PARA DIETAS ESPECIAIS","89","GENEROS ALIMENTICIOS","4620020","ADOCANTE DIETETICO LIQUIDO, CICLAMATO DE SODIO, SACARINA SODICA","N","FRASCO      200,00 MILILITRO","24,74","0","2017-07-11 10:55:16","","0","1","","0","0","1","24,74","24,74","1","16880322000293","ME","VÁLIDO","VÁLIDO","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","LANCES","ATIVO","GOVERNO DO ESTADO DE SAO PAULO","D","PROCURADORIA GERAL DO ESTADO","400116","PROCUR.REGIONAL DE BAURU","SAO CAETANO DO SUL","SÃO PAULO","SANTA PAULA","RUA OSVALDO CRUZ, 1613 - FUNDOS","BRASIL","FILIAL","09540280","BALEIRA LTDA ME","7"],["11/2017","24","PREGÃO ELETRÔNICO","380232000012017OC00246","N","10/11/17","09/11/17","09/11/17","1","MATERIAL","8916","FRUTAS,VERDURAS E LEGUMES PROCESSADOS E SEMI PROCESSADOS","89","GENEROS ALIMENTICIOS","4683188","ALHO PROCESSADO, BRANCO, PURO EM PASTA","N","QUILOGRAMA","5","0","2017-11-24 09:30:24","","0","1","","0","0","1","5","5","1","96678263000123","ME","VÁLIDO E CONFIRMADO","VÁLIDO","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","LANCES","ATUALIZAÇÃO CADASTRAL - AGUARDANDO DOCUMENTAÇÃO","GOVERNO DO ESTADO DE SAO PAULO","D","SECRETARIA ADMINISTRACAO PENITENCIARIA","380232","CTO DETENCAO PROVIS.TACIO AP.SANTANA DE CAIU","CANDIDO MOTA","SÃO PAULO","VILA OPERÁRIA","SÃO CAETANO, 370","N/C","SEDE","19880000","CLAUDEMIR APARECIDO DONA ME","9"],["10/2017","24","PREGÃO ELETRÔNICO","380228000012017OC00298","N","06/10/17","05/10/17","05/10/17","1","MATERIAL","8920","CEREAIS EM GRAOS E FARINHAS EM GERAL","89","GENEROS ALIMENTICIOS","120456","FEIJAO CARIOCA, GRUPO 1, TIPO 1","N","SACO       60,00 QUILOGRAMA","2,8","0","2017-10-23 11:04:33","","0","1","","0","0","1","2,8","2,8","1","14155601000188","ME","VÁLIDO E CONFIRMADO","VÁLIDO","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","LANCES","ATUALIZAÇÃO CADASTRAL - AGUARDANDO DOCUMENTAÇÃO","GOVERNO DO ESTADO DE SAO PAULO","D","SECRETARIA ADMINISTRACAO PENITENCIARIA","380228","PENIT. JOAO A. PANUCCI DE MARABA PAULISTA","PILAR DO SUL","SÃO PAULO","CENTRO","RUA ANTONIO PAULISTA, 200","BRASIL","SEDE","18185000","BARROS COMERCIO DE RACOES EIRELI - ME","5"],["11/2017","24","PREGÃO ELETRÔNICO","380203000012017OC00252","N","09/11/17","08/11/17","08/11/17","1","MATERIAL","8985","OVOS DE AVES","89","GENEROS ALIMENTICIOS","108251","OVO DE GALINHA,BRANCO,GRANDE","N","UNIDADE","3,9","0","2017-11-24 09:31:50","","0","1","","0","0","1","3,9","3,9","1","15228690000108","ME","VÁLIDO E CONFIRMADO","VÁLIDO","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","LANCES","ATUALIZAÇÃO CADASTRAL - AGUARDANDO DOCUMENTAÇÃO","GOVERNO DO ESTADO DE SAO PAULO","D","SECRETARIA ADMINISTRACAO PENITENCIARIA","380203","PENIT. DE PARAGUACU PAULISTA","ADAMANTINA","SÃO PAULO","LAMBARI","SIT ESTANCIA JF, SN","BRASIL","SEDE","17800000","COMERCIO DE OVOS JF DE ADAMANTINA LTDA - ME","8"],["12/2017","20","PREGÃO ELETRÔNICO","841700801002017OC00174","S","28/08/17","14/07/17","14/07/17","1","MATERIAL","6430","ALIMENTACAO PARA ANIMAIS, AVES E PEIXES","64","EQUIPAMENTOS, MAQUINAS, ARTIGOS DE USO VETERINARIO E AGROPECUARIO","4670752","RACAO PARA EQUINOS","N","SACO       40,00 QUILOGRAMA","2,77","0","2017-09-13 00:00:00","","0","1","","0","0","1","2,77","2,77","1","11790393000109","EPP","CLASSIFICADA","CLASSIFICADA","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","ANÁLISE DE PROPOSTAS","SUSPENSÃO TEMPORÁRIA","ENTIDADES CONVENIADAS","E","ENTIDADES CONVENIADAS","841700","PREFEITURA DE LIMEIRA","AMERICANA","SÃO PAULO","RESIDENCIAL VALE DAS NOGUEIRAS","RUA DOS LIMOEIROS, 179","BRASIL","SEDE","13474383","M. P. O. VENTURA","14"],["07/2017","10","CONVITE","200149000012017OC00033","N","21/06/17","20/06/17","","1","MATERIAL","8950","ALIMENTOS DIETETICOS E PARA DIETAS ESPECIAIS","89","GENEROS ALIMENTICIOS","4620020","ADOCANTE DIETETICO LIQUIDO, CICLAMATO DE SODIO, SACARINA SODICA","N","FRASCO      200,00 MILILITRO","1,99","1","2017-06-24 00:00:00","1,99","71,64","1","3,2","0","1","1","1,99","1,99","1","16880322000293","ME","NÃO SE APLICA","NÃO SE APLICA","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","ANÁLISE DE PROPOSTAS","ATIVO","GOVERNO DO ESTADO DE SAO PAULO","D","SECRETARIA DA FAZENDA","200149","CENTRO REG.ADMINISTRACAO DE TAUBATE","SAO CAETANO DO SUL","SÃO PAULO","SANTA PAULA","RUA OSVALDO CRUZ, 1613 - FUNDOS","BRASIL","FILIAL","09540280","BALEIRA LTDA ME","21"],["10/2017","27","CONVITE","180353000012017OC00645","N","10/10/17","09/10/17","","1","MATERIAL","8955","OLEOS VEGETAIS E GORDURAS ANIMAIS","89","GENEROS ALIMENTICIOS","4595742","MARGARINA COM SAL, SEM GORDURA TRANS, TEOR DE LIPIDIOS MINIMO DE 80%","N","POTE      500,00 GRAMA","5,15","0","2017-10-18 00:00:00","","0","1","","0","0","1","5,15","5,15","1","19043440000235","Outros","NÃO SE APLICA","NÃO SE APLICA","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","ANÁLISE DE PROPOSTAS","SUSPENSÃO TEMPORÁRIA","GOVERNO DO ESTADO DE SAO PAULO","D","SECRETARIA DA SEGURANCA PUBLICA","180353","COMANDO POL.AREA METROP. 11 (CPA/M-11)","VARGEM GRANDE PAULISTA","SÃO PAULO","LAGES","ESTRADA RIBEIRÃO DAS LAGES, 50","BRASIL","FILIAL","09610000","NOVA MEGA G ATACADISTA DE ALIMENTOS LTDA","10"],["08/2017","23","CONVITE","130104000012017OC00028","N","20/07/17","20/07/17","","1","MATERIAL","6210","APARELHOS DE ILUMINACAO ELETRICA DE USO INTERNO E EXTERNO","62","LAMPADAS  PARA ILUMINACAO DE AMBIENTE E APARELHOS DE ILUMINACAO","4874137","LUMINARIA DE LED,REFLETOR,400W,BIVOLT","S","UNIDADE","897,75","0","2017-07-28 00:00:00","","0","1","","0","0","1","897,75","897,75","1","26581422000191","ME","NÃO SE APLICA","NÃO SE APLICA","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","ANÁLISE DE PROPOSTAS","ATUALIZAÇÃO CADASTRAL - AGUARDANDO DOCUMENTAÇÃO","GOVERNO DO ESTADO DE SAO PAULO","D","SECRETARIA DE AGRICULTURA E ABASTECIMENTO","130104","ADM.COORD.ASSIST.TEC.INTEGRAL","SAO PAULO","SÃO PAULO","VARZEA DA BARRA FUNDA","RUA DOUTOR MOISES KAHAN, 191","BRASIL","SEDE","01139040","R S DA COSTA COMERCIAL - ME","20"],["11/2017","21","PREGÃO ELETRÔNICO","380148000012017OC00337","N","01/11/17","31/10/17","31/10/17","1","MATERIAL","8906","CARNES,AVES E PEIXES PROCESSADOS E SEMI PROCESSADOS","89","GENEROS ALIMENTICIOS","1656520","SALSICHA HOT DOG,DE CARNE BOVINA E DE AVES, RESFRIADA","N","QUILOGRAMA","10","0","2017-11-03 00:00:00","","0","1","","0","0","1","10","10","1","16984646000190","ME","CLASSIFICADA","CLASSIFICADA","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","ANÁLISE DE PROPOSTAS","ATIVO","GOVERNO DO ESTADO DE SAO PAULO","D","SECRETARIA ADMINISTRACAO PENITENCIARIA","380148","PENITENCIARIA ADRIANO MARREY DE GUARULHOS","SOROCABA","SÃO PAULO","VILA GABRIEL","RUA ODORICO VIEIRA, 262","BRASIL","SEDE","18081035","HELANCE DISTRIBUIDORA LTDA - ME","31"],["12/2017","13","PREGÃO ELETRÔNICO","090109000012017OC00334","N","26/10/17","09/10/17","09/10/17","1","MATERIAL","8695","SUPRIMENTOS DE INFORMATICA","86","INFORMATICA","3009041","CARTUCHO DE TONER PARA IMPRESSORA HP CE505A P2035/P2055","N","UNIDADE UNIDADE","400","0","2017-11-09 00:00:00","","0","1","","0","0","1","400","400","1","5808979000142","Outros","CLASSIFICADA","CLASSIFICADA","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","ANÁLISE DE PROPOSTAS","ATUALIZAÇÃO CADASTRAL - AGUARDANDO DOCUMENTAÇÃO","GOVERNO DO ESTADO DE SAO PAULO","D","SECRETARIA DA SAUDE","90109","CENTRO DE REFERENCIA DA SAUDE DA MULHER","SAO JOSE DO RIO PRETO","SÃO PAULO","BOA VISTA","RUA DOUTOR PRESCILIANO PINTO, 427","BRASIL","SEDE","15025100","VANESSA CORREA DA ROCHA - ME","10"],["12/2017","14","PREGÃO ELETRÔNICO","102115100582017OC00023","N","04/12/17","01/12/17","01/12/17","1","MATERIAL","5935","CONECTORES ELETRICOS","59","COMPONENTES DE EQUIPAMENTOS ELETRICOS E ELETRONICOS","2663937","AQUISICAO DE CONECTORES ELETRICOS","N","VIDE EDITAL  VIDE EDITAL","1000000","0","2017-12-14 00:00:00","","0","1","","0","0","1","1000000","1000000","1","7702233000185","ME","DESCLASSIFICADA","DESCLASSIFICADA","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","ANÁLISE DE PROPOSTAS","ATUALIZAÇÃO CADASTRAL - AGUARDANDO DOCUMENTAÇÃO","UNIVERSIDADE DE SAO PAULO","I","SEC.DESENV. ECONOMICO, CIENCIA,TECN. INOVACA","102115","USP-FACULDADE DE ARQUITETURA E URBANISMO","EMBU-GUACU","SÃO PAULO","CENTRO","RUA MONTEIRO LOBATO, 30","BRASIL","SEDE","06900000","SHEKINAH MATERIAIS PARA CONSTRUCAO LTDA - ME","1"],["12/2017","4","DISPENSA DE LICITAÇÃO","163201160912017OC00075","N","30/11/17","29/11/17","","1","MATERIAL","8530","ARTIGOS DE PAPEL PARA HIGIENE PESSOAL","85","ARTIGOS DE HIGIENE","3196437","PAPEL TOALHA,GOFRADO,SIMPLES,MED(20CMX200M),32G/M2,BRANCO","N","ROLO","43,5","0","2017-12-04 16:10:07","","0","1","","0","0","1","43,5","43,5","1","24077447000127","Outros","VÁLIDO","VÁLIDO","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","LANCES","SUSPENSÃO TEMPORÁRIA","DESENVOLVIMENTO RODOVIARIO S/A","I","SECRETARIA DE LOGISTICA E TRANSPORTES","163201","DESENV. RODOVIARIO S/A - DERSA","BIRIGUI","SÃO PAULO","JARDIM ICARAY","RUA VEREADOR ARTHUR GAJARDONI, 242","BRASIL","SEDE","16200793","BIOLIMP COMERCIAL LTDA","30"],["11/2017","1","DISPENSA DE LICITAÇÃO","130167000012017OC00128","N","30/10/17","27/10/17","","1","MATERIAL","8695","SUPRIMENTOS DE INFORMATICA","86","INFORMATICA","4619277","CARTUCHO TONER IMPRESSORA HP, CF403A, MFP M277, M252DW, MAGENTA","N","UNIDADE","200","0","2017-11-01 15:00:59","","0","1","","0","0","1","200","200","1","27338349000194","Outros","VÁLIDO","VÁLIDO","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","LANCES","ATUALIZAÇÃO CADASTRAL - AGUARDANDO DOCUMENTAÇÃO","GOVERNO DO ESTADO DE SAO PAULO","D","SECRETARIA DE AGRICULTURA E ABASTECIMENTO","130167","ESCRITORIO DE DESENV. RURAL DE REGISTRO","SARANDI","PARANÁ","JARDIM INDEPENDENCIA","RUA MACHADO DE ASSIS,2442","BRASIL","SEDE","87114100","ADÉLIA RENATA DOS SANTOS 05293542923","30"],["08/2017","24","PREGÃO ELETRÔNICO","510109000012017OC00271","S","09/08/17","07/08/17","07/08/17","1","MATERIAL","7230","RECIPIENTES E UTILIDADES DE USO DOMESTICO","72","ARTIGOS, UTENSILIOS E UTILIDADES DE USO GERAL","4879457","AQUISICAO DE RECIPIENTES E UTILIDADES DE USO DOMESTICO,LOTE-38","N","VIDE EDITAL","7,15","0","2017-08-22 15:48:23","","0","1","","0","0","1","7,15","7,15","1","26510981000100","ME","VÁLIDO E CONFIRMADO","VÁLIDO","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","LANCES","ATUALIZAÇÃO CADASTRAL - AGUARDANDO DOCUMENTAÇÃO","GOVERNO DO ESTADO DE SAO PAULO","D","SECRETARIA DE GOVERNO","510109","ADMINISTRACAO DA CASA MILITAR","MOJI-MIRIM","SÃO PAULO","JARDIM PAULISTA","RUA JOSE MARIA DE QUEIROZ, 231","BRASIL","SEDE","13806574","PEZANI COMERCIO DE MOVEIS EIRELI - ME","8"],["12/2017","22","PREGÃO ELETRÔNICO","380145000012017OC00129","N","24/11/17","23/11/17","23/11/17","1","MATERIAL","8930","ACUCARES E ARTIGOS PARA CONFEITARIAS","89","GENEROS ALIMENTICIOS","4428692","ACUCAR REFINADO","N","SACO        5,00 QUILOGRAMA","1,9","0","2017-12-06 09:31:45","","0","1","","0","0","1","1,9","1,9","1","27249577000198","ME","VÁLIDO E CONFIRMADO","VÁLIDO","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","LANCES","ATUALIZAÇÃO CADASTRAL - EM ELABORAÇÃO","GOVERNO DO ESTADO DE SAO PAULO","D","SECRETARIA ADMINISTRACAO PENITENCIARIA","380145","CENTRO PROGR.PENIT.PROF.NOE AZEVEDO","BAURU","SÃO PAULO","RESIDENCIAL NOVA FLORIDA","RUA EDUARDO RESTA, 1-88","BRASIL","SEDE","17024845","FABIANA DA SILVA MARQUESI - ME","23"],["08/2017","30","PREGÃO ELETRÔNICO","090183000012017OC00221","N","09/08/17","17/07/17","17/07/17","1","MATERIAL","6542","SOLUCOES SANEANTES COM NOTIFICACAO/REGISTRO NA ANVISA DO PRODUTO","65","EQUIPAMENTOS E ARTIGOS DE USO MEDICO, ODONTOLOGICO E HOSPITALAR","3873153","DESINFETANTE DE ALTO NIVEL COMPOSTO DE ACIDO PERACETICO 0,09% A 0,15%","N","UNIDADE UNIDADE","470","1","2017-08-25 09:27:29","460","41400","1","486,75","0","1","1","470","470","1","74400052000191","Outros","VÁLIDO E CONFIRMADO","VÁLIDO","OUTROS","NEGOCIAÇÃO","ATUALIZAÇÃO CADASTRAL - AGUARDANDO DOCUMENTAÇÃO","GOVERNO DO ESTADO DE SAO PAULO","D","SECRETARIA DA SAUDE","90183","INST. INFECTOLOGIA EMILIO RIBAS","SAO PAULO","SÃO PAULO","CIDADE FIM DE SEMANA","AV JACOBUS BALDI, 745","BRASIL","SEDE","05847000","COMERCIAL 3 ALBE LTDA","17"],["11/2017","22","PREGÃO ELETRÔNICO","373201370922017OC00392","N","06/10/17","29/09/17","29/09/17","1","MATERIAL","5940","PLACAS, TERMINAIS E LAMINAS TERMINAIS","59","COMPONENTES DE EQUIPAMENTOS ELETRICOS E ELETRONICOS","3714039","TERMINAL PARA CONDUTOR ELETRICO, TIPO OLHAL, PVC AZUL, 1,02 A 2,64 MM2","N","UNIDADE UNIDADE","0,52","1","2017-10-23 11:49:34","0,52","3426,8","1","0,63","0","1","1","0,52","0,52","1","5902583000160","EPP","VÁLIDO E CONFIRMADO","VÁLIDO","EPP","LANCES","ATIVO","CIA PAULISTA DE TRENS METROPOLITANOS","I","SECRETARIA DOS TRANSPORTES METROPOLITANOS","373201","CIA.PAULISTA DE TRENS METROPOLITANOS-CPTM","SAO PAULO","SÃO PAULO","VILA FORMOSA","RUA BALZAC, 121","BRASIL","SEDE","03359130","LAMARE COMERCIO DE PECAS E ACESSORIOS LTDA - ME","29"],["11/2017","9","PREGÃO ELETRÔNICO","090102000012017OC00445","N","17/10/17","11/10/17","11/10/17","2","SERVIÇO","303","SERVICOS DE LIMPEZA, ASSEIO E CONSERVACAO PREDIAL - VOLUME 03","3","SERVICOS TERCEIRIZADOS - CADTERC","168602","LIMPEZA, ASSEIO E CONSERVACAO PREDIAL - AGRUPAMENTO DE PRECOS UNITARIOS PARA PREGAO ELETRONICO","N","VIDE EDITAL","168000","1","2017-10-30 00:00:00","109194,7777","1637921,6655","1","179800","0","1","1","168000","168000","1","26252918000111","ME","CLASSIFICADA","CLASSIFICADA","ME","ANÁLISE DE PROPOSTAS","EM REGULARIZAÇÃO","GOVERNO DO ESTADO DE SAO PAULO","D","SECRETARIA DA SAUDE","90102","COORD. GERAL ADMINIST. - CGA","SAO PAULO","SÃO PAULO","JARDIM AEROPORTO","RUA VIAZA, 437","BRASIL","SEDE","04633050","LIMPA BEM SERVICOS DE LIMPEZA EIRELI - ME","11"],["10/2017","27","CONVITE","380123000012017OC00363","N","11/10/17","10/10/17","","1","MATERIAL","5610","MATERIAIS USINADOS E DE ORIGEM MINERAL A GRANEL","56","MATERIAIS PARA CONSTRUCAO E PAVIMENTACAO","74284","CIMENTO PORTLAND COMPOSTO(CPII-Z-32MPA)","N","SACO 50.00 QUILOGRAMA","19,8","0","2017-10-16 00:00:00","","0","1","","0","0","1","19,8","19,8","1","4662552000116","Outros","NÃO SE APLICA","NÃO SE APLICA","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","ANÁLISE DE PROPOSTAS","ATIVO","GOVERNO DO ESTADO DE SAO PAULO","D","SECRETARIA ADMINISTRACAO PENITENCIARIA","380123","PENIT. P.PRUDENTE WELLINGTON R.SEGURA","REGENTE FEIJO","SÃO PAULO","PORTAL DO SOL","AV CLEMENTE PEREIRA, 1263","BRASIL","SEDE","19570000","CASARÃO - MATERIAIS DE CONSTRUÇÃO REGENTE FEIJÓ LTDA","11"],["07/2017","18","PREGÃO ELETRÔNICO","090171000012017OC00122","N","21/06/17","19/06/17","19/06/17","1","MATERIAL","4510","APARELHOS E ACESSORIOS PARA INSTALACOES HIDRAULICAS","45","EQUIPAMENTOS DE INSTALACOES HIDRAULICAS, SANITARIAS E DE CALEFACAO","250570","TE PVC RIGIDO SOLDAVEL, DIAM. 3/4\" X 1/2\", AZUL, P/ AGUA FRIA","N","UNIDADE UNIDADE","3,3","0","2017-07-03 10:01:56","","0","1","","0","0","1","3,3","3,3","1","4463413000163","EPP","VÁLIDO E CONFIRMADO","VÁLIDO","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","LANCES","ATIVO","GOVERNO DO ESTADO DE SAO PAULO","D","SECRETARIA DA SAUDE","90171","COMPLEXO HOSP. PE.BENTO, DE GUARULHOS","SAO PAULO","SÃO PAULO","JAGUARE","RUA BARCELONA, 973","BRASIL","SEDE","05331012","DAVOP COMERCIAL LTDA","19"],["10/2017","16","CONVITE","380232000012017OC00178","N","25/09/17","25/09/17","","1","MATERIAL","8105","SACOS,BOLSAS,SACOLAS E SIMILARES","81","RECIPIENTES E MATERIAIS PARA ACONDICIONAMENTO E EMBALAGEM","2149915","SACO EM BOBINA P/EMBALAGEM,POLIETILENO,(30X40)CM,PICOTADO,TRANSPARENTE","N","ROLO      150,00 METRO","10,38","0","2017-10-03 00:00:00","","0","1","","0","0","1","10,38","10,38","1","14365828000158","EPP","NÃO SE APLICA","NÃO SE APLICA","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","ANÁLISE DE PROPOSTAS","ATIVO","GOVERNO DO ESTADO DE SAO PAULO","D","SECRETARIA ADMINISTRACAO PENITENCIARIA","380232","CTO DETENCAO PROVIS.TACIO AP.SANTANA DE CAIU","PRESIDENTE PRUDENTE","SÃO PAULO","JARDIM NOVO BONGIOVANI","RUA CAROLINA LANER BONGIOVANI, 599","BRASIL","SEDE","19026660","COMERCIAL DISCON LTDA","25"],["09/2017","6","PREGÃO ELETRÔNICO","380223000012017OC00152","N","25/08/17","23/08/17","23/08/17","1","MATERIAL","8915","FRUTAS,VERDURAS E LEGUMES IN-NATURA","89","GENEROS ALIMENTICIOS","4394526","PEPINO COMUM, EXTRA AA (COMPRIMENTO ENTRE 16 E 20CM)","N","QUILOGRAMA","1,7","1","2017-09-06 10:09:37","0,79","335,75","1","1,23","0","1","1","1,7","1,7","1","23014804000145","ME","VÁLIDO E CONFIRMADO","VÁLIDO","ME","LANCES","ATUALIZAÇÃO CADASTRAL - AGUARDANDO DOCUMENTAÇÃO","GOVERNO DO ESTADO DE SAO PAULO","D","SECRETARIA ADMINISTRACAO PENITENCIARIA","380223","PENIT.TEN.PM JOSE ALFREDO C.BORIN-REGINOPOLI","CLEMENTINA","SÃO PAULO","CENTRO","RUA ESPIRITO SANTO, 385","BRASIL","SEDE","16250000","ROQUE CUSTODIO JUNIOR - ME","23"],["09/2017","27","PREGÃO ELETRÔNICO","373201370922017OC00249","N","24/08/17","02/08/17","02/08/17","1","MATERIAL","9050","CARRO FERROVIARIO","90","MATERIAIS E EQUIPAMENTOS METROVIARIOS E FERROVIARIOS","4786726","PECA REPOSICAO P/ TRUQUE - ROTULA DA BIELA DO SILENTBLOC - COD 014312","N","UNIDADE","1800","0","2017-09-05 10:51:13","","0","1","","0","0","1","1800","1800","1","15513806000150","Outros","VÁLIDO E CONFIRMADO","VÁLIDO","ENQUADRAMENTO NAO CADASTRADO NO CAUFESP","LANCES","ATUALIZAÇÃO CADASTRAL - AGUARDANDO DOCUMENTAÇÃO","CIA PAULISTA DE TRENS METROPOLITANOS","I","SECRETARIA DOS TRANSPORTES METROPOLITANOS","373201","CIA.PAULISTA DE TRENS METROPOLITANOS-CPTM","SAO PAULO","SÃO PAULO","VILA MASCOTE","AV SANTA CATARINA, 2888","BRASIL","SEDE","04378200","NN INDUSTRIA E COMERCIO DE COMPONENTES METRO-FERROVIARIOS LTDA","2"]]};
+
+// Helpers
+const pal = ['#0d6efd','#198754','#dc3545','#fd7e14','#6f42c1','#20c997',
+             '#0dcaf0','#d63384','#ffc107','#6610f2','#adb5bd','#e85d04',
+             '#2b9348','#4361ee','#f72585'];
+function fmtNum(n) { return n.toLocaleString('en'); }
+function fmtSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(1) + ' MB';
+}
+
+// Data source notes
+(function() {
+  if (!DATA.source_notes) return;
+  const section = document.getElementById('source-notes-section');
+  const h2 = document.createElement('h2');
+  h2.className = 'section-title';
+  h2.textContent = 'About This Dataset';
+  section.appendChild(h2);
+  const card = document.createElement('div');
+  card.className = 'card full';
+  card.innerHTML = '<p style="font-size:.9rem;line-height:1.7;color:#333">' + DATA.source_notes + '</p>';
+  section.appendChild(card);
+})();
+
+// Stats bar
+(function() {
+  const bar = document.getElementById('stats-bar');
+  const items = [
+    ['Rows', fmtNum(DATA.row_count)],
+    ['Columns', fmtNum(DATA.col_count)],
+    ['File Size', fmtSize(DATA.file_size)],
+  ];
+  // Add temporal ranges
+  Object.entries(DATA.temporal || {}).forEach(([col, t]) => {
+    items.push(['Date Range (' + col + ')', t.min + ' to ' + t.max]);
+  });
+  items.forEach(([label, value]) => {
+    const d = document.createElement('div');
+    d.className = 'stat-card';
+    d.innerHTML = '<div class="value">' + value + '</div><div class="label">' + label + '</div>';
+    bar.appendChild(d);
+  });
+})();
+
+// Column info table
+(function() {
+  const table = document.getElementById('col-table');
+  let html = '<thead><tr><th>#</th><th>Column</th><th>Type</th><th>Nulls</th><th>Null %</th></tr></thead><tbody>';
+  DATA.columns.forEach((c, i) => {
+    const barW = Math.min(c.null_pct, 100);
+    html += '<tr><td>' + (i + 1) + '</td><td><strong>' + c.name + '</strong></td>'
+      + '<td>' + c.dtype + '</td>'
+      + '<td>' + fmtNum(c.null_count) + '</td>'
+      + '<td><span class="null-bar" style="width:' + barW + 'px"></span> ' + c.null_pct + '%</td></tr>';
+  });
+  html += '</tbody>';
+  table.innerHTML = html;
+})();
+
+// Categorical distribution charts
+(function() {
+  const section = document.getElementById('dist-section');
+  const cats = Object.entries(DATA.categorical || {});
+  if (cats.length === 0) return;
+
+  const h2 = document.createElement('h2');
+  h2.className = 'section-title';
+  h2.textContent = 'Categorical Distributions (Top 15)';
+  section.appendChild(h2);
+
+  const grid = document.createElement('div');
+  grid.className = 'grid';
+  section.appendChild(grid);
+
+  cats.forEach(([col, d], idx) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    const labels = d.labels.map(s => String(s).length > 40 ? String(s).slice(0, 38) + '\u2026' : String(s));
+    card.innerHTML = '<h3>' + col + '</h3><div class="chart-wrap hbar"><canvas id="cat-' + idx + '"></canvas></div>';
+    grid.appendChild(card);
+
+    // Render after DOM insertion
+    setTimeout(() => {
+      new Chart(document.getElementById('cat-' + idx), {
+        type: 'bar',
+        data: { labels: labels, datasets: [{ data: d.values, backgroundColor: pal[idx % pal.length] }] },
+        options: {
+          indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { x: { beginAtZero: true } }
+        }
+      });
+    }, 0);
+  });
+})();
+
+// Temporal charts
+(function() {
+  const section = document.getElementById('temporal-section');
+  const temps = Object.entries(DATA.temporal || {});
+  if (temps.length === 0) return;
+
+  const h2 = document.createElement('h2');
+  h2.className = 'section-title';
+  h2.textContent = 'Temporal Distribution';
+  section.appendChild(h2);
+
+  const grid = document.createElement('div');
+  grid.className = 'grid';
+  section.appendChild(grid);
+
+  temps.forEach(([col, t], idx) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = '<h3>' + col + ' by year</h3><div class="chart-wrap bar"><canvas id="temp-' + idx + '"></canvas></div>';
+    grid.appendChild(card);
+
+    setTimeout(() => {
+      new Chart(document.getElementById('temp-' + idx), {
+        type: 'bar',
+        data: {
+          labels: t.by_year.labels,
+          datasets: [{ label: 'Count', data: t.by_year.values, backgroundColor: '#0d6efd' }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+    }, 0);
+  });
+})();
+
+// Sample data table
+const allRows = DATA.sample || [];
+const sampleCols = DATA.sample_columns || [];
+
+(function() {
+  document.getElementById('thead').innerHTML = '<tr>' + sampleCols.map(c => '<th>' + c + '</th>').join('') + '</tr>';
+  const searchEl = document.getElementById('search');
+  const countEl = document.getElementById('row-count');
+  const tbody = document.getElementById('tbody');
+
+  function render() {
+    const q = searchEl.value.toLowerCase();
+    const rows = q ? allRows.filter(r => r.some(v => String(v).toLowerCase().includes(q))) : allRows;
+    tbody.innerHTML = rows.map(r =>
+      '<tr>' + r.map(v => '<td>' + v + '</td>').join('') + '</tr>'
+    ).join('');
+    countEl.textContent = rows.length + ' of ' + allRows.length + ' rows';
+  }
+  searchEl.addEventListener('input', render);
+  render();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="robots" content="noindex, nofollow">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TCE-SP Municipal Procurement Bids</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+  :root {
+    --bg: #f8f9fa; --card: #fff; --fg: #1a1a1a; --muted: #666;
+    --border: #dee2e6; --accent: #0d6efd; --accent2: #198754;
+    --accent3: #dc3545; --accent4: #fd7e14;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--fg); line-height: 1.5;
+  }
+
+  .stats-bar {
+    display: flex; gap: .8rem; padding: 1rem 2rem; flex-wrap: wrap;
+  }
+  .stat-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: .75rem 1rem; flex: 1; min-width: 120px;
+    text-align: center;
+  }
+  .stat-card .value { font-size: 1.5rem; font-weight: 700; color: var(--accent); }
+  .stat-card .label { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+
+  main { padding: 0 2rem 3rem; max-width: 1400px; margin: 0 auto; }
+
+  h2.section-title {
+    font-size: 1.15rem; margin: 1.6rem 0 .8rem; padding-bottom: .3rem;
+    border-bottom: 2px solid var(--border);
+  }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1.2rem 1.4rem;
+  }
+  .card h3 { font-size: .95rem; margin-bottom: .8rem; color: var(--fg); }
+  .card.full { grid-column: 1 / -1; }
+
+  .chart-wrap { position: relative; width: 100%; }
+  .chart-wrap.bar { height: 300px; }
+  .chart-wrap.hbar { height: 380px; }
+
+  /* column info table */
+  .col-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+  .col-table th, .col-table td {
+    padding: .35rem .6rem; border-bottom: 1px solid var(--border); text-align: left;
+  }
+  .col-table th { background: #f0f4f8; font-weight: 600; position: sticky; top: 0; }
+  .col-table .null-bar { display: inline-block; height: 10px; border-radius: 2px; background: #dc3545; }
+
+  /* data table */
+  .table-wrap { overflow-x: auto; max-height: 520px; overflow-y: auto; }
+  .data-table { width: 100%; border-collapse: collapse; font-size: .8rem; }
+  .data-table th, .data-table td {
+    padding: .4rem .5rem; border-bottom: 1px solid var(--border);
+    text-align: left; white-space: nowrap; max-width: 250px; overflow: hidden; text-overflow: ellipsis;
+  }
+  .data-table th { position: sticky; top: 0; background: #f0f4f8; font-weight: 600; }
+  .data-table tbody tr:hover { background: #f0f4ff; }
+
+  .search-bar { margin-bottom: .8rem; }
+  .search-bar input {
+    font-size: .85rem; padding: .4rem .7rem; border: 1px solid var(--border);
+    border-radius: 4px; width: 100%; max-width: 400px;
+  }
+  .count-label { font-size: .8rem; color: var(--muted); margin-left: .8rem; }
+
+  footer {
+    text-align: center; padding: 1.5rem; font-size: .8rem; color: var(--muted);
+    border-top: 1px solid var(--border); margin-top: 2rem;
+  }
+</style>
+</head>
+<body>
+
+<style>
+  .site-nav {
+    position: sticky; top: 0; z-index: 100;
+    background: #212529; display: flex; align-items: center;
+    padding: 0 2rem; height: 3rem;
+  }
+  .site-nav .nav-brand {
+    color: #fff; text-decoration: none; font-weight: 600; font-size: 1rem;
+    margin-right: auto;
+  }
+  .site-nav .nav-brand:hover { color: #e9ecef; }
+  .site-nav .nav-link {
+    color: #adb5bd; text-decoration: none; font-size: .85rem;
+    padding: 0 .75rem; height: 3rem; display: flex; align-items: center;
+    background: none; border: none; cursor: pointer; font-family: inherit;
+  }
+  .site-nav .nav-link:hover, .site-nav .nav-link.active { color: #fff; }
+  .nav-dropdown { position: relative; }
+  .dropdown-menu {
+    display: none; position: absolute; top: 3rem; right: 0;
+    background: #fff; border: 1px solid var(--border); border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.12); min-width: 220px;
+    padding: .4rem 0; z-index: 200; max-height: 80vh; overflow-y: auto;
+  }
+  .nav-dropdown.open .dropdown-menu { display: block; }
+  .dropdown-menu a {
+    display: block; padding: .3rem 1rem; color: #1a1a1a;
+    text-decoration: none; font-size: .82rem;
+  }
+  .dropdown-menu a:hover { background: #f0f4f8; }
+  .dropdown-group-label {
+    padding: .4rem 1rem .15rem; font-size: .68rem; font-weight: 700;
+    color: #888; text-transform: uppercase; letter-spacing: .04em;
+  }
+  .dropdown-divider { border-top: 1px solid #eee; margin: .3rem 0; }
+  .page-header {
+    padding: .8rem 2rem; border-bottom: 1px solid var(--border); background: #fff;
+  }
+  .page-header h1 { font-size: 1.3rem; font-weight: 600; }
+  .page-header p { color: var(--muted); font-size: .85rem; margin-top: .15rem; }
+</style>
+
+<nav class="site-nav">
+  <a href="../index.html" class="nav-brand">Corruption in Procurement</a>
+  <a href="../index.html" class="nav-link">Home</a>
+  <div class="nav-dropdown">
+    <button class="nav-link">Docs &#9662;</button>
+    <div class="dropdown-menu">
+    <div class="dropdown-group-label">Reference</div>
+    <a href="../docs/README.html">Project Overview</a>
+    <a href="../docs/summary.html">Research Summary</a>
+    <a href="../docs/institutions.html">Institutional Background</a>
+    <a href="../docs/data.html">Data Sources</a>
+    <a href="../docs/methods.html">Empirical Methods</a>
+    <a href="../docs/literature.html">Literature</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Working notes</div>
+    <a href="../docs/thinking.html">Open Questions & Ideas</a>
+    <a href="../docs/decisions.html">Key Decisions</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Tasks</div>
+    <a href="../docs/todo.html">Active Tasks</a>
+    <a href="../docs/done.html">Completed Tasks</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Communication</div>
+    <a href="../docs/meetings.html">Meeting Notes</a>
+    <a href="../docs/feedback.html">External Feedback</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Briefs</div>
+    <a href="../briefs/linking.html">Linking Court Cases to Procurement Data</a>
+    </div>
+  </div>
+  <div class="nav-dropdown">
+    <button class="nav-link active">Data &#9662;</button>
+    <div class="dropdown-menu">
+    <a href="../sources/tjsp.html">TJSP Court Cases</a>
+    <a href="../sources/bec.html">BEC Procurement</a>
+    <a href="../sources/tce-sp-spending.html">TCE-SP Municipal Spending</a>
+    <a href="../sources/tce-sp-procurement.html">TCE-SP Municipal Procurement</a>
+    <a href="../sources/tce-sp-audits.html">TCE-SP Municipal Audits</a>
+    </div>
+  </div>
+</nav>
+<script>
+document.querySelectorAll('.nav-dropdown > .nav-link').forEach(function(btn) {
+  btn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    var dd = btn.parentElement;
+    var wasOpen = dd.classList.contains('open');
+    document.querySelectorAll('.nav-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+    if (!wasOpen) dd.classList.add('open');
+  });
+});
+document.addEventListener('click', function() {
+  document.querySelectorAll('.nav-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+});
+</script>
+
+<div class="page-header">
+  <h1>TCE-SP Municipal Procurement Bids</h1>
+  <p>Bid-level data from municipal procurement processes across 644 SP municipalities.</p>
+</div>
+
+<div class="stats-bar" id="stats-bar"></div>
+
+<main>
+
+<!-- Data source notes -->
+<div id="source-notes-section"></div>
+
+<!-- Column info -->
+<h2 class="section-title">Column Information</h2>
+<div class="card full">
+  <div style="overflow-x:auto; max-height:400px; overflow-y:auto;">
+    <table class="col-table" id="col-table"></table>
+  </div>
+</div>
+
+<!-- Distribution charts -->
+<div id="dist-section"></div>
+
+<!-- Temporal charts -->
+<div id="temporal-section"></div>
+
+<!-- Sample data -->
+<h2 class="section-title">Sample Data (50 rows)</h2>
+<div class="card full">
+  <div class="search-bar">
+    <input type="text" id="search" placeholder="Search across all columns...">
+    <span class="count-label" id="row-count"></span>
+  </div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead id="thead"></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+</main>
+
+<footer>
+  Generated by <code>bash build.sh site</code>
+</footer>
+
+<script>
+// Embedded data — replaced by build pipeline
+const DATA = /* INJECT_DATA */ {"id":"tce-sp-licitacao","name":"TCE-SP Municipal Procurement Bids","description":"Bid-level data from municipal procurement processes across 644 SP municipalities.","category":"TCE-SP Procurement","source_notes":"Municipal procurement bid data from TCE-SP's Audesp licitação system (Phase IV). Each row is a bid item in a procurement process, with municipality, bidding modality, object description, estimated and proposed values, and bidder details. This representative file covers January 2022 (~2.5M rows). Full data spans 2018–2022 with monthly files.","file_size":1038968967,"row_count":2523069,"col_count":21,"columns":[{"name":"Município","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Entidade","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Código da Licitação","dtype":"int64","null_count":0,"null_pct":0.0},{"name":"Modalidade de licitação","dtype":"object","null_count":8879,"null_pct":0.4},{"name":"Objeto","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Descrição do objeto contratado","dtype":"object","null_count":0,"null_pct":0.0},{"name":"Produto (item)","dtype":"object","null_count":847049,"null_pct":33.6},{"name":"Quantidade do objeto contratado (item)","dtype":"object","null_count":847049,"null_pct":33.6},{"name":"Unidade do objeto contratado","dtype":"float64","null_count":2523069,"null_pct":100.0},{"name":"Valor unitário orçamento estimativo lote","dtype":"object","null_count":729340,"null_pct":28.9},{"name":"Quantidade orçamento estimativo lote","dtype":"object","null_count":729340,"null_pct":28.9},{"name":"Unidade de medida orçamento estimativo lote","dtype":"object","null_count":729929,"null_pct":28.9},{"name":"Valor unitário orçamento estimativo item","dtype":"object","null_count":923805,"null_pct":36.6},{"name":"Quantidade orçamento estimativo item","dtype":"object","null_count":923925,"null_pct":36.6},{"name":"Unidade de medida orçamento estimativo item","dtype":"object","null_count":923805,"null_pct":36.6},{"name":"Número do edital","dtype":"object","null_count":51022,"null_pct":2.0},{"name":"Data do edital","dtype":"object","null_count":51022,"null_pct":2.0},{"name":"CNPJ do participante candidato","dtype":"object","null_count":66000,"null_pct":2.6},{"name":"Nome do participante candidato","dtype":"object","null_count":65269,"null_pct":2.6},{"name":"Resultado da Habilitação","dtype":"object","null_count":65308,"null_pct":2.6},{"name":"Valor da Proposta","dtype":"object","null_count":66734,"null_pct":2.6}],"categorical":{"Município":{"labels":["Paulínia","Salto","São Paulo","Vera Cruz","Itapira","Itu","Mogi Guaçu","Ilhabela","Taubaté","Fartura","Vargem Grande do Sul","Pariquera-Açu","Indaiatuba","Pedreira","Igarapava","Piracaia","Limeira","Santo Antônio do Pinhal","Planalto","Arapeí"],"values":[704563,184492,86876,60213,59680,48772,44157,42804,41091,39057,36505,33072,30509,28260,27656,26918,26315,25948,24464,23836]},"Modalidade de licitação":{"labels":["Pregao Eletronico","Pregao Presencial","Convite","Contratacao Direta - Dispensa de licitacao","Concorrencia","Contratacao Direta - Inexigibilidade de licitacao","Tomada de Precos","Procedimento de Licitação","Licitação SABESP","REGULAMENTO DA FAEPA - COMPRA DIRETA","3 Orçamentos","Licitação Sabesp","Credenciamento de instituições financeiras","LICITAÇÃO","Chamada Pública","CHAMADA PÚBLICA","Pedido de Proposta/DL","Licitação","artigo 14 c/c inciso II° do artigo 8° do regulamento FAEPA","Regulamento FAEPA"],"values":[1785362,608306,69180,40341,4509,1801,1584,1226,762,374,248,155,38,35,29,17,17,17,16,15]},"Resultado da Habilitação":{"labels":["Nao Compareceu","Classificado","Desclassificado","Classificado - Vencedor","Inabilitado","Desistiu","Habilitado","Proposta não analisada"],"values":[949817,590743,429698,409217,32600,31996,13447,243]}},"temporal":{"Data do edital":{"min":"1900-12-13","max":"2022-12-22","by_year":{"labels":[1900,2017,2018,2019,2020,2021,2022],"values":[10,137,53,1485,7951,2430102,32297]}}},"sample_columns":["Município","Entidade","Código da Licitação","Modalidade de licitação","Objeto","Descrição do objeto contratado","Produto (item)","Quantidade do objeto contratado (item)","Unidade do objeto contratado","Valor unitário orçamento estimativo lote","Quantidade orçamento estimativo lote","Unidade de medida orçamento estimativo lote","Valor unitário orçamento estimativo item","Quantidade orçamento estimativo item","Unidade de medida orçamento estimativo item","Número do edital","Data do edital","CNPJ do participante candidato","Nome do participante candidato","Resultado da Habilitação","Valor da Proposta"],"sample":[["Santa Gertrudes","PREFEITURA MUNICIPAL DE SANTA GERTRUDES","2022002021178","Pregao Presencial","Outros materiais de consumo","MATERIAL HIDRÁULICO","MANGUEIRA CRISTAL P/ NIVEL 3/8 X 1,5","20,0","","","","","1,5","20,0","MT","21","10/12/2021","03.952.955/0001-37","TERESA MIRANDA BASSO & FILHO LTDA ME","Classificado - Vencedor","146318,85"],["Paulínia","PREFEITURA MUNICIPAL DE PAULÍNIA","2022000000003","Pregao Eletronico","Outras prestacoes de servico","REGISTRO DE PRECOS PARA PRESTACAO DE SERVICOS DE MANUTENCAO, CONSERVACAO E PEQUENOS SERVICOS NOS IMOVEIS DA REDE MUNICIPAL DE ENSINO","RETIRADA DE APARELHOS SANITARIOS INCLUINDO ACESSORIOS ","120,0","","21,57","4000,0","UNI          ","49,12","120,0","UN          ","163/2021","04/11/2021","03.548.670/0001-35","ENGEDRART PROJETOS E OBRAS EIRELI","Classificado - Vencedor","16835000,0"],["Osvaldo Cruz","PREFEITURA MUNICIPAL DE OSVALDO CRUZ","2022210006706","Pregao Eletronico","Outros materiais de consumo","1/1 AQUISIÇÃO DE VEÍCULOS.  VEICULO ZERO KM.","","","","","","","","","","97","13/10/2021","04.602.269/0001-07","Lumiere Veículos Ltda.","Classificado - Vencedor","79500,0"],["Chavantes","PREFEITURA MUNICIPAL DE CHAVANTES","2022000000010","Pregao Eletronico","Outras prestacoes de servico","LOTE 4 CARRO 130 ","JOGO DE JUNTA DO MOTOR - CARRO 130 ","1,0","","","","","1380,0","1,0","UN","3","05/11/2021","11.704.044/0001-19","JOEL RIBEIRO DOS SANTOS ME","Classificado - Vencedor","46900,0"],["Paulínia","PREFEITURA MUNICIPAL DE PAULÍNIA","2022000000003","Pregao Eletronico","Outras prestacoes de servico","REGISTRO DE PRECOS PARA PRESTACAO DE SERVICOS DE MANUTENCAO, CONSERVACAO E PEQUENOS SERVICOS NOS IMOVEIS DA REDE MUNICIPAL DE ENSINO","CABO DE 6MM2 750V DE ISOLACAO","4500,0","","340,75","200,0","UNI          ","10,17","4500,0","UNI          ","163/2021","04/11/2021","16.934.064/0001-08","PH SERVICOS DE MANUTENCAO, CONSERVACAO, PORTARIA e OBRAS DE CONSTRUCAO CIVIL LTDA","Nao Compareceu","0,0"],["Paulínia","PREFEITURA MUNICIPAL DE PAULÍNIA","2022000000003","Pregao Eletronico","Outras prestacoes de servico","REGISTRO DE PRECOS PARA PRESTACAO DE SERVICOS DE MANUTENCAO, CONSERVACAO E PEQUENOS SERVICOS NOS IMOVEIS DA REDE MUNICIPAL DE ENSINO","RECOLOCACAO DE BATENTES DE ESQUADRIAS DE MADEIRA ","250,0","","79,57","300,0","M          ","60,83","250,0","CON          ","163/2021","04/11/2021","56.838.949/0001-10","CONSTRUTORA PROGREDIOR LTDA","Nao Compareceu","0,0"],["Itu","PREFEITURA MUNICIPAL DE ITU","2022000000415","Pregao Presencial","Medicamentos","VARFARINA 5 MG COMP ","","","","0,67","42000,0","COM","","","","0000000160","05/11/2021","04.027.894/0007-50","DUPATRI HOSPITALAR COM.IMP.E EXP. LTDA","Nao Compareceu","0,01"],["Igarapava","PREFEITURA MUNICIPAL DE IGARAPAVA","2022202100068","Pregao Eletronico","Outros materiais de consumo","JOGO DE UNIFORME PARA   FUTSAL  MASCULINO conj","JOGO DE UNIFORME PARA   FUTSAL  MASCULINO conj","4,0","","","","","1500,0","4,0","conj","000068","04/10/2021","14.163.479/0001-91","EXITUS COMERCIAL PRODUTOS E SERVICOS LTDA","Desclassificado","0,0"],["Salto","PREFEITURA MUNICIPAL DE SALTO","2022000000011","Pregao Eletronico","Material hospitalar, ambulatorial ou odontolÃ³gico","LOTE 07          ","EQUIPO PARA ALIMENTACAO","10000,0","","1,9","6000,0","UNIDADE          ","1,99","10000,0","UN          ","90/2021","30/11/2021","39.852.391/0001-08","MARIA MARTA PEREIRA DE ALMEIDA","Nao Compareceu","0,0"],["Salto","PREFEITURA MUNICIPAL DE SALTO","2022000000011","Pregao Eletronico","Material hospitalar, ambulatorial ou odontolÃ³gico","LOTE 27          ","SORO FISIOLOGICO 100 ML","3000,0","","3,9","120,0","FRASCO          ","4,05","3000,0","FRASCO          ","90/2021","30/11/2021","56.081.482/0001-06","DIMEBRAS COMERCIAL HOSPITALAR LTDA","Classificado - Vencedor","63834,0"],["Paulínia","PREFEITURA MUNICIPAL DE PAULÍNIA","2022000000003","Pregao Eletronico","Outras prestacoes de servico","REGISTRO DE PRECOS PARA PRESTACAO DE SERVICOS DE MANUTENCAO, CONSERVACAO E PEQUENOS SERVICOS NOS IMOVEIS DA REDE MUNICIPAL DE ENSINO","LATEX COM MASSA NIVELADORA PARA INTERIOR ","2500,0","","1749,46","4,0","UNI          ","44,15","2500,0","M2          ","163/2021","04/11/2021","16.934.064/0001-08","PH SERVICOS DE MANUTENCAO, CONSERVACAO, PORTARIA e OBRAS DE CONSTRUCAO CIVIL LTDA","Nao Compareceu","0,0"],["Salto","PREFEITURA MUNICIPAL DE SALTO","2022000000011","Pregao Eletronico","Material hospitalar, ambulatorial ou odontolÃ³gico","LOTE 27          ","AGUA DESTILADA 250ML ESTERIL ","200,0","","4,6","200,0","UNIDADE          ","4,5","200,0","UNIDADE          ","90/2021","30/11/2021","13.085.369/0001-96","CAPROMED FARMACEUTICA LTDA ME","Nao Compareceu","0,0"],["Planalto","PREFEITURA MUNICIPAL DE PLANALTO","2022000000014","Pregao Presencial","Medicamentos","FENITOÍNA SÓDICA SOLUÇAO INJETAVEL 50MG/ML","","","","7,5","1000,0","AM","","","","129","25/11/2021","08.231.734/0001-93","FUTURA COMERCIO DE PRODUTOS MEDICOS E HOSPITALARES EIRELI","Desclassificado","0,0"],["Vargem Grande do Sul","PREFEITURA MUNICIPAL DE VARGEM GRANDE DO SUL","2022002021120","Pregao Eletronico","Medicamentos","AMBROXOL(CLORIDRATO) 30MG/5ML- FRASCO 100ML-","AMBROXOL(CLORIDRATO) 30MG/5ML- FRASCO 100ML-","800,0","","","","","","","","82","30/11/2021","01.417.694/0001-20","DISTRIMIX DISTRIBUIDORA DE MEDICAMENTOS LTDA","Nao Compareceu","0,0"],["Cerquilho","PREFEITURA MUNICIPAL DE CERQUILHO","2022000000008","Pregao Eletronico","Outros materiais de consumo","COPO DESCARTAVEL 180ML","","","","10,44","13638,0","PCT","","","","115","17/11/2021","32.246.770/0001-05","MARCOS JOSE STUQUI DOS SANTOS","Classificado","0,0"],["Taubaté","PREFEITURA MUNICIPAL DE TAUBATÉ","2022000061249","Pregao Eletronico","Material hospitalar, ambulatorial ou odontolÃ³gico","FIO DE SUTURA DE ALGODAO 3-0, SEM AGULHA, 15X45 CM ","","","","5,0","270,0","ENV","","","","0000000255","14/09/2021","05.431.736/0001-38","ASTRA CIENTIFICA EIRELI","Nao Compareceu","0,01"],["Itapira","PREFEITURA MUNICIPAL DE ITAPIRA","2022000000249","Pregao Eletronico","Medicamentos","SALBUTAMOL 0.04 MG/5 ML, XAROPE, FRS 120 ML FR","SALBUTAMOL 0 04 MG/5 ML  XAROPE  FRS 120 ML FR","60,0","","","","","2,46","60,0","FR","000249","10/12/2021","05.439.635/0004-56","ANTIBIOTICOS DO BRASIL LTDA","Desclassificado","0,0"],["Piracaia","PREFEITURA MUNICIPAL DE PIRACAIA","2021000005022","Pregao Eletronico","Medicamentos","SUCCINATO DE DESVENLAFAXINA MONOIDRATADO 50MG COMPRIMIDO REVESTIDO DE LIBERAÇÃO PROLONGADA BLISTER","SUCCINATO DE DESVENLAFAXINA MONOIDRATADO 50MG COMPRIMIDO REVESTIDO DE LIBERAÇÃO PROLONGADA BLISTE...","300,0","","","","","","","","97","25/08/2021","29.196.670/0001-07","RHODES DISTRIBUIDORA DE MAT. HOSPITALARES LTDA","Classificado","0,0"],["Mogi das Cruzes","SECRETARIA DA ADMINISTRACAO PENITENCIARIA / CENTRO DE DETENCAO PROVISORIA DE MOGI DAS CRUZES","2022212000067","Convite","Outros materiais de consumo","5202078-Abracadeira,Tipo U,3/4\\',Aco Galvanizado Abracadeira, Tipo Em U, Com Dimensoes De 3/4\\' De Diametro, Fabricada Em Aco Galvanizado, Na Cor Natural Do Aco","","","","","","","","","","380212000012021OC00067","11/05/2021","12.688.264/0001-69","D L ISHIZUCKA EPP","Desclassificado","1,0"],["Barueri","PREFEITURA MUNICIPAL DE BARUERI","2022000000077","Pregao Eletronico","Outros materiais de consumo","CONFECÇÃO DE FORMULÁRIO MOD. 048/ 1 - PASTA PROCESSO FINANÇAS - FORMATO 500X330MM (ABERTA) - CORES 1X0 - PAPEL CARTÃO AMARELA","","","","1,53","1,0","UN","","","","436","10/12/2021","08.767.385/0001-29","HELIO MASSAKI TOTIZAWA EPP","Desclassificado","1,2"],["Paulínia","PREFEITURA MUNICIPAL DE PAULÍNIA","2022000000003","Pregao Eletronico","Outras prestacoes de servico","REGISTRO DE PRECOS PARA PRESTACAO DE SERVICOS DE MANUTENCAO, CONSERVACAO E PEQUENOS SERVICOS NOS IMOVEIS DA REDE MUNICIPAL DE ENSINO","REMOCAO DE SOQUETES P LAMPADAS INCANDES OU DE CORRENTES P PENDENTES","400,0","","955,12","5,0","UN          ","9,31","400,0","UN          ","163/2021","04/11/2021","56.838.949/0001-10","CONSTRUTORA PROGREDIOR LTDA","Nao Compareceu","0,0"],["Paulínia","PREFEITURA MUNICIPAL DE PAULÍNIA","2022000000003","Pregao Eletronico","Outras prestacoes de servico","REGISTRO DE PRECOS PARA PRESTACAO DE SERVICOS DE MANUTENCAO, CONSERVACAO E PEQUENOS SERVICOS NOS IMOVEIS DA REDE MUNICIPAL DE ENSINO","CAIXILHO DE CORRER EM PERFIL DE FERRO ","60,0","","68,64","250,0","UNI          ","937,26","60,0","CON          ","163/2021","04/11/2021","03.548.670/0001-35","ENGEDRART PROJETOS E OBRAS EIRELI","Classificado - Vencedor","16835000,0"],["Lorena","PREFEITURA MUNICIPAL DE LORENA","2022100000001","Pregao Eletronico","Material hospitalar, ambulatorial ou odontolÃ³gico","AGULHA HIPODÉRMICA DESCARTAVEL 13 X 4,5.","AGULHA HIPODÉRMICA DESCARTAVEL 13 X 4,5.","3500,0","","","","","","","","19","08/10/2021","00.874.929/0001-40","MED CENTER COMERCIAL LTDA.","Nao Compareceu","0,0"],["São Carlos","SAAE - SERVIÇO AUTÔNOMO DE ÁGUA E ESGOTO","2022210002676","Pregao Eletronico","Outros materiais de consumo","AQUISIÇÃO DE ROLAMENTOS E SELOS MECÂNICOS","Rolamento 6205 ZZ Rígido de Esfera Tipo SKF/NSK/FAG ou similar com o mesmo padrão de qualidade Cap.D","2,0","","","","","23,34","2,0","Peça","2021.057","03/12/2021","07.050.899/0001-04","ZL - ELETROTUDO MATERIAIS ELETRICOS LTDA","Classificado","0,0"],["Américo Brasiliense","PREFEITURA MUNICIPAL DE AMÉRICO BRASILIENSE","2022000000030","Pregao Presencial","Outros materiais de consumo","BASE REGISTRO GAVETA 3/4","","","","52,0","20,0","UN","","","","0082/2021","18/11/2021","19.849.459/0001-92","MORAES E GUEDES TINTAS LTDA ME","Classificado","56,9"],["Paulínia","PREFEITURA MUNICIPAL DE PAULÍNIA","2022000000003","Pregao Eletronico","Outras prestacoes de servico","REGISTRO DE PRECOS PARA PRESTACAO DE SERVICOS DE MANUTENCAO, CONSERVACAO E PEQUENOS SERVICOS NOS IMOVEIS DA REDE MUNICIPAL DE ENSINO","RECOLOCACAO DE APARELHOS SANITARIOS INCLUINDO ACESSORIOS","250,0","","142,69","100,0","JG          ","110,9","250,0","UNI          ","163/2021","04/11/2021","56.838.949/0001-10","CONSTRUTORA PROGREDIOR LTDA","Nao Compareceu","0,0"],["Ourinhos","SUPERINTENDÊNCIA DE ÁGUA E ESGOTO- SAE","2022211100035","Pregao Presencial","Outras prestacoes de servico","4  BOMBA CENTRÍFUGA KSB MEGANORM 150315","CHAVETA DO ROTOR, PARA BOMBA CENTRÍFUGA KSB MEGANORM 150  3 15","4,0","","","","","141,0","4,0","Unidade","35","05/11/2021","13.786.929/0001-30","VEGATEC SOLUÇÕES EM MANUTENÇÃO LTDAME ","Classificado - Vencedor","186361,0"],["Botucatu","PREFEITURA MUNICIPAL DE BOTUCATU","2022210800415","Pregao Eletronico","Medicamentos","PREGABALINA 75MG CAPSULA  USO ADULTO E PEDIÁTRICO ACIMA DE 12 ANOS","","","","3,96","7650,0","CAPSULA","","","","415","09/12/2021","05.159.591/0001-68","PRÓ REMEDIOS DISTRIBUIDORA DE PRODUTOS FARMACEUTICOS E COSMETICOS EIRELI ME ","Classificado","15988,5"],["Altinópolis","PREFEITURA MUNICIPAL DE ALTINÓPOLIS","2022100000327","Pregao Presencial","Outros materiais de consumo","ADAPTADOR CURTO SR 110 X 4' NBR 5648 UN","ADAPTADOR CURTO SR 110 X 4  NBR 5648 UN","100,0","","","","","80,56","100,0","UN","000327","01/12/2021","24.419.445/0001-79","TALENTOS D AGUA REPRESENTACAO PROJETOS ASSESSORIA LTDA","Classificado","31,79"],["Paulínia","PREFEITURA MUNICIPAL DE PAULÍNIA","2022000000003","Pregao Eletronico","Outras prestacoes de servico","REGISTRO DE PRECOS PARA PRESTACAO DE SERVICOS DE MANUTENCAO, CONSERVACAO E PEQUENOS SERVICOS NOS IMOVEIS DA REDE MUNICIPAL DE ENSINO","CAIXA DAGUA CONICA POLIETILENO CAPACIDADE DE 1000L INCLUSIVE TAMPA","10,0","","132,83","1200,0","UNI          ","605,93","10,0","UN          ","163/2021","04/11/2021","16.934.064/0001-08","PH SERVICOS DE MANUTENCAO, CONSERVACAO, PORTARIA e OBRAS DE CONSTRUCAO CIVIL LTDA","Nao Compareceu","0,0"],["Ribeirão Preto","FUNDACAO APOIO ENSINO PESQ HOSP CLINICAS RIB PRETO","2022100000134","REGULAMENTO DA FAEPA - COMPRA DIRETA","Generos alimenticios","01065269 - MELAO AMARELO (01065257)","","","","3,47","96,2","Kg","","","","8736/2021","04/10/2021","","","",""],["Monte Castelo","PREFEITURA MUNICIPAL DE MONTE CASTELO","2022202100072","Convite","Outras prestacoes de servico","KOMBI DMN-7798","FILTRO OLEO MOTOR DMN-7798 PC","1,0","","","","","25,69","1,0","PÇ","000072","03/12/2021","09.407.233/0001-88","THOMAZ & RAIMUNDO OFICINA MECANICA LTDA","Classificado - Vencedor","9539,34"],["Lorena","PREFEITURA MUNICIPAL DE LORENA","2022100000001","Pregao Eletronico","Material hospitalar, ambulatorial ou odontolÃ³gico","CUBA RIM EM AÇO INOXIDAVEL, CAPACIDADE DE 700 a 750ML","CUBA RIM EM AÇO INOXIDAVEL, CAPACIDADE DE 700 a 750ML","30,0","","","","","","","","19","08/10/2021","05.194.502/0001-14","ALFALAGOS LTDA.","Nao Compareceu","0,0"],["Paulínia","PREFEITURA MUNICIPAL DE PAULÍNIA","2022000000003","Pregao Eletronico","Outras prestacoes de servico","REGISTRO DE PRECOS PARA PRESTACAO DE SERVICOS DE MANUTENCAO, CONSERVACAO E PEQUENOS SERVICOS NOS IMOVEIS DA REDE MUNICIPAL DE ENSINO","RODAPE DE GRANILITE SIMPLES ALTURA 7CM","1000,0","","55,14","500,0","M          ","43,47","1000,0","UNI          ","163/2021","04/11/2021","56.838.949/0001-10","CONSTRUTORA PROGREDIOR LTDA","Nao Compareceu","0,0"],["Vargem Grande do Sul","PREFEITURA MUNICIPAL DE VARGEM GRANDE DO SUL","2022002021120","Pregao Eletronico","Medicamentos","FLUOXETINA 20MG","FLUOXETINA 20MG","150000,0","","","","","","","","82","30/11/2021","07.768.887/0001-01","MDF DISTRIBUIDORA DE PRODUTOS FARMACEUTICOS E HOSP","Nao Compareceu","0,0"],["Guaraci","PREFEITURA MUNICIPAL DE GUARACI","2022210001215","Pregao Presencial","Outros materiais de consumo","Materiais gráficos","1/33 Pastas Assunto - tamanho 25x50 cm - papel cartolina verde 1x0 cor - 01 dobra","5000,0","","","","","2,0","5000,0","UNIDADE","62","23/11/2021","14.867.938/0001-18","BOM IMPRESSO EIRELI","Classificado","144614,0"],["Paulínia","PREFEITURA MUNICIPAL DE PAULÍNIA","2022000000003","Pregao Eletronico","Outras prestacoes de servico","REGISTRO DE PRECOS PARA PRESTACAO DE SERVICOS DE MANUTENCAO, CONSERVACAO E PEQUENOS SERVICOS NOS IMOVEIS DA REDE MUNICIPAL DE ENSINO","EM TESOURAS PARA TELHAS OND CIM AM AL PLAST VAOS ATE 7,00 M","300,0","","136,58","120,0","M          ","139,57","300,0","M2          ","163/2021","04/11/2021","03.548.670/0001-35","ENGEDRART PROJETOS E OBRAS EIRELI","Classificado - Vencedor","16835000,0"],["Paulínia","PREFEITURA MUNICIPAL DE PAULÍNIA","2022000000003","Pregao Eletronico","Outras prestacoes de servico","REGISTRO DE PRECOS PARA PRESTACAO DE SERVICOS DE MANUTENCAO, CONSERVACAO E PEQUENOS SERVICOS NOS IMOVEIS DA REDE MUNICIPAL DE ENSINO","FORRO PLACA MINERAL NRC 0,70 CONSTELATION INCL PERFIS FORNEC INST ","150,0","","39,25","400,0","UN          ","141,42","150,0","M2          ","163/2021","04/11/2021","16.934.064/0001-08","PH SERVICOS DE MANUTENCAO, CONSERVACAO, PORTARIA e OBRAS DE CONSTRUCAO CIVIL LTDA","Nao Compareceu","0,0"],["São Manuel","PREFEITURA MUNICIPAL DE SÃO MANUEL","2022000000003","Pregao Eletronico","Medicamentos","Insulina humana NPH 100 UI/ml frasco ampola 10ml ","","","","37,23","12000,0","FR","","","","292","03/11/2021","43.295.831/0001-40","INTERLAB FARMACEUTICA LTDA","Classificado","0,0"],["Mogi Mirim","PREFEITURA MUNICIPAL DE MOGI MIRIM","2022210012694","Pregao Eletronico","Medicamentos","DIMENIDRINATO 50MG/ML+CLOR.PIRIDOXINA  50MG/ML - INJETÁVEL - AMPOLA 1ML","","","","1,7931","6000,0","AMPOLA","","","","2021/000148","10/11/2021","76.386.283/0001-13","DIMEVA DISTRIBUIDORA E IMPORTADORA LTDA","Classificado","0,0"],["Porto Ferreira","PREFEITURA MUNICIPAL DE PORTO FERREIRA","2022000005000","Pregao Eletronico","Outros materiais de consumo","ETIQUETA ADESIVA 80X28X1MM ROLO COM 1000 UNIDADES ETIQUETA CARTAO SUS SIMILAR A MARCA ETIPRESS ETIQUETAS ","","","","28,0","225,0","ROLO          ","","","","126/2021","16/12/2021","24.005.316/0001-34","PAPELARIA PAPEL CARTAZ LTDA","Nao Compareceu","0,0"],["Itapira","PREFEITURA MUNICIPAL DE ITAPIRA","2022000000249","Pregao Eletronico","Medicamentos","MORFINA 10MG, COMPRIMIDO CO","MORFINA 10MG  COMPRIMIDO CO","200,0","","","","","2,79","200,0","CO","000249","10/12/2021","01.857.076/0001-09","VALINPHARMA COM E REPRESENTACOES LTDA","Desclassificado","0,0"],["Itu","PREFEITURA MUNICIPAL DE ITU","2022000000415","Pregao Presencial","Medicamentos","FENOBARBITAL 100 MG COMP ","","","","0,24","602000,0","COM","","","","0000000160","05/11/2021","04.027.894/0007-50","DUPATRI HOSPITALAR COM.IMP.E EXP. LTDA","Nao Compareceu","0,01"],["Jacareí","SERVIÇO AUTÔNOMO DE ÁGUA E ESGOTO DE JACAREÍ","2021000000125","Pregao Presencial","Outros materiais de consumo","LOTE 03 - CALÇAS","Calça Branca 50","5,0","","","","","49,0","1,0","PÇ","15","14/12/2021","14.511.644/0001-59","D C N UNIFORMES E SERVICOS EIRELI","Classificado - Vencedor","91760,0"],["Fartura","PREFEITURA MUNICIPAL DE FARTURA","2022000001617","Pregao Eletronico","Outros materiais de consumo","DEXAMETASONA 0,1% COLÍRIO ","","","","8,15","50,0","FR","","","","30","15/07/2021","00.874.929/0001-40","MED CENTER COMERCIAL","Desclassificado","0,0"],["São Vicente","PREFEITURA MUNICIPAL DE SÃO VICENTE","2022100000006","Pregao Presencial","Outros materiais de consumo","lote 2","SHAMPOO PARA USO ADULTO","300,0","","","","","70,0","300,0","GALAO","165","11/01/2022","42.130.170/0001-30","FRANN COMERCIAL LTDA","Nao Compareceu","0,0"],["Paulínia","PREFEITURA MUNICIPAL DE PAULÍNIA","2022000000003","Pregao Eletronico","Outras prestacoes de servico","REGISTRO DE PRECOS PARA PRESTACAO DE SERVICOS DE MANUTENCAO, CONSERVACAO E PEQUENOS SERVICOS NOS IMOVEIS DA REDE MUNICIPAL DE ENSINO","RETIRADA DE ESTRUT DE MADEIRA EM TESOURA,PONTAL OU MISTA P TELHA FIBRO CIM SOBRE LAJE ","500,0","","587,83","10,0","UNI          ","17,99","500,0","CON          ","163/2021","04/11/2021","56.838.949/0001-10","CONSTRUTORA PROGREDIOR LTDA","Nao Compareceu","0,0"],["Taubaté","PREFEITURA MUNICIPAL DE TAUBATÉ","2022000061249","Pregao Eletronico","Material hospitalar, ambulatorial ou odontolÃ³gico","EQUIPO PARA SORO MICROGOTAS ","","","","3,6","375,0","PC","","","","0000000255","14/09/2021","61.610.283/0001-88","VITAL HOSPITALAR COMERCIAL LTDA.","Nao Compareceu","0,01"],["Pariquera-Açu","CONSORCIO INTERMUNICIPAL DE SAUDE DO VALE DO RIBEIRA","2022000000012","Pregao Presencial","Medicamentos","ACIDO FOLINICO 50MG/5ML INJETAVEL -","","","","77,73","1300,0","FA","","","","50","12/11/2021","11.260.846/0001-87","ANBIOTON IMPORTADORA LTDA.","Classificado","0,0"],["Santa Albertina","PREFEITURA MUNICIPAL DE SANTA ALBERTINA","2022000000078","Pregao Presencial","Outros materiais de consumo","CLORO GRAN. HIDR. 10KG - PISCINA BL","CLORO GRAN. HIDR. 10KG - PISCINA BL","20,0","","","","","245,3","20,0","BL","000078","29/12/2021","25.065.413/0001-85","MARCELO HENRIQUE DA SILVEIRA ANDRADE - EPP","Classificado - Vencedor","235,0"]]};
+
+// Helpers
+const pal = ['#0d6efd','#198754','#dc3545','#fd7e14','#6f42c1','#20c997',
+             '#0dcaf0','#d63384','#ffc107','#6610f2','#adb5bd','#e85d04',
+             '#2b9348','#4361ee','#f72585'];
+function fmtNum(n) { return n.toLocaleString('en'); }
+function fmtSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(1) + ' MB';
+}
+
+// Data source notes
+(function() {
+  if (!DATA.source_notes) return;
+  const section = document.getElementById('source-notes-section');
+  const h2 = document.createElement('h2');
+  h2.className = 'section-title';
+  h2.textContent = 'About This Dataset';
+  section.appendChild(h2);
+  const card = document.createElement('div');
+  card.className = 'card full';
+  card.innerHTML = '<p style="font-size:.9rem;line-height:1.7;color:#333">' + DATA.source_notes + '</p>';
+  section.appendChild(card);
+})();
+
+// Stats bar
+(function() {
+  const bar = document.getElementById('stats-bar');
+  const items = [
+    ['Rows', fmtNum(DATA.row_count)],
+    ['Columns', fmtNum(DATA.col_count)],
+    ['File Size', fmtSize(DATA.file_size)],
+  ];
+  // Add temporal ranges
+  Object.entries(DATA.temporal || {}).forEach(([col, t]) => {
+    items.push(['Date Range (' + col + ')', t.min + ' to ' + t.max]);
+  });
+  items.forEach(([label, value]) => {
+    const d = document.createElement('div');
+    d.className = 'stat-card';
+    d.innerHTML = '<div class="value">' + value + '</div><div class="label">' + label + '</div>';
+    bar.appendChild(d);
+  });
+})();
+
+// Column info table
+(function() {
+  const table = document.getElementById('col-table');
+  let html = '<thead><tr><th>#</th><th>Column</th><th>Type</th><th>Nulls</th><th>Null %</th></tr></thead><tbody>';
+  DATA.columns.forEach((c, i) => {
+    const barW = Math.min(c.null_pct, 100);
+    html += '<tr><td>' + (i + 1) + '</td><td><strong>' + c.name + '</strong></td>'
+      + '<td>' + c.dtype + '</td>'
+      + '<td>' + fmtNum(c.null_count) + '</td>'
+      + '<td><span class="null-bar" style="width:' + barW + 'px"></span> ' + c.null_pct + '%</td></tr>';
+  });
+  html += '</tbody>';
+  table.innerHTML = html;
+})();
+
+// Categorical distribution charts
+(function() {
+  const section = document.getElementById('dist-section');
+  const cats = Object.entries(DATA.categorical || {});
+  if (cats.length === 0) return;
+
+  const h2 = document.createElement('h2');
+  h2.className = 'section-title';
+  h2.textContent = 'Categorical Distributions (Top 15)';
+  section.appendChild(h2);
+
+  const grid = document.createElement('div');
+  grid.className = 'grid';
+  section.appendChild(grid);
+
+  cats.forEach(([col, d], idx) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    const labels = d.labels.map(s => String(s).length > 40 ? String(s).slice(0, 38) + '\u2026' : String(s));
+    card.innerHTML = '<h3>' + col + '</h3><div class="chart-wrap hbar"><canvas id="cat-' + idx + '"></canvas></div>';
+    grid.appendChild(card);
+
+    // Render after DOM insertion
+    setTimeout(() => {
+      new Chart(document.getElementById('cat-' + idx), {
+        type: 'bar',
+        data: { labels: labels, datasets: [{ data: d.values, backgroundColor: pal[idx % pal.length] }] },
+        options: {
+          indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { x: { beginAtZero: true } }
+        }
+      });
+    }, 0);
+  });
+})();
+
+// Temporal charts
+(function() {
+  const section = document.getElementById('temporal-section');
+  const temps = Object.entries(DATA.temporal || {});
+  if (temps.length === 0) return;
+
+  const h2 = document.createElement('h2');
+  h2.className = 'section-title';
+  h2.textContent = 'Temporal Distribution';
+  section.appendChild(h2);
+
+  const grid = document.createElement('div');
+  grid.className = 'grid';
+  section.appendChild(grid);
+
+  temps.forEach(([col, t], idx) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = '<h3>' + col + ' by year</h3><div class="chart-wrap bar"><canvas id="temp-' + idx + '"></canvas></div>';
+    grid.appendChild(card);
+
+    setTimeout(() => {
+      new Chart(document.getElementById('temp-' + idx), {
+        type: 'bar',
+        data: {
+          labels: t.by_year.labels,
+          datasets: [{ label: 'Count', data: t.by_year.values, backgroundColor: '#0d6efd' }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+    }, 0);
+  });
+})();
+
+// Sample data table
+const allRows = DATA.sample || [];
+const sampleCols = DATA.sample_columns || [];
+
+(function() {
+  document.getElementById('thead').innerHTML = '<tr>' + sampleCols.map(c => '<th>' + c + '</th>').join('') + '</tr>';
+  const searchEl = document.getElementById('search');
+  const countEl = document.getElementById('row-count');
+  const tbody = document.getElementById('tbody');
+
+  function render() {
+    const q = searchEl.value.toLowerCase();
+    const rows = q ? allRows.filter(r => r.some(v => String(v).toLowerCase().includes(q))) : allRows;
+    tbody.innerHTML = rows.map(r =>
+      '<tr>' + r.map(v => '<td>' + v + '</td>').join('') + '</tr>'
+    ).join('');
+    countEl.textContent = rows.length + ' of ' + allRows.length + ' rows';
+  }
+  searchEl.addEventListener('input', render);
+  render();
+})();
+</script>
+</body>
+</html>

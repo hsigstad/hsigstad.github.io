@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="robots" content="noindex, nofollow">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Data Sources — Corruption in Procurement</title>
+<style>
+  :root {
+    --bg: #f8f9fa; --card: #fff; --fg: #1a1a1a; --muted: #666;
+    --border: #dee2e6; --accent: #0d6efd; --accent2: #198754;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--fg); line-height: 1.5;
+  }
+
+  main {
+    padding: 1.5rem 2rem 3rem; max-width: 900px; margin: 0 auto;
+  }
+
+  /* Markdown body styles */
+  .md-body { font-size: .92rem; line-height: 1.7; color: #1f2328; }
+
+  .md-body h1 { font-size: 1.5rem; font-weight: 600; margin: 1.8rem 0 .8rem; padding-bottom: .3rem; border-bottom: 1px solid var(--border); }
+  .md-body h2 { font-size: 1.25rem; font-weight: 600; margin: 1.6rem 0 .6rem; padding-bottom: .25rem; border-bottom: 1px solid var(--border); }
+  .md-body h3 { font-size: 1.05rem; font-weight: 600; margin: 1.3rem 0 .5rem; }
+  .md-body h4 { font-size: .95rem; font-weight: 600; margin: 1.1rem 0 .4rem; }
+  .md-body h5, .md-body h6 { font-size: .88rem; font-weight: 600; margin: 1rem 0 .4rem; }
+  .md-body h1:first-child { margin-top: 0; }
+
+  .md-body p { margin: 0 0 .8rem; }
+
+  .md-body ul, .md-body ol { margin: 0 0 .8rem; padding-left: 1.8rem; }
+  .md-body li { margin-bottom: .25rem; }
+  .md-body li > ul, .md-body li > ol { margin-top: .25rem; margin-bottom: 0; }
+
+  /* Task lists */
+  .md-body ul li { list-style: disc; }
+  .md-body li input[type="checkbox"] {
+    margin-right: .4rem; vertical-align: middle; position: relative; top: -1px;
+  }
+
+  .md-body a { color: var(--accent); text-decoration: none; }
+  .md-body a:hover { text-decoration: underline; }
+
+  .md-body strong { font-weight: 600; }
+
+  .md-body blockquote {
+    margin: 0 0 .8rem; padding: .4rem 1rem;
+    border-left: 4px solid var(--accent); background: #f0f4f8;
+    color: #555; font-size: .88rem;
+  }
+  .md-body blockquote p:last-child { margin-bottom: 0; }
+
+  .md-body code {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: .85em; background: #eef1f5; padding: .15rem .35rem;
+    border-radius: 4px;
+  }
+  .md-body pre {
+    margin: 0 0 .8rem; padding: .9rem 1rem;
+    background: #f6f8fa; border: 1px solid var(--border);
+    border-radius: 6px; overflow-x: auto; line-height: 1.45;
+  }
+  .md-body pre code {
+    background: none; padding: 0; font-size: .82rem;
+  }
+
+  .md-body table {
+    width: 100%; border-collapse: collapse; margin: 0 0 .8rem;
+    font-size: .85rem; display: block; overflow-x: auto;
+  }
+  .md-body th, .md-body td {
+    padding: .45rem .7rem; border: 1px solid var(--border); text-align: left;
+  }
+  .md-body th { background: #f0f4f8; font-weight: 600; }
+  .md-body tr:nth-child(even) td { background: #fafbfc; }
+
+  .md-body hr {
+    border: none; border-top: 1px solid var(--border); margin: 1.5rem 0;
+  }
+
+  .md-body img { max-width: 100%; }
+
+  /* Collapsible sections */
+  .doc-controls { margin-bottom: 1rem; }
+  .doc-controls button {
+    font-size: .8rem; padding: .3rem .7rem; cursor: pointer;
+    background: var(--card); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--accent); font-weight: 600;
+  }
+  .doc-controls button:hover { background: #e7f1ff; }
+  .md-body details { margin-bottom: .5rem; }
+  .md-body details summary {
+    font-weight: 600; cursor: pointer; list-style: none;
+  }
+  .md-body details summary::-webkit-details-marker { display: none; }
+  .md-body details summary::before {
+    content: "\25b6"; font-size: .7em; margin-right: .5rem;
+    display: inline-block; transition: transform .15s;
+  }
+  .md-body details[open] summary::before { transform: rotate(90deg); }
+  .md-body details.level-2 > summary {
+    font-size: 1.25rem; padding-bottom: .25rem;
+    border-bottom: 1px solid var(--border); margin: 1.6rem 0 .6rem;
+  }
+  .md-body details.level-3 > summary {
+    font-size: 1.05rem; margin: 1.3rem 0 .5rem;
+  }
+
+  footer {
+    text-align: center; padding: 1.5rem; font-size: .8rem; color: var(--muted);
+    border-top: 1px solid var(--border); margin-top: 2rem;
+  }
+</style>
+</head>
+<body>
+
+<style>
+  .site-nav {
+    position: sticky; top: 0; z-index: 100;
+    background: #212529; display: flex; align-items: center;
+    padding: 0 2rem; height: 3rem;
+  }
+  .site-nav .nav-brand {
+    color: #fff; text-decoration: none; font-weight: 600; font-size: 1rem;
+    margin-right: auto;
+  }
+  .site-nav .nav-brand:hover { color: #e9ecef; }
+  .site-nav .nav-link {
+    color: #adb5bd; text-decoration: none; font-size: .85rem;
+    padding: 0 .75rem; height: 3rem; display: flex; align-items: center;
+    background: none; border: none; cursor: pointer; font-family: inherit;
+  }
+  .site-nav .nav-link:hover, .site-nav .nav-link.active { color: #fff; }
+  .nav-dropdown { position: relative; }
+  .dropdown-menu {
+    display: none; position: absolute; top: 3rem; right: 0;
+    background: #fff; border: 1px solid var(--border); border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.12); min-width: 220px;
+    padding: .4rem 0; z-index: 200; max-height: 80vh; overflow-y: auto;
+  }
+  .nav-dropdown.open .dropdown-menu { display: block; }
+  .dropdown-menu a {
+    display: block; padding: .3rem 1rem; color: #1a1a1a;
+    text-decoration: none; font-size: .82rem;
+  }
+  .dropdown-menu a:hover { background: #f0f4f8; }
+  .dropdown-group-label {
+    padding: .4rem 1rem .15rem; font-size: .68rem; font-weight: 700;
+    color: #888; text-transform: uppercase; letter-spacing: .04em;
+  }
+  .dropdown-divider { border-top: 1px solid #eee; margin: .3rem 0; }
+  .page-header {
+    padding: .8rem 2rem; border-bottom: 1px solid var(--border); background: #fff;
+  }
+  .page-header h1 { font-size: 1.3rem; font-weight: 600; }
+  .page-header p { color: var(--muted); font-size: .85rem; margin-top: .15rem; }
+</style>
+
+<nav class="site-nav">
+  <a href="../index.html" class="nav-brand">Corruption in Procurement</a>
+  <a href="../index.html" class="nav-link">Home</a>
+  <div class="nav-dropdown">
+    <button class="nav-link active">Docs &#9662;</button>
+    <div class="dropdown-menu">
+    <div class="dropdown-group-label">Reference</div>
+    <a href="../docs/README.html">Project Overview</a>
+    <a href="../docs/summary.html">Research Summary</a>
+    <a href="../docs/institutions.html">Institutional Background</a>
+    <a href="../docs/data.html">Data Sources</a>
+    <a href="../docs/methods.html">Empirical Methods</a>
+    <a href="../docs/literature.html">Literature</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Working notes</div>
+    <a href="../docs/thinking.html">Open Questions & Ideas</a>
+    <a href="../docs/decisions.html">Key Decisions</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Tasks</div>
+    <a href="../docs/todo.html">Active Tasks</a>
+    <a href="../docs/done.html">Completed Tasks</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Communication</div>
+    <a href="../docs/meetings.html">Meeting Notes</a>
+    <a href="../docs/feedback.html">External Feedback</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Briefs</div>
+    <a href="../briefs/linking.html">Linking Court Cases to Procurement Data</a>
+    </div>
+  </div>
+  <div class="nav-dropdown">
+    <button class="nav-link">Data &#9662;</button>
+    <div class="dropdown-menu">
+    <a href="../sources/tjsp.html">TJSP Court Cases</a>
+    <a href="../sources/bec.html">BEC Procurement</a>
+    <a href="../sources/tce-sp-spending.html">TCE-SP Municipal Spending</a>
+    <a href="../sources/tce-sp-procurement.html">TCE-SP Municipal Procurement</a>
+    <a href="../sources/tce-sp-audits.html">TCE-SP Municipal Audits</a>
+    </div>
+  </div>
+</nav>
+<script>
+document.querySelectorAll('.nav-dropdown > .nav-link').forEach(function(btn) {
+  btn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    var dd = btn.parentElement;
+    var wasOpen = dd.classList.contains('open');
+    document.querySelectorAll('.nav-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+    if (!wasOpen) dd.classList.add('open');
+  });
+});
+document.addEventListener('click', function() {
+  document.querySelectorAll('.nav-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+});
+</script>
+
+<div class="page-header">
+  <h1>Data Sources</h1>
+</div>
+
+<main>
+<div class="doc-controls">
+  <button id="toggle-sections">Expand all</button>
+</div>
+<div class="md-body">
+<h1>Data</h1>
+<p>Note: current files are a sample/subset. The full universe for the recent period, for São Paulo state, will be available for each data type.</p>
+<hr />
+<h2 id="bec-state-procurement-consolidated-licita-es-do-estado-de-sp">BEC state procurement — consolidated (Licitações do Estado de SP)</h2>
+<h3 id="source">Source</h3>
+<ul>
+<li>provider: BEC/SP (Bolsa Eletrônica de Compras) — São Paulo state's electronic procurement platform</li>
+<li>access: <code>data/Licitações do Estado de SP/</code></li>
+<li>documentation:</li>
+</ul>
+<h3 id="files">Files</h3>
+<ul>
+<li><code>BEC_consolidated.csv</code> — ~4M rows, 83 columns (semicolon-delimited)<ul>
+<li>one row per item per purchase order (OC)</li>
+<li>columns include: purchase order details, item descriptions, buyer unit, supplier info, bid counts by phase, prices, firm characteristics (CNPJ, CNAE, size, location, distance to buyer)</li>
+</ul>
+</li>
+<li><code>BEC_bid_to_bid.csv</code> — ~2.3M rows, 52 columns<ul>
+<li>one row per bid per item per auction</li>
+<li>columns include: auction dates, item details, unit price proposed, negotiated price, reference price, winner flag, item quantities</li>
+</ul>
+</li>
+</ul>
+<h3 id="coverage">Coverage</h3>
+<ul>
+<li>time period: (sample — full universe for recent period forthcoming)</li>
+<li>geographic scope: São Paulo state (state-level purchases, not municipal)</li>
+<li>population: state procurement via BEC electronic platform</li>
+</ul>
+<h3 id="unit-of-observation">Unit of observation</h3>
+<ul>
+<li>consolidated: item × purchase order (OC)</li>
+<li>bid_to_bid: bid × item × auction</li>
+</ul>
+<h3 id="key-variables">Key variables</h3>
+<ul>
+<li><code>numerodaoc</code> — purchase order number</li>
+<li><code>proc_compra</code> — procurement procedure type</li>
+<li><code>preco_final</code> — final price</li>
+<li><code>numbids_ph1</code>–<code>ph7</code> — number of bids by auction phase</li>
+<li><code>firm_cnpj</code> — supplier CNPJ</li>
+<li><code>cnae_fiscal</code> / <code>cnae_descr</code> — supplier industry classification</li>
+<li><code>porte_empresa</code> — firm size</li>
+<li><code>dist</code> / <code>dist1</code> / <code>dist2</code> / <code>dist3</code> — distance measures (buyer–supplier)</li>
+<li><code>same_municip</code> — buyer and supplier in same municipality</li>
+<li><code>Flag Vencedor</code> (bid_to_bid) — winner indicator</li>
+<li><code>Valor Unitário Proposta</code> / <code>Valor Unitario Negociado</code> (bid_to_bid) — bid and negotiated prices</li>
+</ul>
+<h3 id="sample-restrictions">Sample restrictions</h3>
+<ul>
+<li>state-level purchases only (not municipal)</li>
+</ul>
+<h3 id="data-quality">Data quality</h3>
+<ul>
+<li></li>
+</ul>
+<hr />
+<h2 id="public-notices-editais-data2">Public notices — editais (data2/)</h2>
+<h3 id="source">Source</h3>
+<ul>
+<li>provider: scraped from BEC/SP by Darcio Genicolo-Martins</li>
+<li>access: <code>data2/edital/</code></li>
+<li>documentation:</li>
+</ul>
+<h3 id="files">Files</h3>
+<ul>
+<li>8 sample .txt files (full set forthcoming)</li>
+<li>filenames encode procedure IDs, e.g. <code>080102000012011OC00097_edital.txt</code></li>
+<li>content: HTML-sourced text from BEC/SP system (&quot;Sistema BEC/SP&quot;)</li>
+</ul>
+<h3 id="coverage">Coverage</h3>
+<ul>
+<li>time period: (sample — full set forthcoming)</li>
+<li>geographic scope: São Paulo state</li>
+<li>population: state public bids</li>
+</ul>
+<h3 id="unit-of-observation">Unit of observation</h3>
+<ul>
+<li>one file per public notice (edital)</li>
+</ul>
+<h3 id="key-variables">Key variables</h3>
+<ul>
+<li>procedure ID (ordem de compra) — encoded in filename</li>
+<li>procedimento licitatório number — contained in text</li>
+<li>links court case references to procurement procedure IDs</li>
+</ul>
+<h3 id="sample-restrictions">Sample restrictions</h3>
+<ul>
+<li>state-level bids only (not municipal)</li>
+<li>8 files in current sample</li>
+</ul>
+<h3 id="data-quality">Data quality</h3>
+<ul>
+<li>not all court cases can be linked via edital</li>
+</ul>
+<hr />
+<h2 id="judicial-case-files-example-procurement-cases-csv">Judicial case files (example_procurement_cases.csv)</h2>
+<h3 id="source">Source</h3>
+<ul>
+<li>provider: TJSP (Tribunal de Justiça do Estado de São Paulo)</li>
+<li>access: <code>data/example_procurement_cases.csv</code></li>
+<li>documentation:</li>
+</ul>
+<h3 id="files">Files</h3>
+<ul>
+<li><code>example_procurement_cases.csv</code> — ~3,700 rows, ~130 MB</li>
+</ul>
+<h3 id="coverage">Coverage</h3>
+<ul>
+<li>time period: various (cases with decisions from ~2013 onwards in sample)</li>
+<li>geographic scope: São Paulo state</li>
+<li>population: procurement-related judicial cases (improbidade administrativa, ação civil pública, etc.)</li>
+</ul>
+<h3 id="unit-of-observation">Unit of observation</h3>
+<ul>
+<li>one row per case</li>
+</ul>
+<h3 id="key-variables">Key variables</h3>
+<ul>
+<li><code>num_npu</code> — CNJ unified case number</li>
+<li><code>classe</code> — case type (e.g., Ação Civil Pública)</li>
+<li><code>assunto</code> — subject (e.g., Improbidade Administrativa)</li>
+<li><code>magistrado</code> — judge name</li>
+<li><code>comarca</code> / <code>foro</code> / <code>vara</code> — court jurisdiction</li>
+<li><code>data</code> — decision date</li>
+<li><code>text</code> — full decision text (sentença)</li>
+</ul>
+<h3 id="sample-restrictions">Sample restrictions</h3>
+<ul>
+<li>sample of ~3,700 cases (full universe forthcoming)</li>
+</ul>
+<h3 id="data-quality">Data quality</h3>
+<ul>
+<li>full text available for LLM-based scheme classification</li>
+</ul>
+<hr />
+<h2 id="audit-data-fef-auditorias">Audit data — FEF (Auditorias/)</h2>
+<h3 id="source">Source</h3>
+<ul>
+<li>provider: likely CGU or TCE-SP audit data</li>
+<li>access: <code>data/Auditorias/</code></li>
+<li>documentation:</li>
+</ul>
+<h3 id="files">Files</h3>
+<ul>
+<li><code>FEF__Arquivo1.xlsx</code> — 27 MB</li>
+<li><code>FEF_Arquivo2.xlsx</code> — 13 MB</li>
+<li><code>FEF_Arquivo3.xlsx</code> — 2 MB</li>
+</ul>
+<h3 id="coverage">Coverage</h3>
+<ul>
+<li>time period:</li>
+<li>geographic scope:</li>
+<li>population: audited procurement cases/entities</li>
+</ul>
+<h3 id="unit-of-observation">Unit of observation</h3>
+<ul>
+<li></li>
+</ul>
+<h3 id="key-variables">Key variables</h3>
+<ul>
+<li></li>
+</ul>
+<h3 id="sample-restrictions">Sample restrictions</h3>
+<ul>
+<li></li>
+</ul>
+<h3 id="data-quality">Data quality</h3>
+<ul>
+<li></li>
+</ul>
+<hr />
+<h2 id="municipal-procurement-tce-sp-licita-es-munic-pios-estado-de-sp">Municipal procurement (TCE-SP — Licitações Municípios Estado de SP)</h2>
+<h3 id="source">Source</h3>
+<ul>
+<li>provider: TCE-SP (Tribunal de Contas do Estado de São Paulo) — Portal da Transparência Municipal</li>
+<li>URL: https://transparencia.tce.sp.gov.br/conjunto-de-dados</li>
+<li>access: <code>data/Licitações Municípios Estado de SP/</code></li>
+<li>documentation: Audesp system; see also saude project <code>docs/data.md</code> for detailed TCE-SP documentation</li>
+</ul>
+<h3 id="files">Files</h3>
+<ul>
+<li><code>licitacao-2024-11_0.zip</code> — 47 MB (November 2024)</li>
+<li><code>licitacao-2024-12_0.zip</code> — 49 MB (December 2024)</li>
+<li><code>despesas-2012.zip</code> — 976 MB (municipal expenditures 2012)</li>
+</ul>
+<h3 id="coverage">Coverage</h3>
+<ul>
+<li>time period: sample months (full series 2018+ forthcoming for licitações; 2008–2024 for despesas)</li>
+<li>geographic scope: 644 municipalities in São Paulo state (capital excluded — falls under TCM-SP)</li>
+<li>population: municipal procurement and expenditures</li>
+</ul>
+<h3 id="unit-of-observation">Unit of observation</h3>
+<ul>
+<li>licitações: procurement event level</li>
+<li>despesas: line-item expenditure (empenho / liquidação / pagamento)</li>
+</ul>
+<h3 id="key-variables-despesas">Key variables (despesas)</h3>
+<ul>
+<li><code>ds_municipio</code> / <code>codigo_municipio_ibge</code> — municipality</li>
+<li><code>tp_despesa</code> — type: Empenhado / Liquidado / Pago</li>
+<li><code>vl_despesa</code> — value in R$</li>
+<li><code>ds_modalidade_lic</code> — procurement modality (PREGÃO, DISPENSA, etc.)</li>
+<li><code>historico_despesa</code> — free-text description (can contain judicial markers)</li>
+<li><code>ds_funcao_governo</code> / <code>ds_subfuncao_governo</code> — functional classification</li>
+</ul>
+<h3 id="sample-restrictions">Sample restrictions</h3>
+<ul>
+<li>sample months only (full universe forthcoming)</li>
+</ul>
+<h3 id="data-quality">Data quality</h3>
+<ul>
+<li>encoding: ISO-8859-1 (not UTF-8)</li>
+</ul>
+<hr />
+<h2 id="tce-sp-additional-datasets-available-via-saude-project">TCE-SP additional datasets (available via saude project)</h2>
+<p>Located at <code>saude/data/tce_sp/</code>. Can be used for cross-referencing municipal spending and procurement.</p>
+<h3 id="available-datasets">Available datasets</h3>
+<table>
+<thead>
+<tr>
+  <th>Dataset</th>
+  <th>Period</th>
+  <th>Size (zipped)</th>
+  <th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Despesas</td>
+  <td>2008–2024</td>
+  <td>~22 GB</td>
+  <td>Line-item municipal expenditures</td>
+</tr>
+<tr>
+  <td>Licitações e Contratos</td>
+  <td>2018+</td>
+  <td>~1.6 GB</td>
+  <td>Procurement bids and contracts</td>
+</tr>
+<tr>
+  <td>Receitas</td>
+  <td>2008–2024</td>
+  <td>~400 MB</td>
+  <td>Municipal revenues by source</td>
+</tr>
+<tr>
+  <td>Alteração Orçamentária</td>
+  <td>2015–2019</td>
+  <td>~51 MB</td>
+  <td>Budget amendments</td>
+</tr>
+<tr>
+  <td>Relatório de Atividades</td>
+  <td>2015–2021</td>
+  <td>~49 MB</td>
+  <td>Program-level spending</td>
+</tr>
+<tr>
+  <td>RCL mensal</td>
+  <td>2015+</td>
+  <td>~600 KB</td>
+  <td>Monthly Net Current Revenue</td>
+</tr>
+<tr>
+  <td>Relatório de Alertas</td>
+  <td>2019</td>
+  <td>small</td>
+  <td>Audit alerts for fiscal irregularities</td>
+</tr>
+<tr>
+  <td>Dívida Ativa</td>
+  <td>2014+</td>
+  <td>small</td>
+  <td>Outstanding receivables</td>
+</tr>
+<tr>
+  <td>Parecer</td>
+  <td>varies</td>
+  <td>small</td>
+  <td>Audit opinions/assessments</td>
+</tr>
+</tbody>
+</table>
+<h3 id="key-details">Key details</h3>
+<ul>
+<li>all data from Audesp system (Auditoria Eletrônica de Órgãos Públicos)</li>
+<li>covers 644 SP municipalities (capital excluded)</li>
+<li>despesas contain procurement modality (<code>ds_modalidade_lic</code>) and free-text descriptions</li>
+<li>see saude <code>docs/data.md</code> for full column-level documentation</li>
+</ul>
+
+</div>
+</main>
+
+<footer>
+  Generated by <code>bash build.sh site</code>
+</footer>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const body = document.querySelector('.md-body');
+  if (!body) return;
+
+  function foldHeadings(container, tag) {
+    const level = tag.replace('H', '');
+    const headings = Array.from(container.querySelectorAll(':scope > ' + tag.toLowerCase()));
+    headings.forEach(h => {
+      const details = document.createElement('details');
+      details.className = 'level-' + level;
+      if (h.id) details.id = h.id;
+      const summary = document.createElement('summary');
+      summary.innerHTML = h.innerHTML;
+      details.appendChild(summary);
+      let sibling = h.nextElementSibling;
+      const collected = [];
+      while (sibling && sibling.tagName !== tag) {
+        collected.push(sibling);
+        sibling = sibling.nextElementSibling;
+      }
+      collected.forEach(el => details.appendChild(el));
+      h.replaceWith(details);
+    });
+    return headings.length;
+  }
+
+  // Fold h2 sections, then h3 sections within each h2
+  const count = foldHeadings(body, 'H2');
+  if (count === 0) {
+    document.querySelector('.doc-controls').style.display = 'none';
+    return;
+  }
+  body.querySelectorAll('details.level-2').forEach(d => foldHeadings(d, 'H3'));
+
+  // Toggle button
+  const btn = document.getElementById('toggle-sections');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    const allDetails = body.querySelectorAll('details');
+    const expanding = btn.textContent === 'Expand all';
+    allDetails.forEach(d => d.open = expanding);
+    btn.textContent = expanding ? 'Collapse all' : 'Expand all';
+  });
+
+  // Auto-open details when navigating to an anchor
+  function openAnchorTarget() {
+    if (!location.hash) return;
+    const target = document.querySelector(location.hash);
+    if (!target) return;
+    let el = target;
+    while (el) {
+      if (el.tagName === 'DETAILS') el.open = true;
+      el = el.parentElement;
+    }
+    target.scrollIntoView();
+  }
+  openAnchorTarget();
+  window.addEventListener('hashchange', openAnchorTarget);
+});
+</script>
+
+</body>
+</html>

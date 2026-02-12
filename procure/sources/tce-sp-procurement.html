@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="robots" content="noindex, nofollow">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TCE-SP Municipal Procurement</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+  :root {
+    --bg: #f8f9fa; --card: #fff; --fg: #1a1a1a; --muted: #666;
+    --border: #dee2e6; --accent: #0d6efd; --accent2: #198754;
+    --accent3: #dc3545; --accent4: #fd7e14;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--fg); line-height: 1.5;
+  }
+
+  .stats-bar {
+    display: flex; gap: .8rem; padding: 1rem 2rem; flex-wrap: wrap;
+  }
+  .stat-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: .75rem 1rem; flex: 1; min-width: 120px;
+    text-align: center;
+  }
+  .stat-card .value { font-size: 1.5rem; font-weight: 700; color: var(--accent); }
+  .stat-card .label { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+
+  main { padding: 0 2rem 3rem; max-width: 1400px; margin: 0 auto; }
+
+  h2.section-title {
+    font-size: 1.15rem; margin: 1.6rem 0 .8rem; padding-bottom: .3rem;
+    border-bottom: 2px solid var(--border);
+  }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1.2rem 1.4rem;
+  }
+  .card h3 { font-size: .95rem; margin-bottom: .8rem; color: var(--fg); }
+  .card.full { grid-column: 1 / -1; }
+
+  .chart-wrap { position: relative; width: 100%; }
+  .chart-wrap.bar { height: 300px; }
+  .chart-wrap.hbar { height: 380px; }
+
+  /* dataset table */
+  .ds-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+  .ds-table th, .ds-table td {
+    padding: .5rem .7rem; border-bottom: 1px solid var(--border); text-align: left;
+  }
+  .ds-table th { background: #f0f4f8; font-weight: 600; position: sticky; top: 0; }
+  .ds-table tbody tr:hover { background: #f0f4ff; }
+  .ds-table .ds-name { font-weight: 600; }
+  .ds-table .ds-desc { color: var(--muted); font-size: .8rem; }
+  .ds-table .view-link {
+    color: var(--accent); text-decoration: none; font-weight: 600; font-size: .82rem;
+  }
+  .ds-table .view-link:hover { text-decoration: underline; }
+  .num { text-align: right; }
+
+  footer {
+    text-align: center; padding: 1.5rem; font-size: .8rem; color: var(--muted);
+    border-top: 1px solid var(--border); margin-top: 2rem;
+  }
+</style>
+</head>
+<body>
+
+<style>
+  .site-nav {
+    position: sticky; top: 0; z-index: 100;
+    background: #212529; display: flex; align-items: center;
+    padding: 0 2rem; height: 3rem;
+  }
+  .site-nav .nav-brand {
+    color: #fff; text-decoration: none; font-weight: 600; font-size: 1rem;
+    margin-right: auto;
+  }
+  .site-nav .nav-brand:hover { color: #e9ecef; }
+  .site-nav .nav-link {
+    color: #adb5bd; text-decoration: none; font-size: .85rem;
+    padding: 0 .75rem; height: 3rem; display: flex; align-items: center;
+    background: none; border: none; cursor: pointer; font-family: inherit;
+  }
+  .site-nav .nav-link:hover, .site-nav .nav-link.active { color: #fff; }
+  .nav-dropdown { position: relative; }
+  .dropdown-menu {
+    display: none; position: absolute; top: 3rem; right: 0;
+    background: #fff; border: 1px solid var(--border); border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.12); min-width: 220px;
+    padding: .4rem 0; z-index: 200; max-height: 80vh; overflow-y: auto;
+  }
+  .nav-dropdown.open .dropdown-menu { display: block; }
+  .dropdown-menu a {
+    display: block; padding: .3rem 1rem; color: #1a1a1a;
+    text-decoration: none; font-size: .82rem;
+  }
+  .dropdown-menu a:hover { background: #f0f4f8; }
+  .dropdown-group-label {
+    padding: .4rem 1rem .15rem; font-size: .68rem; font-weight: 700;
+    color: #888; text-transform: uppercase; letter-spacing: .04em;
+  }
+  .dropdown-divider { border-top: 1px solid #eee; margin: .3rem 0; }
+  .page-header {
+    padding: .8rem 2rem; border-bottom: 1px solid var(--border); background: #fff;
+  }
+  .page-header h1 { font-size: 1.3rem; font-weight: 600; }
+  .page-header p { color: var(--muted); font-size: .85rem; margin-top: .15rem; }
+</style>
+
+<nav class="site-nav">
+  <a href="../index.html" class="nav-brand">Corruption in Procurement</a>
+  <a href="../index.html" class="nav-link">Home</a>
+  <div class="nav-dropdown">
+    <button class="nav-link">Docs &#9662;</button>
+    <div class="dropdown-menu">
+    <div class="dropdown-group-label">Reference</div>
+    <a href="../docs/README.html">Project Overview</a>
+    <a href="../docs/summary.html">Research Summary</a>
+    <a href="../docs/institutions.html">Institutional Background</a>
+    <a href="../docs/data.html">Data Sources</a>
+    <a href="../docs/methods.html">Empirical Methods</a>
+    <a href="../docs/literature.html">Literature</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Working notes</div>
+    <a href="../docs/thinking.html">Open Questions & Ideas</a>
+    <a href="../docs/decisions.html">Key Decisions</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Tasks</div>
+    <a href="../docs/todo.html">Active Tasks</a>
+    <a href="../docs/done.html">Completed Tasks</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Communication</div>
+    <a href="../docs/meetings.html">Meeting Notes</a>
+    <a href="../docs/feedback.html">External Feedback</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Briefs</div>
+    <a href="../briefs/linking.html">Linking Court Cases to Procurement Data</a>
+    </div>
+  </div>
+  <div class="nav-dropdown">
+    <button class="nav-link active">Data &#9662;</button>
+    <div class="dropdown-menu">
+    <a href="../sources/tjsp.html">TJSP Court Cases</a>
+    <a href="../sources/bec.html">BEC Procurement</a>
+    <a href="../sources/tce-sp-spending.html">TCE-SP Municipal Spending</a>
+    <a href="../sources/tce-sp-procurement.html">TCE-SP Municipal Procurement</a>
+    <a href="../sources/tce-sp-audits.html">TCE-SP Municipal Audits</a>
+    </div>
+  </div>
+</nav>
+<script>
+document.querySelectorAll('.nav-dropdown > .nav-link').forEach(function(btn) {
+  btn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    var dd = btn.parentElement;
+    var wasOpen = dd.classList.contains('open');
+    document.querySelectorAll('.nav-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+    if (!wasOpen) dd.classList.add('open');
+  });
+});
+document.addEventListener('click', function() {
+  document.querySelectorAll('.nav-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+});
+</script>
+
+<div class="page-header">
+  <h1>TCE-SP Municipal Procurement</h1>
+  <p>Municipal procurement bids and contracts from TCE-SP's Audesp licitação data.</p>
+</div>
+
+<div class="stats-bar" id="stats-bar"></div>
+
+<main>
+
+<!-- Distribution charts -->
+<div id="dist-section"></div>
+
+<!-- Temporal charts -->
+<div id="temporal-section"></div>
+
+<!-- Dataset listing -->
+<h2 class="section-title">Datasets</h2>
+<div class="card full">
+  <table class="ds-table" id="ds-table"></table>
+</div>
+
+</main>
+
+<footer>
+  Generated by <code>bash build.sh site</code>
+</footer>
+
+<script>
+const DATA = /* INJECT_DATA */ {"id":"tce-sp-procurement","name":"TCE-SP Municipal Procurement","description":"Municipal procurement bids and contracts from TCE-SP's Audesp licitação data.","total_rows":6514476,"total_file_size":2964752623,"dataset_count":2,"temporal_range":{"min":"1900-12-13","max":"2023"},"datasets":[{"id":"tce-sp-ajustes","name":"TCE-SP Municipal Contracts","description":"Contract-level data linking procurement processes to awarded firms across SP municipalities.","row_count":3991407,"col_count":27,"file_size":1925783656},{"id":"tce-sp-licitacao","name":"TCE-SP Municipal Procurement Bids","description":"Bid-level data from municipal procurement processes across 644 SP municipalities.","row_count":2523069,"col_count":21,"file_size":1038968967}],"featured":{"categorical":{"Município":{"labels":["São Paulo","Ribeirão Preto","Praia Grande","Indaiatuba","Catanduva","Bauru","São José dos Campos","Campinas","Araçatuba","Marília","São José do Rio Preto","Jundiaí","Botucatu","Mogi das Cruzes","Atibaia","São Manuel","Santana de Parnaíba","Cajati","Mirante do Paranapanema","Registro"],"values":[126307,58399,55319,48465,42900,42627,41726,38213,35712,34641,34547,34212,32163,29918,29531,28305,26701,26371,24996,24505]},"Modalidade de licitação":{"labels":["Pregao Presencial","Pregao Eletronico","Contratacao Direta - Dispensa de licitacao","Convite","Contratacao Direta - Inexigibilidade de licitacao","Concorrencia","Tomada de Precos","Licitação SABESP","REGULAMENTO DA FAEPA - COMPRA DIRETA","REGULAMENTO DA FAEPA - 3 ORÇAMENTOS","Licitação Sabesp","CHAMADA PÚBLICA","Chamamento Público","CREDENCIAMENTO","Chamada Pública","Regulamento Interno para a área de compras e contratação de serviços de terceiros e obras.","Regulamento Interno para área de compras e contratação de serviços de terceiros e obras.","REG. COMPRAS - INCISO I","Concorrencia Internacional","CHAMAMENTO PÚBLICO"],"values":[2446911,1002053,322476,91530,49776,28834,25388,6695,4122,1424,1140,599,581,463,455,416,351,350,319,289]},"Instrumento":{"labels":["Nota de Empenho","Contrato"],"values":[3551720,439687]}},"temporal":{"Ano do processo licitatório":{"min":"1969","max":"2023","by_year":{"labels":[1969,2002,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,2020,2021,2022,2023],"values":[1,1,5,1,6,35,3,11,29,95,471,1218,22800,347631,643369,767345,625082,827294,383553,3]}}}}};
+
+const pal = ['#0d6efd','#198754','#dc3545','#fd7e14','#6f42c1','#20c997',
+             '#0dcaf0','#d63384','#ffc107','#6610f2','#adb5bd','#e85d04',
+             '#2b9348','#4361ee','#f72585'];
+function fmtNum(n) { return n.toLocaleString('en'); }
+function fmtSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  if (bytes < 1073741824) return (bytes / 1048576).toFixed(1) + ' MB';
+  return (bytes / 1073741824).toFixed(1) + ' GB';
+}
+
+// Stats bar
+(function() {
+  var bar = document.getElementById('stats-bar');
+  var items = [
+    ['Total Rows', fmtNum(DATA.total_rows)],
+    ['Datasets', DATA.dataset_count],
+    ['Total Size', fmtSize(DATA.total_file_size)],
+  ];
+  if (DATA.temporal_range && DATA.temporal_range.min) {
+    items.push(['Temporal Range', DATA.temporal_range.min + ' \u2013 ' + DATA.temporal_range.max]);
+  }
+  items.forEach(function(item) {
+    var d = document.createElement('div');
+    d.className = 'stat-card';
+    d.innerHTML = '<div class="value">' + item[1] + '</div><div class="label">' + item[0] + '</div>';
+    bar.appendChild(d);
+  });
+})();
+
+// Categorical distribution charts (from featured dataset)
+(function() {
+  var section = document.getElementById('dist-section');
+  var featured = DATA.featured || {};
+  var cats = Object.entries(featured.categorical || {});
+  if (cats.length === 0) return;
+
+  var h2 = document.createElement('h2');
+  h2.className = 'section-title';
+  h2.textContent = 'Categorical Distributions (Top 15)';
+  section.appendChild(h2);
+
+  var grid = document.createElement('div');
+  grid.className = 'grid';
+  section.appendChild(grid);
+
+  cats.forEach(function(entry, idx) {
+    var col = entry[0], d = entry[1];
+    var card = document.createElement('div');
+    card.className = 'card';
+    var labels = d.labels.map(function(s) { return String(s).length > 40 ? String(s).slice(0, 38) + '\u2026' : String(s); });
+    card.innerHTML = '<h3>' + col + '</h3><div class="chart-wrap hbar"><canvas id="cat-' + idx + '"></canvas></div>';
+    grid.appendChild(card);
+    setTimeout(function() {
+      new Chart(document.getElementById('cat-' + idx), {
+        type: 'bar',
+        data: { labels: labels, datasets: [{ data: d.values, backgroundColor: pal[idx % pal.length] }] },
+        options: {
+          indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { x: { beginAtZero: true } }
+        }
+      });
+    }, 0);
+  });
+})();
+
+// Temporal charts (from featured dataset)
+(function() {
+  var section = document.getElementById('temporal-section');
+  var featured = DATA.featured || {};
+  var temps = Object.entries(featured.temporal || {});
+  if (temps.length === 0) return;
+
+  var h2 = document.createElement('h2');
+  h2.className = 'section-title';
+  h2.textContent = 'Temporal Distribution';
+  section.appendChild(h2);
+
+  var grid = document.createElement('div');
+  grid.className = 'grid';
+  section.appendChild(grid);
+
+  temps.forEach(function(entry, idx) {
+    var col = entry[0], t = entry[1];
+    var card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = '<h3>' + col + ' by year</h3><div class="chart-wrap bar"><canvas id="temp-' + idx + '"></canvas></div>';
+    grid.appendChild(card);
+    setTimeout(function() {
+      new Chart(document.getElementById('temp-' + idx), {
+        type: 'bar',
+        data: {
+          labels: t.by_year.labels,
+          datasets: [{ label: 'Count', data: t.by_year.values, backgroundColor: '#0d6efd' }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+    }, 0);
+  });
+})();
+
+// Dataset table
+(function() {
+  var table = document.getElementById('ds-table');
+  var html = '<thead><tr><th>Dataset</th><th class="num">Rows</th><th class="num">Columns</th><th class="num">Size</th><th></th></tr></thead><tbody>';
+  DATA.datasets.forEach(function(ds) {
+    html += '<tr>'
+      + '<td><div class="ds-name">' + ds.name + '</div><div class="ds-desc">' + ds.description + '</div></td>'
+      + '<td class="num">' + fmtNum(ds.row_count) + '</td>'
+      + '<td class="num">' + ds.col_count + '</td>'
+      + '<td class="num">' + fmtSize(ds.file_size) + '</td>'
+      + '<td><a class="view-link" href="../datasets/' + ds.id + '.html">View \u2192</a></td>'
+      + '</tr>';
+  });
+  html += '</tbody>';
+  table.innerHTML = html;
+})();
+</script>
+</body>
+</html>
