@@ -163,6 +163,7 @@
 <nav class="site-nav">
   <a href="../index.html" class="nav-brand">Corruption in Procurement</a>
   <a href="../index.html" class="nav-link">Home</a>
+  <a href="../paper/index.html" class="nav-link">Paper</a>
   <div class="nav-dropdown">
     <button class="nav-link active">Docs &#9662;</button>
     <div class="dropdown-menu">
@@ -173,6 +174,8 @@
     <a href="../docs/data.html">Data Sources</a>
     <a href="../docs/methods.html">Empirical Methods</a>
     <a href="../docs/literature.html">Literature</a>
+    <a href="../docs/scheme_evidence.html">Scheme Evidence</a>
+    <a href="../docs/hypotheses.html">Hypotheses</a>
     <div class="dropdown-divider"></div>
     <div class="dropdown-group-label">Working notes</div>
     <a href="../docs/thinking.html">Open Questions & Ideas</a>
@@ -188,6 +191,7 @@
     <div class="dropdown-divider"></div>
     <div class="dropdown-group-label">Briefs</div>
     <a href="../briefs/linking.html">Linking Court Cases to Procurement Data</a>
+    <a href="../briefs/mpsp_sources.html">MPSP Public Sources for Procurement Corruption Research</a>
     </div>
   </div>
   <div class="nav-dropdown">
@@ -282,11 +286,11 @@ document.addEventListener('click', function() {
 <li></li>
 </ul>
 <hr />
-<h2 id="public-notices-editais-data2">Public notices — editais (data2/)</h2>
+<h2 id="public-notices-editais">Public notices — editais</h2>
 <h3 id="source">Source</h3>
 <ul>
 <li>provider: scraped from BEC/SP by Darcio Genicolo-Martins</li>
-<li>access: <code>data2/edital/</code></li>
+<li>access: <code>data/edital/</code></li>
 <li>documentation:</li>
 </ul>
 <h3 id="files">Files</h3>
@@ -361,12 +365,77 @@ document.addEventListener('click', function() {
 <li>full text available for LLM-based scheme classification</li>
 </ul>
 <hr />
-<h2 id="audit-data-fef-auditorias">Audit data — FEF (Auditorias/)</h2>
+<h2 id="cgu-sorteio-audit-reports">CGU sorteio audit reports</h2>
 <h3 id="source">Source</h3>
 <ul>
-<li>provider: likely CGU or TCE-SP audit data</li>
+<li>provider: CGU (Controladoria-Geral da União) — Programa de Fiscalização por Sorteios Públicos / FEF</li>
+<li>access: <code>../../data/CGU/</code></li>
+<li>documentation: each cycle randomly selects ~60 municipalities nationwide for federal-transfer audits</li>
+</ul>
+<h3 id="files">Files</h3>
+<ul>
+<li><code>Ciclo 02/</code> through <code>Ciclo 40/</code> — individual PDF audit reports per municipality (37 cycles, ~2,100 reports total, 4.8 GB)<ul>
+<li>filename format: <code>{id}_{cycle}-{UF}-{Municipality}.pdf</code></li>
+<li><strong>178 reports for SP municipalities</strong> across all cycles</li>
+</ul>
+</li>
+<li><code>Ciclo20_40.xlsx</code> — structured finding-level data for cycles 20–40 plus V-series<ul>
+<li>84,706 rows, 23 columns</li>
+<li><strong>5,280 findings for SP</strong> across <strong>131 SP municipalities</strong></li>
+</ul>
+</li>
+<li><code>Relatórios Auditorias/</code> — (empty)</li>
+</ul>
+<h3 id="coverage">Coverage</h3>
+<ul>
+<li>time period: cycles 02–40 (~2003–2015) plus V-series (verification cycles)</li>
+<li>geographic scope: nationally sampled municipalities; 131 unique SP municipalities in xlsx</li>
+<li>population: federal transfers to municipalities (health, education, social assistance, infrastructure)</li>
+</ul>
+<h3 id="unit-of-observation">Unit of observation</h3>
+<ul>
+<li>PDFs: one report per municipality per cycle</li>
+<li>xlsx: one row per audit finding (constatação) per program per municipality</li>
+</ul>
+<h3 id="key-variables-xlsx">Key variables (xlsx)</h3>
+<ul>
+<li><code>Etapa_Sorteio_ou_Ciclo_FEF</code> — cycle number</li>
+<li><code>Municipio</code> / <code>Cod_Mun_IBGE</code> / <code>UF</code> — municipality identifiers</li>
+<li><code>Montante_fiscalizado</code> — audited amount in R$</li>
+<li><code>Funcao</code> / <code>Subfuncao</code> / <code>Programa</code> / <code>Acao</code> — functional classification</li>
+<li><code>Tipo_constatacao</code> — severity: Falha Grave (13,281), Falha Média (65,298), Falha Formal (860), Informação (3,225)</li>
+<li><code>descricao_sumaria_constatacao</code> — free-text description of the irregularity found</li>
+</ul>
+<h3 id="sp-findings-by-function-top-5">SP findings by function (top 5)</h3>
+<ul>
+<li>Saúde: 1,694 | Assistência Social: 1,189 | Educação: 1,234 | Comércio e Serviços: 192 | Urbanismo: 214</li>
+</ul>
+<h3 id="sample-restrictions">Sample restrictions</h3>
+<ul>
+<li>only municipalities selected by random lottery (not census)</li>
+<li>SP coverage: 131 of 645 municipalities (~20%)</li>
+</ul>
+<h3 id="data-quality">Data quality</h3>
+<ul>
+<li>function/subfunction labels have inconsistent casing across cycles (e.g., &quot;SAUDE&quot; vs &quot;Saúde&quot;)</li>
+<li>xlsx covers cycles 20–40 only; cycles 02–19 available as PDFs only</li>
+</ul>
+<h3 id="clean-csvs-audit-project">Clean CSVs (audit project)</h3>
+<p>Parsed and structured versions of the CGU data, available in the audit project. No need to duplicate — reference directly.</p>
+<ul>
+<li>access: <code>../../projects/audit/build/data/</code></li>
+<li><code>constatacao.csv</code> — 2.3M rows, 170 MB — every audit finding with full text (<code>fato</code>, <code>evidencias</code>, <code>analise</code>, <code>recomendacao</code>, <code>manifestacao_prefeito</code>), program/function, severity type, OS numbers</li>
+<li><code>relatorio.csv</code> — 10.8M rows, 355 MB — report-level: municipality, cycle, state, IBGE code, audited amount, year</li>
+<li>access: <code>../../projects/audit/build/clean/</code></li>
+<li><code>audit.csv</code> — 2,203 rows — audit-level: cycle, IBGE, year, publication date</li>
+<li><code>ciclo.csv</code> — 33 rows — cycle metadata</li>
+</ul>
+<hr />
+<h2 id="audit-data-fef-structured-files-auditorias">Audit data — FEF structured files (Auditorias/)</h2>
+<h3 id="source">Source</h3>
+<ul>
+<li>provider: likely extracted/structured from CGU audit data above</li>
 <li>access: <code>data/Auditorias/</code></li>
-<li>documentation:</li>
 </ul>
 <h3 id="files">Files</h3>
 <ul>
@@ -376,25 +445,19 @@ document.addEventListener('click', function() {
 </ul>
 <h3 id="coverage">Coverage</h3>
 <ul>
-<li>time period:</li>
-<li>geographic scope:</li>
-<li>population: audited procurement cases/entities</li>
+<li>likely overlaps with CGU Ciclo20_40.xlsx and audit project CSVs; relationship to be confirmed</li>
 </ul>
 <h3 id="unit-of-observation">Unit of observation</h3>
 <ul>
-<li></li>
+<li>TBD</li>
 </ul>
 <h3 id="key-variables">Key variables</h3>
 <ul>
-<li></li>
-</ul>
-<h3 id="sample-restrictions">Sample restrictions</h3>
-<ul>
-<li></li>
+<li>TBD</li>
 </ul>
 <h3 id="data-quality">Data quality</h3>
 <ul>
-<li></li>
+<li>TBD</li>
 </ul>
 <hr />
 <h2 id="municipal-procurement-tce-sp-licita-es-munic-pios-estado-de-sp">Municipal procurement (TCE-SP — Licitações Municípios Estado de SP)</h2>
@@ -515,6 +578,249 @@ document.addEventListener('click', function() {
 <li>covers 644 SP municipalities (capital excluded)</li>
 <li>despesas contain procurement modality (<code>ds_modalidade_lic</code>) and free-text descriptions</li>
 <li>see saude <code>docs/data.md</code> for full column-level documentation</li>
+</ul>
+<hr />
+<h2 id="lava-jato-case-files-data-lavajato">Lava Jato case files (data/lavajato/)</h2>
+<h3 id="source">Source</h3>
+<ul>
+<li>provider: MPF (Ministério Público Federal), STF, TRF4 — scraped from official portals</li>
+<li>access: <code>data/lavajato/</code></li>
+<li>documentation: MPF catalog at <code>data/lavajato/MPF/acoes.md</code> (315 actions documented)</li>
+</ul>
+<h3 id="directory-structure">Directory structure</h3>
+<h4 id="colabora-es-premiadas-plea-agreements">Colaborações Premiadas (plea agreements)</h4>
+<ul>
+<li>access: <code>data/lavajato/Colaborações Premiadas da Lava-Jato/</code></li>
+<li><code>Arquivos das delações no STF/</code> — 65 PDFs (308 MB) of unsealed plea agreement testimony<ul>
+<li>major collaborators: Paulo Roberto Costa (3 vols), Alberto Youssef (full), Nestor Cerveró (4 vols), Ricardo Pessoa (7 vols), Sérgio Machado (2 vols), Fernando Baiano (multiple terms), Lúcio Funaro (10 terms), Mônica Moura (3 vols), JBS (1 vol + 15 appendices), Delcídio do Amaral, Antônio Palocci, Cláudio Melo Filho, Diogo Ferreira, Fernando Migliaccio, Benedicto Barbosa da Silva Jr (TSE deposition)</li>
+</ul>
+</li>
+<li><code>Arquivos das delações no RJ/</code> — 1 PDF (Orlando Diniz, FECOMÉRCIO-RJ)</li>
+<li><code>Lista delações.xlsx</code> — index of 117 STF + 31 RJ collaborators with confidentiality status and links</li>
+<li><code>relatorioLJ2019 gabinete Fachin.pdf</code> — 2019 statistics: 113 plea agreements, 183 investigations, 782 judicial orders</li>
+</ul>
+<h4 id="mpf-case-documents">MPF case documents</h4>
+<ul>
+<li>access: <code>data/lavajato/MPF/</code></li>
+<li><code>acoes.md</code> / <code>acoes.html</code> — 315-action catalog with dates, synopses, accused, document links<ul>
+<li>62 actions with procurement-related keywords (licitação, cartel, sobrepreço, rodoanel, metrô, dersa, empreiteira)</li>
+</ul>
+</li>
+<li><code>grandes-casos/lava-jato/entenda-o-caso/curitiba/acoes/</code> — 103 criminal proceedings<ul>
+<li>101 denúncias (charge documents, 351 MB total)</li>
+<li>26 sentenças (court sentences, 43 MB total)</li>
+</ul>
+</li>
+<li><code>grandes-casos/lava-jato/entenda-o-caso/rio-de-janeiro/acoes/</code> — 48 criminal proceedings<ul>
+<li>includes named operations: Calicute, Eficiência, Tolypeutes, Pripyat, Radioatividade, Fatura Exposta, etc.</li>
+<li>50 PDFs (397 MB total)</li>
+</ul>
+</li>
+<li><code>grandes-casos/lava-jato/entenda-o-caso/stj/acoes/</code> — 18 habeas corpus / appeals cases</li>
+<li><code>sp/sala-de-imprensa/docs/</code> — SP-specific denúncias and sentences (24 MB), including:<ul>
+<li><code>denuncia-metro-corrupcao.pdf</code> — Metrô SP Lines 2, 5, 6 corruption (ex-director + 13 executives)</li>
+<li><code>FTLJSP_denuncia_CARTEL_RODOSUL_SISVIARIO.pdf</code> — Rodoanel Sul / Sis. Viário cartel (33 accused)</li>
+<li><code>improbidade-cartel-rodoanel-sul.pdf</code> — Rodoanel improbidade (4 ex-DERSA directors + 18 construction firms, R$593M)</li>
+<li><code>denuncia-dersa.pdf</code> — DERSA corruption (Paulo Vieira de Souza / &quot;Paulo Preto&quot;)</li>
+<li><code>ftlj_sp_denuncia_operacao_pedra_versao_final-revisada.pdf</code> — Operação Pedra no Caminho (Rodoanel Norte fraud, 14 accused)</li>
+<li><code>SENTENA1150787.2018.403_RED.pdf.pdf</code> — related sentence</li>
+</ul>
+</li>
+<li><code>unico/rest-api/</code> — REST API data (215 files, 801 MB) — centralized Lava Jato system records</li>
+</ul>
+<h4 id="trf4-court-cases-appeals">TRF4 court cases (appeals)</h4>
+<ul>
+<li>access: <code>data/lavajato/trf4/</code></li>
+<li><code>5000553-66.2017.4.04.7000/</code> — Ação Penal: corruption + money laundering (Mariano Marcondes Ferraz), 13ª VF Curitiba; 144 PDFs (422 MB)</li>
+<li><code>5001580-21.2016.4.04.7000/</code> — Ação Penal: financial crimes + money laundering, Curitiba; 67 docs (136 MB)</li>
+<li><code>0050095-58.2019.4.04.7000/</code> — reference case (minimal, 1 HTML file)</li>
+<li>user has full TRF4 Lava Jato archive available for additional cases</li>
+</ul>
+<h3 id="coverage">Coverage</h3>
+<ul>
+<li>time period: 2004–2019 (peak 2014–2018)</li>
+<li>geographic scope: national (Curitiba, Rio, São Paulo, Brasília/STF)</li>
+<li>SP-relevant: Metrô Lines 2/5/6, Rodoanel Sul/Norte, DERSA, Sis. Viário Metropolitano</li>
+<li>population: Petrobras procurement cartel, state infrastructure corruption, political bribery</li>
+</ul>
+<h3 id="key-content-for-this-project">Key content for this project</h3>
+<ul>
+<li><strong>Plea agreement testimony</strong> — detailed operational descriptions of how procurement cartels worked: bid rotation, bribery mechanics, payment channels, intermediary roles</li>
+<li><strong>SP denúncias</strong> — formal charges documenting specific procurement fraud schemes in São Paulo state infrastructure (Metrô, Rodoanel, DERSA), with amounts, participants, and scheme mechanics</li>
+<li><strong>Curitiba denúncias</strong> — Petrobras procurement cartel: how construction companies divided contracts, fixed bids, paid bribes through intermediaries (doleiros), and maintained the cartel over a decade</li>
+<li><strong>Sentenças</strong> — court findings establishing facts about how corruption was organized</li>
+</ul>
+<h3 id="data-quality">Data quality</h3>
+<ul>
+<li>STF delações: 65 of ~117 collaborators have unsealed documents; many remain under seal</li>
+<li>denúncias are prosecution charges (allegations, not proven facts); sentenças are court findings</li>
+<li>some PDF filenames have duplicate extensions (.pdf.pdf)</li>
+</ul>
+<hr />
+<h2 id="institutional-reference-materials-references">Institutional reference materials (references/)</h2>
+<p>Primary sources for scheme descriptions, legal frameworks, and case mechanics. Not quantitative data — these are texts used for understanding corruption typologies and institutional context.</p>
+<p>Large PDFs (&gt;5MB) are stored in Dropbox (<code>$DROPBOX_DIR/references/</code>) and marked with [DROPBOX] below. Smaller files are in the git repo.</p>
+<h3 id="cade-decisions-and-guides-references-cade">CADE decisions and guides (<code>references/cade/</code>)</h3>
+<table>
+<thead>
+<tr>
+  <th>File</th>
+  <th>Case</th>
+  <th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><code>decisions/merenda_voto_0862253.txt</code></td>
+  <td>08012.010022/2008-16</td>
+  <td>Main voto — merenda escolar cartel (SP), 7 companies, R$340.8M fines</td>
+</tr>
+<tr>
+  <td><code>decisions/merenda_voto_0867681.txt</code></td>
+  <td>&quot;</td>
+  <td>Second voto (divergência)</td>
+</tr>
+<tr>
+  <td><code>decisions/merenda_voto_0894369.txt</code></td>
+  <td>&quot;</td>
+  <td>Third voto vista</td>
+</tr>
+<tr>
+  <td><code>decisions/trens_metros_voto.txt</code></td>
+  <td>08700.004617/2013-41</td>
+  <td>Trens/metrôs cartel — Siemens, Alstom, Bombardier, CAF, Mitsui; 26 procurement processes</td>
+</tr>
+<tr>
+  <td><code>decisions/favelas_rj_historico.pdf</code></td>
+  <td>08700.007776/2016-41</td>
+  <td>[DROPBOX] Histórico da Conduta — PAC-Favelas RJ, 10 construction companies, Andrade Gutierrez leniency (98pp, 13MB)</td>
+</tr>
+<tr>
+  <td><code>decisions/petrobras_edificacoes_historico_conduta.pdf</code></td>
+  <td>Acordo de Leniência 10/2016</td>
+  <td>[DROPBOX] Histórico da Conduta — Petrobras large-scale construction, 13 companies incl. Odebrecht, Camargo Corrêa, OAS (49pp, 9MB)</td>
+</tr>
+<tr>
+  <td><code>decisions/guia_carteis_licitacao.pdf</code></td>
+  <td>—</td>
+  <td>CADE guide on detecting/combating bid-rigging cartels in procurement</td>
+</tr>
+<tr>
+  <td><code>lei_12529_2011.txt</code></td>
+  <td>—</td>
+  <td>Competition law (Lei de Defesa da Concorrência)</td>
+</tr>
+<tr>
+  <td><code>lei_12846_2013_anticorrupcao.txt</code></td>
+  <td>—</td>
+  <td>Anti-corruption law (Lei Anticorrupção)</td>
+</tr>
+<tr>
+  <td><code>lei_8137_1990_crimes_economicos.txt</code></td>
+  <td>—</td>
+  <td>Economic crimes law</td>
+</tr>
+<tr>
+  <td><code>oecd_guidelines_bid_rigging_2009.pdf</code></td>
+  <td>—</td>
+  <td>OECD guidelines on fighting bid rigging in public procurement</td>
+</tr>
+</tbody>
+</table>
+<h3 id="tcu-publications-and-audit-reports-references-tcu">TCU publications and audit reports (<code>references/tcu/</code>)</h3>
+<table>
+<thead>
+<tr>
+  <th>File</th>
+  <th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><code>referencial_combate_fraude_corrupcao_2ed.pdf</code></td>
+  <td>Referencial de Combate a Fraude e Corrupção (2nd ed., 2018) — comprehensive framework: fraud typologies, detection methods, prevention/correction mechanisms (152pp, 3.7MB)</td>
+</tr>
+<tr>
+  <td><code>licitacoes_contratos_jurisprudencia_5ed.pdf</code></td>
+  <td>[DROPBOX] Licitações e Contratos: Orientações e Jurisprudência do TCU (5th ed., 2024) — definitive procurement manual with finding matrices by procurement phase (1,013pp, 45MB)</td>
+</tr>
+<tr>
+  <td><code>codevasf_collusion_indicators_TC005920.pdf</code></td>
+  <td>TC 005.920/2022-1 — Codevasf paving collusion analysis, maps CADE/OECD indicators to bid data, 4-type scheme typology (48pp excerpts)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="cgu-guides-references-cgu">CGU guides (<code>references/cgu/</code>)</h3>
+<table>
+<thead>
+<tr>
+  <th>File</th>
+  <th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><code>guia_superfaturamento.pdf</code></td>
+  <td>Guia Referencial para Identificação, Quantificação e Mitigação de Superfaturamento (April 2025) — 7 types of overcharging: quantity, quality, excessive price, advance payments, irregular adjustments, unjustified extensions, &quot;chemical&quot; (66pp)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="legislation-references-legislacao-licitacoes-references-improbidade">Legislation (<code>references/legislacao_licitacoes/</code>, <code>references/improbidade/</code>)</h3>
+<table>
+<thead>
+<tr>
+  <th>File</th>
+  <th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><code>lei_8666_1993.txt</code></td>
+  <td>General procurement law (Lei de Licitações)</td>
+</tr>
+<tr>
+  <td><code>lei_14133_2021.txt</code></td>
+  <td>New procurement law (Nova Lei de Licitações)</td>
+</tr>
+<tr>
+  <td><code>lei_10520_2002.txt</code></td>
+  <td>Pregão law (reverse auction)</td>
+</tr>
+<tr>
+  <td><code>lei_8429_1992.txt</code></td>
+  <td>Improbidade administrativa law</td>
+</tr>
+<tr>
+  <td><code>lei_14230_2021.txt</code></td>
+  <td>Improbidade reforma</td>
+</tr>
+</tbody>
+</table>
+<h3 id="mpsp-and-cnmp-references-mpsp">MPSP and CNMP (<code>references/mpsp/</code>)</h3>
+<table>
+<thead>
+<tr>
+  <th>File</th>
+  <th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><code>manual_investigacao_patrimonio_publico.pdf</code></td>
+  <td>Manual Prático de Investigação na Proteção do Patrimônio Público e da Moralidade Administrativa — MPSP methodology for investigating patrimônio público crimes (940KB)</td>
+</tr>
+<tr>
+  <td><code>cnmp_correicao_mpsp_2022_2023.pdf</code></td>
+  <td>CNMP Correição Ordinária de Fomento à Resolutividade no MPSP (2023) — 104pp audit of MPSP effectiveness with propositions to specific units (1.5MB)</td>
+</tr>
+</tbody>
+</table>
+<p>See also <code>docs/briefs/mpsp_sources.md</code> for a comprehensive assessment of publicly available MPSP materials, including GAECO operations (Munditia, Dólos, Prenunciado, etc.) and the SIS Consulta Pública database.</p>
+<h3 id="news-collection-references-news">News collection (<code>references/news/</code>)</h3>
+<ul>
+<li><code>stories.csv</code> — 75 catalogued stories on procurement corruption (11 themes)</li>
+<li><code>texts/</code> — 61 archived full-text articles (some rows paywalled or unavailable)</li>
+<li>built into NotebookLM digest via <code>source/notebooklm/build_news_digest.py</code> (12 excerpted articles, 74KB output)</li>
 </ul>
 
 </div>
