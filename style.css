@@ -1,0 +1,1598 @@
+:root {
+  --site-max: 1600px;
+  --page-pad: clamp(1rem, 2.5vw, 2rem);
+
+  --text: #1b1b1b;
+  --muted: rgba(0,0,0,0.62);
+  --bg: #ffffff;
+  --soft: rgba(0,0,0,0.035);
+  --border: rgba(0,0,0,0.16);
+
+  --link: #0b57d0;
+  --link-visited: #5a2ea6;
+
+  --code-bg: rgba(0,0,0,0.055);
+  --code-border: rgba(0,0,0,0.12);
+
+  --radius: 10px;
+  --shadow: 0 1px 2px rgba(0,0,0,0.06);
+
+  --serif: ui-serif, Georgia, "Times New Roman", Times, serif;
+  --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+  --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  --nav-w: 420px;
+  --content-measure: 80ch;
+}
+
+html { scroll-behavior: smooth; }
+
+/* ============================================================
+   IMPORTANT: Org exporter wraps everything in #content (and sometimes
+   adds width constraints). Neutralize those so our layout applies
+   uniformly to the whole page.
+   ============================================================ */
+
+#content {
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+#content > #table-of-contents {
+  /* if Org ever emits an extra TOC outside your aside, hide it */
+  display: none;
+}
+
+/* ============================================================
+   Base typography
+   ============================================================ */
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--serif);
+  font-size: 1.06rem;
+  line-height: 1.68;
+  color: var(--text);
+  background: var(--bg);
+  counter-reset: part chapter section;
+}
+
+p { margin: 0.7rem 0; }
+strong { font-weight: 650; }
+p, li { overflow-wrap: anywhere; }
+
+a {
+  color: var(--link);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+  text-decoration-thickness: 0.08em;
+}
+a:visited { color: var(--link-visited); }
+a:hover { text-decoration-thickness: 0.12em; }
+
+hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1.5rem 0;
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--sans);
+  line-height: 1.25;
+  margin: 1.6rem 0 0.6rem;
+}
+h1 { font-size: 1.9rem; margin-top: 0.6rem; }
+h2 { font-size: 1.55rem; margin-top: 2.0rem; }
+h3 { font-size: 1.28rem; margin-top: 1.8rem; }
+h4 { font-size: 1.10rem; margin-top: 1.3rem; }
+h5 { font-size: 1.0rem; margin-top: 1.1rem; }
+h6 { font-size: 0.95rem; margin-top: 1.0rem; color: var(--muted); }
+
+h2, h3, h4 { scroll-margin-top: 1.2rem; }
+
+/* Lists, tables, code */
+ul, ol { padding-left: 1.35rem; margin: 0.7rem 0; }
+li { margin: 0.25rem 0; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-family: var(--sans);
+  font-size: 0.98rem;
+}
+th, td {
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.6rem;
+  vertical-align: top;
+}
+th { background: var(--soft); font-weight: 650; }
+
+code, pre { font-family: var(--mono); font-size: 0.95em; }
+code {
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  padding: 0.10em 0.32em;
+  border-radius: 7px;
+}
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem;
+  overflow: auto;
+  box-shadow: var(--shadow);
+  margin: 1rem 0;
+}
+pre code { background: transparent; border: none; padding: 0; }
+
+/* ============================================================
+   Two-column layout (desktop): TOC left, EVERYTHING else right
+   ============================================================ */
+
+.book-layout {
+  max-width: var(--site-max);
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem;
+}
+
+/* Right column: make sure it wraps ALL Org content */
+.book-main {
+  max-width: var(--content-measure);
+}
+
+/* Desktop: permanent sticky sidebar */
+@media (min-width: 1000px) {
+  .book-layout {
+    display: grid;
+    grid-template-columns: var(--nav-w) minmax(600px, 1fr);
+    gap: 2.5rem;
+    align-items: start;
+  }
+
+  .book-nav {
+    position: sticky;
+    top: 1rem;
+    max-height: calc(100vh - 2rem);
+    overflow: auto;
+
+    padding: var(--page-pad);
+    border-right: 1px solid var(--border);
+  }
+
+  .book-main {
+    padding: 0 var(--page-pad) var(--page-pad) var(--page-pad);
+    margin: 0;
+    justify-self: start;
+  }
+}
+
+/* Mobile: drawer-based TOC */
+@media (max-width: 999px) {
+  .book-nav {
+    position: fixed;
+    top: 0;
+    left: -100%;
+    width: 85%;
+    max-width: 380px;
+    height: 100vh;
+    overflow-y: auto;
+    z-index: 1000;
+    padding: var(--page-pad);
+    padding-top: 1.5rem;
+    background: var(--bg);
+    border-right: 1px solid var(--border);
+    box-shadow: 2px 0 12px rgba(0,0,0,0.15);
+    transition: left 0.3s ease-out;
+  }
+
+  .book-nav.mobile-open {
+    left: 0;
+  }
+
+  .book-main {
+    padding: 0 var(--page-pad) var(--page-pad) var(--page-pad);
+    margin: 0 auto;
+  }
+
+  /* Mobile TOC toggle button */
+  .mobile-toc-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 999;
+    padding: 0.75rem 1rem;
+    background: var(--link);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-family: var(--sans);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .mobile-toc-toggle:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+  }
+
+  .mobile-toc-toggle:active {
+    transform: translateY(0);
+  }
+
+  .mobile-toc-toggle svg {
+    flex-shrink: 0;
+  }
+
+  /* Mobile back button - bottom left */
+  .mobile-back-button {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    position: fixed;
+    bottom: 1.5rem;
+    left: 1.5rem;
+    z-index: 998;
+    padding: 0.65rem 0.9rem;
+    background: var(--text);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-family: var(--sans);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+  }
+
+  .mobile-back-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+  }
+
+  .mobile-back-button:active {
+    transform: translateY(0);
+  }
+
+  .mobile-back-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* Backdrop */
+  .mobile-toc-backdrop {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    background: rgba(0,0,0,0.5);
+    z-index: 999;
+    opacity: 0;
+    transition: opacity 0.3s ease-out;
+  }
+
+  .mobile-toc-backdrop.active {
+    display: block;
+    opacity: 1;
+  }
+}
+
+/* Hide mobile elements on desktop */
+@media (min-width: 1000px) {
+  .mobile-toc-toggle,
+  .mobile-toc-backdrop,
+  .mobile-back-button {
+    display: none !important;
+  }
+}
+
+/* ============================================================
+   Front matter
+   ============================================================ */
+
+.book-frontmatter {
+  text-align: center;
+  margin: 3rem 0 2.5rem 0;
+}
+.book-title { font-size: 2.1rem; font-weight: 700; margin: 0 0 0.6rem 0; }
+.book-subtitle { font-size: 1.2rem; font-weight: 400; color: rgba(0,0,0,0.7); margin: 0 0 1.2rem 0; }
+.book-author { font-size: 1rem; font-weight: 400; color: rgba(0,0,0,0.6); margin: 0; }
+
+/* ============================================================
+   TOC: sidebar-optimized (no centered box)
+   ============================================================ */
+
+#table-of-contents {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+/* Never apply BODY heading labels inside TOC */
+#table-of-contents h1::before,
+#table-of-contents h2::before,
+#table-of-contents h3::before,
+#table-of-contents h4::before,
+#table-of-contents h5::before,
+#table-of-contents h6::before { content: none !important; }
+
+#table-of-contents h1,
+#table-of-contents h2,
+#table-of-contents h3,
+#table-of-contents h4,
+#table-of-contents h5,
+#table-of-contents h6 {
+  counter-increment: none !important;
+  counter-reset: none !important;
+}
+
+/* Independent TOC counters */
+#table-of-contents { counter-reset: tocpart tocchapter; }
+
+#text-table-of-contents > ul { margin: 0; padding-left: 0; list-style: none; }
+#text-table-of-contents > ul > li { margin: 0.65rem 0; counter-increment: tocpart; }
+
+#text-table-of-contents > ul > li > a::before {
+  content: "Part " counter(tocpart, upper-roman) ": ";
+  font-weight: 600;
+}
+
+#text-table-of-contents > ul > li > ul {
+  margin-top: 0.35rem;
+  padding-left: 1.05rem;
+  list-style: none;
+}
+
+#text-table-of-contents > ul > li > ul > li {
+  margin: 0.35rem 0;
+  counter-increment: tocchapter;
+}
+
+#text-table-of-contents > ul > li > ul > li > a::before {
+  content: counter(tocchapter) ". ";
+  font-weight: 500;
+}
+
+#table-of-contents h2 {
+  margin: 0 0 0.9rem 0;
+  font-size: 1.02rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+#table-of-contents a { text-decoration: none; color: inherit; }
+#table-of-contents a:hover { text-decoration: underline; }
+
+/* Collapsible TOC sections */
+#text-table-of-contents > ul > li > ul > li > ul {
+  margin-top: 0.25rem;
+  padding-left: 1.2rem;
+  list-style: none;
+  overflow: hidden;
+  transition: max-height 0.25s ease-out, opacity 0.2s ease-out;
+}
+
+#text-table-of-contents > ul > li > ul > li > ul.collapsed {
+  max-height: 0;
+  opacity: 0;
+  margin-top: 0;
+}
+
+#text-table-of-contents > ul > li > ul > li > ul:not(.collapsed) {
+  max-height: 500px;
+}
+
+/* Section links styling */
+#text-table-of-contents > ul > li > ul > li > ul > li {
+  margin: 0.2rem 0;
+  font-size: 0.92em;
+}
+
+#text-table-of-contents > ul > li > ul > li > ul > li > a {
+  color: var(--muted);
+  padding-left: 0.3rem;
+}
+
+#text-table-of-contents > ul > li > ul > li > ul > li > a:hover {
+  color: var(--text);
+}
+
+/* Arrow indicator */
+.toc-arrow {
+  display: inline-block;
+  width: 1.1em;
+  text-align: center;
+  margin-right: 0.15em;
+  font-size: 0.8em;
+  user-select: none;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  vertical-align: baseline;
+}
+
+/* ============================================================
+   Org HTML counters in BODY (Parts/Chapters/Sections)
+   ============================================================ */
+
+body { counter-reset: part chapter section; }
+
+/* Part headings - major book divisions */
+.outline-2 > h2 {
+  counter-increment: part;
+  font-size: 2.2rem;
+  text-align: center;
+  margin-top: 5rem;
+  margin-bottom: 2.5rem;
+  padding: 2rem 0;
+  border-top: 4px solid var(--text);
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(to bottom, rgba(0,0,0,0.04), rgba(0,0,0,0.01));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.outline-2 > h2::before {
+  content: "Part " counter(part, upper-roman);
+  display: block;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+}
+
+/* Chapter headings - clear visual break */
+.outline-3 { counter-reset: section; }
+.outline-3 > h3 {
+  counter-increment: chapter;
+  font-size: 1.65rem;
+  margin-top: 4rem;
+  margin-bottom: 1.5rem;
+  padding-top: 1.5rem;
+  padding-bottom: 1rem;
+  border-top: 2px solid var(--border);
+  background: linear-gradient(to bottom, rgba(0,0,0,0.025), transparent);
+  display: flex;
+  width: 100%;
+}
+
+.outline-3 > h3::before {
+  content: "Chapter " counter(chapter) ": ";
+  font-weight: 700;
+}
+
+/* Section headings */
+.outline-4 > h4 { counter-increment: section; }
+.outline-4 > h4::before {
+  content: counter(chapter) "." counter(section) " ";
+  font-weight: 700;
+}
+
+/* Wide screens: slightly larger type */
+@media (min-width: 900px) {
+  body { font-size: 1.10rem; }
+}
+
+
+/* ----------------------------
+   5) Your pedagogical boxes — upgraded
+   - More “booky”: left accent + small header label
+   ---------------------------- */
+
+/* Generic box styling */
+.intuitionbox, .examplebox, .takeawaybox, .robustnessbox,
+.assumptionbox, .awarenessbox, .workedexample,
+.chapterorientationbox, .foundationorientationbox,
+.questionblock {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.95rem 1.05rem;
+  margin: 1.1rem 0;
+  background: var(--soft);
+  box-shadow: var(--shadow);
+}
+
+/* Left accent to help scanning */
+.intuitionbox, .examplebox, .takeawaybox, .robustnessbox,
+.assumptionbox, .awarenessbox, .workedexample,
+.chapterorientationbox, .foundationorientationbox,
+.questionblock {
+  border-left-width: 5px;
+}
+
+/* Slight differentiation by type (subtle) */
+.intuitionbox { background: rgba(0,0,0,0.03); border-left-color: rgba(0,0,0,0.35); }
+.examplebox { background: rgba(0,80,160,0.06); border-left-color: rgba(0,80,160,0.45); }
+.takeawaybox { background: rgba(0,120,60,0.06); border-left-color: rgba(0,120,60,0.45); }
+.robustnessbox { background: rgba(184,134,11,0.08); border-left-color: rgba(184,134,11,0.55); }
+.assumptionbox { background: rgba(120,0,120,0.06); border-left-color: rgba(120,0,120,0.45); }
+.awarenessbox { background: rgba(184,134,11,0.05); border-left-color: rgba(184,134,11,0.50); }
+
+.chapterorientationbox { background: rgba(0,0,0,0.025); border-left-color: rgba(0,0,0,0.25); }
+.foundationorientationbox { background: rgba(0,0,0,0.035); border-left-color: rgba(0,0,0,0.30); }
+
+.workedexample {
+  background: rgba(0,80,160,0.06);
+  border-left-color: rgba(0,80,160,0.60);
+  border-width: 1px;
+}
+
+/* Box “titles” via CSS only (more subtle + consistent) */
+.intuitionbox::before,
+.examplebox::before,
+.takeawaybox::before,
+.robustnessbox::before,
+.assumptionbox::before,
+.workedexample::before,
+.chapterorientationbox::before,
+.foundationorientationbox::before {
+  display: block;
+  font-family: var(--sans);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  font-size: 0.92rem;
+  margin-bottom: 0.45rem;
+  color: rgba(0,0,0,0.78);
+}
+
+.intuitionbox::before { content: "Intuition"; }
+.examplebox::before { content: "Example"; }
+.takeawaybox::before { content: "Takeaway"; }
+.robustnessbox::before { content: "Robustness"; }
+.assumptionbox::before { content: "Assumptions in Focus"; }
+.workedexample::before { content: "Worked Example (exam-style reasoning)"; }
+.chapterorientationbox::before { content: "Chapter Orientation"; }
+.foundationorientationbox::before { content: "Foundations Orientation"; }
+
+/* Make the first paragraph inside boxes slightly tighter */
+.intuitionbox > p:first-child,
+.examplebox > p:first-child,
+.takeawaybox > p:first-child,
+.robustnessbox > p:first-child,
+.assumptionbox > p:first-child,
+.workedexample > p:first-child,
+.chapterorientationbox > p:first-child,
+.foundationorientationbox > p:first-child,
+.questionblock > p:first-child {
+  margin-top: 0.35rem;
+}
+
+/* Question block: make it look "exam prompt"-like */
+.questionblock {
+  background: rgba(0,0,0,0.02);
+  border-left-color: rgba(0,0,0,0.28);
+}
+
+/* ============================================================
+   Collapsible Box Functionality (HTML-only)
+   ============================================================ */
+
+/* Title bar becomes clickable */
+.box-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  padding: 0.5rem 0;
+  margin: 0 0 0.75rem 0;
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 0.92rem;
+  letter-spacing: 0.02em;
+  color: rgba(0,0,0,0.78);
+}
+
+/* Box type label - less emphasized */
+.box-type-label {
+  font-weight: 600;
+  font-size: 0.85rem;
+  opacity: 0.7;
+  color: rgba(0,0,0,0.65);
+}
+
+/* Separator between type and topic */
+.box-title-separator {
+  opacity: 0.5;
+  font-weight: 400;
+}
+
+/* Box topic label - more emphasized */
+.box-topic-label {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: rgba(0,0,0,0.85);
+}
+
+/* Chevron icon */
+.box-chevron {
+  font-size: 0.75rem;
+  transition: transform 0.2s ease;
+  color: rgba(0,0,0,0.5);
+  margin-left: 0.5rem;
+}
+
+/* Rotate chevron when expanded */
+.box-expanded .box-chevron {
+  transform: rotate(90deg);
+}
+
+/* Collapsible content container */
+.box-content {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 0.3s ease, opacity 0.2s ease, overflow 0s 0.3s;
+}
+
+/* Expanded state */
+.box-expanded .box-content {
+  max-height: 5000px; /* Large enough for any box content */
+  opacity: 1;
+  overflow: visible; /* Allow tooltips to overflow */
+  transition: max-height 0.3s ease, opacity 0.2s ease, overflow 0s 0s;
+}
+
+/* Remove old ::before labels (replaced by .box-title) */
+.intuitionbox::before,
+.examplebox::before,
+.takeawaybox::before,
+.robustnessbox::before,
+.assumptionbox::before,
+.awarenessbox::before,
+.workedexample::before,
+.chapterorientationbox::before,
+.foundationorientationbox::before {
+  content: none;
+}
+
+/* Adjust padding for collapsed boxes */
+.intuitionbox:not(.box-expanded),
+.examplebox:not(.box-expanded),
+.takeawaybox:not(.box-expanded),
+.robustnessbox:not(.box-expanded),
+.assumptionbox:not(.box-expanded),
+.awarenessbox:not(.box-expanded),
+.workedexample:not(.box-expanded),
+.chapterorientationbox:not(.box-expanded),
+.foundationorientationbox:not(.box-expanded) {
+  padding: 0.75rem 1.2rem;
+}
+
+/* Hover effect on title bar */
+.box-title:hover {
+  opacity: 0.8;
+}
+
+/* Mobile: Larger tap target */
+@media (max-width: 600px) {
+  .box-title {
+    padding: 0.75rem 0;
+    font-size: 0.95rem;
+  }
+
+  .box-chevron {
+    font-size: 0.85rem;
+  }
+}
+
+/* ============================================================
+   Foldable Headings (Chapters, Sections, Subsections)
+   ============================================================ */
+
+/* Fold arrow indicator */
+.heading-fold-arrow {
+  display: inline-block;
+  font-size: 0.7em;
+  margin-left: 0.4em;
+  margin-right: 0.3em;
+  color: rgba(0,0,0,0.4);
+  cursor: pointer;
+  transition: transform 0.2s ease, color 0.2s ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Hover effect */
+.heading-fold-arrow:hover {
+  color: rgba(0,0,0,0.7);
+}
+
+/* Rotated state when folded */
+.heading-folded .heading-fold-arrow {
+  transform: rotate(-90deg);
+}
+
+/* Make entire heading clickable and use flexbox for ordering */
+h2.foldable-heading,
+h3.foldable-heading,
+h4.foldable-heading {
+  display: inline-flex;
+  align-items: baseline;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Hover effect on foldable headings */
+h2.foldable-heading:hover,
+h3.foldable-heading:hover,
+h4.foldable-heading:hover {
+  opacity: 0.85;
+}
+
+/* Order elements: arrow first, then counter, then text */
+.heading-fold-arrow {
+  order: -1;
+}
+
+h2.foldable-heading::before,
+h3.foldable-heading::before,
+h4.foldable-heading::before {
+  order: 0;
+}
+
+.heading-text {
+  order: 1;
+  margin-left: 0.35em;
+}
+
+/* Content that can be folded */
+.foldable-content {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 0.4s ease, opacity 0.3s ease;
+}
+
+/* Folded state - hide content */
+.heading-folded ~ .foldable-content,
+.heading-folded .foldable-content {
+  max-height: 0 !important;
+  opacity: 0;
+  margin: 0;
+  padding: 0;
+}
+
+/* Expanded state - show content (only when NOT inside a folded heading) */
+div:not(.heading-folded) > .foldable-content,
+div:not(.heading-folded) ~ div > .foldable-content {
+  max-height: none;
+  opacity: 1;
+}
+
+/* Mobile: Larger tap target for fold arrow */
+@media (max-width: 600px) {
+  .heading-fold-arrow {
+    font-size: 0.8em;
+    margin-left: 0.5em;
+    margin-right: 0.4em;
+  }
+}
+
+/* ============================================================
+   Foundation Concept Tooltips
+   ============================================================ */
+
+/* Tooltip term styling */
+.term-with-tooltip {
+  color: #3d4a5c !important;
+  text-decoration: none !important;
+  border-bottom: none !important;
+}
+
+/* ============================================================
+   Legal Incentives Model Interactive Widget
+   ============================================================ */
+
+.legal-incentives-widget {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background: rgba(0,0,0,0.02);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--link);
+  border-radius: var(--radius);
+}
+
+.widget-header {
+  margin-bottom: 1.5rem;
+}
+
+.widget-header h4 {
+  margin: 0 0 0.5rem 0;
+  font-family: var(--sans);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: rgba(0,0,0,0.85);
+}
+
+.widget-subtitle {
+  margin: 0;
+  font-size: 0.9rem;
+  color: rgba(0,0,0,0.6);
+  font-style: italic;
+}
+
+/* Scenario buttons */
+.widget-scenarios {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.scenario-btn {
+  padding: 0.5rem 1rem;
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.scenario-btn:hover {
+  background: rgba(0,70,140,0.05);
+  border-color: var(--link);
+}
+
+.scenario-btn.active {
+  background: var(--link);
+  color: white;
+  border-color: var(--link);
+}
+
+/* Control groups */
+.widget-controls {
+  margin-bottom: 1.5rem;
+}
+
+.control-group {
+  margin-bottom: 1.5rem;
+}
+
+.control-group label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.5rem;
+  font-family: var(--sans);
+}
+
+.param-label {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: rgba(0,0,0,0.8);
+}
+
+.param-value {
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  color: var(--link);
+  font-weight: 700;
+}
+
+.param-hint {
+  font-size: 0.8rem;
+  color: rgba(0,0,0,0.5);
+  margin-top: 0.25rem;
+  font-style: italic;
+}
+
+/* Range sliders */
+input[type="range"] {
+  width: 100%;
+  height: 6px;
+  background: rgba(0,0,0,0.1);
+  border-radius: 3px;
+  outline: none;
+  -webkit-appearance: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: var(--link);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: var(--link);
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  transition: transform 0.1s;
+}
+
+input[type="range"]::-moz-range-thumb:hover {
+  transform: scale(1.2);
+}
+
+/* Results section */
+.widget-results {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.result-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 1rem;
+  font-family: var(--sans);
+}
+
+.result-label {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: rgba(0,0,0,0.7);
+}
+
+.result-value {
+  font-family: var(--mono);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--link);
+}
+
+/* Decision box */
+.decision-box {
+  padding: 1.25rem;
+  border-radius: 6px;
+  text-align: center;
+  transition: all 0.3s;
+}
+
+.decision-box.action-taken {
+  background: rgba(0,120,60,0.1);
+  border: 2px solid rgba(0,120,60,0.4);
+}
+
+.decision-box.action-not-taken {
+  background: rgba(180,0,0,0.08);
+  border: 2px solid rgba(180,0,0,0.3);
+}
+
+.decision-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.decision-text {
+  font-family: var(--sans);
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.decision-box.action-taken .decision-text {
+  color: rgba(0,100,50,0.9);
+}
+
+.decision-box.action-not-taken .decision-text {
+  color: rgba(140,0,0,0.9);
+}
+
+.decision-detail {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: rgba(0,0,0,0.7);
+}
+
+/* Mobile responsive */
+@media (max-width: 600px) {
+  .widget-scenarios {
+    flex-direction: column;
+  }
+
+  .scenario-btn {
+    width: 100%;
+  }
+}
+
+/* ============================================================
+   Activation Mode Toggle
+   ============================================================ */
+
+/* TOC Settings Section */
+.toc-settings {
+  padding: 1rem 1.5rem 0.75rem;
+  background: rgba(0,0,0,0.02);
+}
+
+.toc-settings-header {
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 0.75rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.toc-setting-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  padding: 0.5rem 0;
+  color: var(--text);
+}
+
+.toc-setting-item input[type="checkbox"] {
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+}
+
+.toc-setting-item .setting-label {
+  user-select: none;
+}
+
+.toc-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 0.75rem 0 1rem;
+}
+
+.reset-questions-btn {
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 4px);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.reset-questions-btn:hover {
+  background: rgba(0,0,0,0.03);
+  color: var(--text);
+  border-color: var(--muted);
+}
+
+/* ============================================================
+   Structural Sections (Non-analytical, Mandatory)
+   ============================================================ */
+
+/* Structural sections are unnumbered, visually distinct landmarks
+   that mark mandatory pedagogical interfaces (not analytical content) */
+
+/* Structural section headings (exported as h4 in HTML) */
+.structural-section h4,
+.structural-section h3 {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  font-family: var(--sans);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text);
+  width: 100%;
+  margin-top: 3.5rem;
+  margin-bottom: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  border-bottom: none;
+  border-left: none;
+  border-right: none;
+  background: none;
+}
+
+/* Position fold arrow on left for structural sections */
+.structural-section h4 .heading-fold-arrow,
+.structural-section h3 .heading-fold-arrow {
+  position: absolute;
+  left: 0;
+  order: unset;
+}
+
+/* Remove section numbering for structural sections */
+.structural-section h4 .section-number-4,
+.structural-section h3 .section-number-3 {
+  display: none;
+}
+
+/* Override CSS counter numbering for structural sections */
+.structural-section.outline-4 > h4 { counter-increment: none; }
+.structural-section > h4::before,
+.structural-section > h3::before {
+  content: "" !important;
+}
+
+
+
+/* Mobile adjustments */
+@media (max-width: 600px) {
+  .structural-section h4,
+  .structural-section h3 {
+    font-size: 1.1rem;
+    padding-top: 1rem;
+    margin: 2.5rem 0 1.25rem 0;
+  }
+}
+
+/* ============================================================
+   Activation Questions
+   ============================================================ */
+
+.activation-question {
+  margin: 3rem 0;
+  padding: 2rem;
+  background: rgba(11, 87, 208, 0.03);
+  border: 2px solid var(--link);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.question-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.question-header h4 {
+  margin: 0 0 0.5rem 0;
+  font-family: var(--sans);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--link);
+}
+
+.question-subtitle {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.question-content {
+  margin-top: 1.5rem;
+}
+
+.question-text {
+  font-family: var(--sans);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.answer-options {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.option-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: white;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.option-label:hover {
+  background: rgba(11, 87, 208, 0.05);
+  border-color: var(--link);
+}
+
+.option-label input[type="radio"] {
+  margin-top: 0.25rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.option-label input[type="radio"]:disabled {
+  cursor: not-allowed;
+}
+
+.option-text {
+  flex: 1;
+}
+
+.check-answer-btn {
+  width: 100%;
+  padding: 0.875rem 1.5rem;
+  background: var(--link);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-family: var(--sans);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 1rem;
+}
+
+.check-answer-btn:hover {
+  background: #0a4ab8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(11, 87, 208, 0.3);
+}
+
+.check-answer-btn:disabled {
+  background: rgba(0,0,0,0.2);
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Question Feedback */
+.question-feedback {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  border-radius: 8px;
+  background: rgba(0,120,60,0.1);
+  border: 2px solid rgba(0,120,60,0.4);
+}
+
+.question-feedback.incorrect {
+  background: rgba(180,0,0,0.08);
+  border: 2px solid rgba(180,0,0,0.3);
+}
+
+.feedback-icon-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.feedback-icon {
+  font-size: 1.5rem;
+}
+
+.feedback-title {
+  font-family: var(--sans);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.feedback-explanation {
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin: 0;
+  color: var(--text);
+}
+
+.feedback-buttons {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.retry-btn,
+.continue-btn {
+  padding: 0.625rem 1.25rem;
+  border-radius: 6px;
+  font-family: var(--sans);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.retry-btn {
+  background: white;
+  color: var(--text);
+  border: 2px solid var(--border);
+}
+
+.retry-btn:hover {
+  background: var(--soft);
+  border-color: var(--link);
+}
+
+.continue-btn {
+  background: rgba(0,120,60,0.15);
+  color: rgba(0,120,60,0.9);
+  border: 2px solid rgba(0,120,60,0.3);
+}
+
+.continue-btn:hover {
+  background: rgba(0,120,60,0.25);
+  border-color: rgba(0,120,60,0.5);
+}
+
+/* ============================================================
+   Locked Content
+   ============================================================ */
+
+.locked-content {
+  transition: filter 0.3s ease;
+}
+
+.locked-content.locked {
+  position: relative;
+  filter: blur(4px);
+  pointer-events: none;
+  user-select: none;
+  min-height: 200px;
+}
+
+.locked-content.locked::before {
+  content: '🔒 Complete the activation question above to unlock this content';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255,255,255,0.98);
+  padding: 1.5rem 2rem;
+  border-radius: 12px;
+  border: 3px solid var(--link);
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--text);
+  filter: none;
+  z-index: 10;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  max-width: 400px;
+  line-height: 1.5;
+}
+
+/* Hide locked content overlay when not in activation mode */
+body:not(.activation-mode) .locked-content.locked::before {
+  display: none;
+}
+
+body:not(.activation-mode) .locked-content.locked {
+  filter: none;
+  pointer-events: auto;
+  user-select: auto;
+}
+
+/* ============================================================
+   Exam Questions
+   Collapsible exam questions with nested subboxes
+   ============================================================ */
+
+.exam-question {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin: 1.5rem 0;
+  background: rgba(0,120,60,0.04);
+  border-left: 5px solid rgba(0,120,60,0.50);
+  box-shadow: var(--shadow);
+}
+
+.exam-question-header {
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: background 0.2s;
+}
+
+.exam-question-header:hover {
+  background: rgba(0,0,0,0.03);
+}
+
+.exam-question-arrow {
+  font-size: 0.85rem;
+  color: var(--muted);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+.exam-question-title {
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--text);
+}
+
+.exam-question-content {
+  padding: 0 1.25rem 1.25rem;
+}
+
+.exam-question-text {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Exam subboxes (How to answer, Example solution) */
+.exam-subbox {
+  margin: 1rem 0;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 2px);
+  background: var(--bg);
+}
+
+.exam-subbox-header {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  transition: background 0.2s;
+  border-bottom: 1px solid transparent;
+}
+
+.exam-subbox-header:hover {
+  background: rgba(0,0,0,0.025);
+}
+
+.exam-subbox-arrow {
+  font-size: 0.75rem;
+  color: var(--muted);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+.exam-subbox-title {
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.exam-subbox-content {
+  padding: 1rem;
+}
+
+/* Differentiate subbox types */
+.exam-subbox.good-answer {
+  border-left: 3px solid rgba(0,80,160,0.45);
+}
+
+.exam-subbox.example-solution {
+  border-left: 3px solid rgba(184,134,11,0.55);
+}
+
+.exam-subbox.good-answer .exam-subbox-header {
+  background: rgba(0,80,160,0.03);
+}
+
+.exam-subbox.example-solution .exam-subbox-header {
+  background: rgba(184,134,11,0.05);
+}
+
+/* Custom confirmation dialog for exam questions */
+.exam-confirm-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.exam-confirm-overlay.active {
+  opacity: 1;
+}
+
+.exam-confirm-dialog {
+  background: var(--bg);
+  border-radius: var(--radius);
+  padding: 2rem;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  transform: scale(0.95);
+  transition: transform 0.2s;
+}
+
+.exam-confirm-overlay.active .exam-confirm-dialog {
+  transform: scale(1);
+}
+
+.exam-confirm-message {
+  font-family: var(--sans);
+  font-size: 1.1rem;
+  color: var(--text);
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.exam-confirm-buttons {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.exam-confirm-btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: calc(var(--radius) - 2px);
+  font-family: var(--sans);
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.exam-confirm-yes {
+  background: #0b57d0;
+  color: white;
+}
+
+.exam-confirm-yes:hover {
+  background: #0842a0;
+}
+
+.exam-confirm-no {
+  background: var(--soft);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.exam-confirm-no:hover {
+  background: rgba(0,0,0,0.08);
+}
+
+/* Mobile responsive */
+@media (max-width: 600px) {
+  .activation-question {
+    padding: 1.5rem;
+  }
+
+  .question-text {
+    font-size: 1rem;
+  }
+
+  .option-label {
+    font-size: 0.9rem;
+  }
+}
