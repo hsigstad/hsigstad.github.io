@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="robots" content="noindex, nofollow">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Active Tasks — ML and Deterrence</title>
+<style>
+  :root {
+    --bg: #f8f9fa; --card: #fff; --fg: #1a1a1a; --muted: #666;
+    --border: #dee2e6; --accent: #0d6efd; --accent2: #198754;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--fg); line-height: 1.5;
+  }
+
+  main {
+    padding: 1.5rem 2rem 3rem; max-width: 900px; margin: 0 auto;
+  }
+
+  /* Markdown body styles */
+  .md-body { font-size: .92rem; line-height: 1.7; color: #1f2328; }
+
+  .md-body h1 { font-size: 1.5rem; font-weight: 600; margin: 1.8rem 0 .8rem; padding-bottom: .3rem; border-bottom: 1px solid var(--border); }
+  .md-body h2 { font-size: 1.25rem; font-weight: 600; margin: 1.6rem 0 .6rem; padding-bottom: .25rem; border-bottom: 1px solid var(--border); }
+  .md-body h3 { font-size: 1.05rem; font-weight: 600; margin: 1.3rem 0 .5rem; }
+  .md-body h4 { font-size: .95rem; font-weight: 600; margin: 1.1rem 0 .4rem; }
+  .md-body h5, .md-body h6 { font-size: .88rem; font-weight: 600; margin: 1rem 0 .4rem; }
+  .md-body h1:first-child { margin-top: 0; }
+
+  .md-body p { margin: 0 0 .8rem; }
+
+  .md-body ul, .md-body ol { margin: 0 0 .8rem; padding-left: 1.8rem; }
+  .md-body li { margin-bottom: .25rem; }
+  .md-body li > ul, .md-body li > ol { margin-top: .25rem; margin-bottom: 0; }
+
+  /* Task lists */
+  .md-body ul li { list-style: disc; }
+  .md-body li input[type="checkbox"] {
+    margin-right: .4rem; vertical-align: middle; position: relative; top: -1px;
+  }
+
+  .md-body a { color: var(--accent); text-decoration: none; }
+  .md-body a:hover { text-decoration: underline; }
+
+  .md-body strong { font-weight: 600; }
+
+  .md-body blockquote {
+    margin: 0 0 .8rem; padding: .4rem 1rem;
+    border-left: 4px solid var(--accent); background: #f0f4f8;
+    color: #555; font-size: .88rem;
+  }
+  .md-body blockquote p:last-child { margin-bottom: 0; }
+
+  .md-body code {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: .85em; background: #eef1f5; padding: .15rem .35rem;
+    border-radius: 4px;
+  }
+  .md-body pre {
+    margin: 0 0 .8rem; padding: .9rem 1rem;
+    background: #f6f8fa; border: 1px solid var(--border);
+    border-radius: 6px; overflow-x: auto; line-height: 1.45;
+  }
+  .md-body pre code {
+    background: none; padding: 0; font-size: .82rem;
+  }
+
+  .md-body table {
+    width: 100%; border-collapse: collapse; margin: 0 0 .8rem;
+    font-size: .85rem; display: block; overflow-x: auto;
+  }
+  .md-body th, .md-body td {
+    padding: .45rem .7rem; border: 1px solid var(--border); text-align: left;
+  }
+  .md-body th { background: #f0f4f8; font-weight: 600; }
+  .md-body tr:nth-child(even) td { background: #fafbfc; }
+
+  .md-body hr {
+    border: none; border-top: 1px solid var(--border); margin: 1.5rem 0;
+  }
+
+  .md-body img { max-width: 100%; cursor: pointer; transition: opacity .15s; }
+  .md-body img:hover { opacity: .85; }
+
+  /* Lightbox overlay */
+  .lightbox {
+    display: none; position: fixed; inset: 0; z-index: 9999;
+    background: rgba(0,0,0,.82); justify-content: center; align-items: center;
+    cursor: pointer;
+  }
+  .lightbox.active { display: flex; }
+  .lightbox img {
+    max-width: 94vw; max-height: 92vh; border-radius: 6px;
+    box-shadow: 0 4px 24px rgba(0,0,0,.4); cursor: default;
+  }
+  .lightbox-close {
+    position: fixed; top: 1rem; right: 1.2rem; z-index: 10000;
+    background: rgba(255,255,255,.9); border: none; border-radius: 50%;
+    width: 2.2rem; height: 2.2rem; font-size: 1.3rem; line-height: 2.2rem;
+    text-align: center; cursor: pointer; color: #333; font-weight: 600;
+  }
+  .lightbox-close:hover { background: #fff; }
+
+  /* Collapsible sections */
+  .doc-controls { margin-bottom: 1rem; }
+  .doc-controls button {
+    font-size: .8rem; padding: .3rem .7rem; cursor: pointer;
+    background: var(--card); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--accent); font-weight: 600;
+  }
+  .doc-controls button:hover { background: #e7f1ff; }
+  .md-body details { margin-bottom: .5rem; }
+  .md-body details summary {
+    font-weight: 600; cursor: pointer; list-style: none;
+  }
+  .md-body details summary::-webkit-details-marker { display: none; }
+  .md-body details summary::before {
+    content: "\25b6"; font-size: .7em; margin-right: .5rem;
+    display: inline-block; transition: transform .15s;
+  }
+  .md-body details[open] summary::before { transform: rotate(90deg); }
+  .md-body details.level-2 > summary {
+    font-size: 1.25rem; padding-bottom: .25rem;
+    border-bottom: 1px solid var(--border); margin: 1.6rem 0 .6rem;
+  }
+  .md-body details.level-3 > summary {
+    font-size: 1.05rem; margin: 1.3rem 0 .5rem;
+  }
+
+  footer {
+    text-align: center; padding: 1.5rem; font-size: .8rem; color: var(--muted);
+    border-top: 1px solid var(--border); margin-top: 2rem;
+  }
+</style>
+</head>
+<body>
+
+<style>
+  .site-nav {
+    position: sticky; top: 0; z-index: 100;
+    background: #212529; display: flex; align-items: center;
+    padding: 0 2rem; height: 3rem;
+  }
+  .site-nav .nav-brand {
+    color: #fff; text-decoration: none; font-weight: 600; font-size: 1rem;
+    margin-right: auto;
+  }
+  .site-nav .nav-brand:hover { color: #e9ecef; }
+  .site-nav .nav-link {
+    color: #adb5bd; text-decoration: none; font-size: .85rem;
+    padding: 0 .75rem; height: 3rem; display: flex; align-items: center;
+    background: none; border: none; cursor: pointer; font-family: inherit;
+  }
+  .site-nav .nav-link:hover, .site-nav .nav-link.active { color: #fff; }
+  .nav-dropdown { position: relative; }
+  .dropdown-menu {
+    display: none; position: absolute; top: 3rem; right: 0;
+    background: #fff; border: 1px solid var(--border); border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.12); min-width: 220px;
+    padding: .4rem 0; z-index: 200; max-height: 80vh; overflow-y: auto;
+  }
+  .nav-dropdown.open .dropdown-menu { display: block; }
+  .dropdown-menu a {
+    display: block; padding: .3rem 1rem; color: #1a1a1a;
+    text-decoration: none; font-size: .82rem;
+  }
+  .dropdown-menu a:hover { background: #f0f4f8; }
+  .dropdown-group-label {
+    padding: .4rem 1rem .15rem; font-size: .68rem; font-weight: 700;
+    color: #888; text-transform: uppercase; letter-spacing: .04em;
+  }
+  .dropdown-divider { border-top: 1px solid #eee; margin: .3rem 0; }
+  .page-header {
+    padding: .8rem 2rem; border-bottom: 1px solid var(--border); background: #fff;
+  }
+  .page-header h1 { font-size: 1.3rem; font-weight: 600; }
+  .page-header p { color: var(--muted); font-size: .85rem; margin-top: .15rem; }
+</style>
+
+<nav class="site-nav">
+  <a href="../index.html" class="nav-brand">SERASA Courts</a>
+  <a href="../index.html" class="nav-link">Home</a>
+  <a href="../paper/index.html" class="nav-link">Paper</a>
+  <a href="../results/index.html" class="nav-link">Results</a>
+  <a href="../talk/index.html" class="nav-link">Talk</a>
+  <div class="nav-dropdown">
+    <button class="nav-link active">Docs &#9662;</button>
+    <div class="dropdown-menu">
+    <div class="dropdown-group-label">Reference</div>
+    <a href="../docs/summary.html">Research Summary</a>
+    <a href="../docs/institutions.html">Institutional Background</a>
+    <a href="../docs/data.html">Data Sources</a>
+    <a href="../docs/methods.html">Methods</a>
+    <a href="../docs/results.html">Results</a>
+    <a href="../docs/literature.html">Literature</a>
+    <a href="../docs/README.html">Docs Conventions</a>
+    <a href="../docs/theory.html">Theory</a>
+    <a href="../docs/README.html">Setup & Conventions</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Working notes</div>
+    <a href="../docs/thinking.html">Open Questions & Ideas</a>
+    <a href="../docs/decisions.html">Key Decisions</a>
+    <a href="../docs/outline.html">Paper Outline</a>
+    <a href="../docs/hypotheses.html">Hypotheses</a>
+    <a href="../docs/anecdotes.html">News Anecdotes</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Tasks</div>
+    <a href="../docs/todo.html">Active Tasks</a>
+    <a href="../docs/done.html">Completed Tasks</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Communication</div>
+    <a href="../docs/meetings.html">Meeting Notes</a>
+    <a href="../docs/feedback.html">External Feedback</a>
+    </div>
+  </div>
+</nav>
+<script>
+document.querySelectorAll('.nav-dropdown > .nav-link').forEach(function(btn) {
+  btn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    var dd = btn.parentElement;
+    var wasOpen = dd.classList.contains('open');
+    document.querySelectorAll('.nav-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+    if (!wasOpen) dd.classList.add('open');
+  });
+});
+document.addEventListener('click', function() {
+  document.querySelectorAll('.nav-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+});
+</script>
+
+<div class="page-header">
+  <h1>Active Tasks</h1>
+</div>
+
+<main>
+<div class="doc-controls">
+  <button id="toggle-sections">Collapse all</button>
+</div>
+<div class="md-body">
+<h1>TODOs</h1>
+<h2 id="bib-citations">Bib / citations</h2>
+<ul>
+<li class="task-list-item"><input class="task-list-item-checkbox" type="checkbox" disabled/>Verify whether STJ Sept 2023 email-notification holdings (REsp 2.056.285/RS, REsp 2.070.073) still represent current law after REsp 2.158.450/RS (Dec 2024). If reversed, update institutions.md §2.2 and do not cite the 2023 position in the paper.<ul>
+<li>created: 2026-04-16</li>
+</ul>
+</li>
+</ul>
+<h2 id="paper-remaining-tbd-s-that-need-data-access">Paper — remaining [TBD]s that need data access</h2>
+<p>These require running code against the TJSP data (on the secure server or locally with DATA_DIR set). Grouped by what they unblock.</p>
+<h3 id="descriptive-statistics-unblocks-2-3-of-the-paper">Descriptive statistics (unblocks §2–3 of the paper)</h3>
+<ul>
+<li class="task-list-item"><p><input class="task-list-item-checkbox" type="checkbox" disabled checked/>Sentence breakdown by outcome category (PROCEDENTE / PARCIALMENTE PROCEDENTE / IMPROCEDENTE / EXTINTO / ACORDO) — run <code>source/clean/serasa.py</code>, then tabulate <code>sentenca</code> column. Write into institutions.md §4.3 and paper §2.3.</p>
+<ul>
+<li>created: 2026-04-16</li>
+<li>done: 2026-04-16. Output in <code>source/table/descriptives.py</code> and <code>docs/methods.md</code>. EXTINTO 24%, IMPROCEDENTE 19%, PARCIALMENTE PROCEDENTE 19%, ACORDO 14%, PROCEDENTE 14%, unclassified 10%.</li>
+</ul>
+</li>
+<li class="task-list-item"><p><input class="task-list-item-checkbox" type="checkbox" disabled/>6226 share of TJSP civil caseload 2013–2024 — count 6226 cases in Datajud snapshot vs total TJSP first-instance civil cases. Write into paper §2.3.</p>
+<ul>
+<li>created: 2026-04-16</li>
+<li>note: requires total TJSP civil caseload numbers from an external source (Justiça em Números or Datajud API for all classes).</li>
+</ul>
+</li>
+<li class="task-list-item"><p><input class="task-list-item-checkbox" type="checkbox" disabled checked/>Filing-to-sentence timing (p50, p90, right-tail) — compute from <code>mov</code> table: time between distribution movement and sentence movement. Write into paper §2.4.</p>
+<ul>
+<li>created: 2026-04-16</li>
+<li>done: 2026-04-16. Computed from proc_1a.data_distribuicao → serasa.data. p50 = 203 days, p90 = 687 days, mean = 318 days.</li>
+</ul>
+</li>
+<li class="task-list-item"><p><input class="task-list-item-checkbox" type="checkbox" disabled checked/>Serasa statistics paragraph: hand-code validation subsample for the regex sentence classifier. Paper §3 currently says <code>[TBD: cross-validation against a hand-coded subsample]</code>.</p>
+<ul>
+<li>created: 2026-04-16</li>
+<li>done: 2026-04-16. 78% exact agreement on 100 random cases. All disagreements are ACORDO ↔ EXTINTO (settlement wording). Zero misclassifications among adjudicated categories. Written up in <code>docs/methods.md</code>.</li>
+</ul>
+</li>
+</ul>
+<h3 id="sample-accounting-unblocks-3-of-the-paper">Sample accounting (unblocks §3 of the paper)</h3>
+<ul>
+<li class="task-list-item"><p><input class="task-list-item-checkbox" type="checkbox" disabled checked/>Sample-accounting table (Table 1): walk through each filter step (340K Datajud → first-instance only → 6226 assunto → classified sentence → natural-person plaintiff → multi-vara foro → min-cell-size → linked sample). Report N surviving at each step.</p>
+<ul>
+<li>created: 2026-04-16</li>
+<li>done: 2026-04-16. Output in <code>build/table/table1_sample_accounting.csv</code> and <code>source/table/descriptives.py</code>. Final analysis sample: 89,011.</li>
+</ul>
+</li>
+<li class="task-list-item"><p><input class="task-list-item-checkbox" type="checkbox" disabled checked/>Summary statistics table (Table 2): plaintiff demographics, disputed amounts, time to decision, share by sentence category.</p>
+<ul>
+<li>created: 2026-04-16</li>
+<li>done: 2026-04-16. Output in <code>source/table/descriptives.py</code>. Plaintiff wins = 59.5%, median days to sentence = 168, median valor da ação = R$20,000.</li>
+</ul>
+</li>
+</ul>
+<h3 id="first-stage-and-balance-unblocks-4-of-the-paper">First stage and balance (unblocks §4 of the paper)</h3>
+<ul>
+<li class="task-list-item"><p><input class="task-list-item-checkbox" type="checkbox" disabled checked/>Balance table: regression of pre-filing covariates on leave-one-out vara leniency, conditional on foro × filing-year FE. Joint F-test.</p>
+<ul>
+<li>created: 2026-04-16</li>
+<li>done: 2026-04-16. Output in <code>build/table/balance.csv</code> and <code>source/table/first_stage.py</code>. Joint F = 5.57 (p = 0.0002); defendant-bank imbalance drives it (see methods.md for robustness). Controlling for defendant type resolves balance; first stage unaffected (F = 2,428 → 2,349).</li>
+</ul>
+</li>
+<li class="task-list-item"><p><input class="task-list-item-checkbox" type="checkbox" disabled checked/>Leniency distribution figure: histogram of residualized LOO vara leniency. Report within-foro s.d.</p>
+<ul>
+<li>created: 2026-04-16</li>
+<li>done: 2026-04-17. Within-foro×year s.d. = 13.6 p.p. Figure at <code>paper/figures/leniency_histogram.pdf</code>; underlying data in <code>build/table/analysis_with_loo.parquet</code> (column <code>loo_resid</code>).</li>
+</ul>
+</li>
+<li class="task-list-item"><p><input class="task-list-item-checkbox" type="checkbox" disabled checked/>Random-assignment diagnostic: density of cases per vara within multi-vara foros vs uniform benchmark.</p>
+<ul>
+<li>created: 2026-04-16</li>
+<li>done: 2026-04-16. Output in <code>build/table/random_assignment.csv</code>. 53% of foro-years reject uniform at 5%. Subsample that passes: first stage still strong (F = 475), balance problem disappears.</li>
+</ul>
+</li>
+</ul>
+<h3 id="anecdote-and-sourcing">Anecdote and sourcing</h3>
+<ul>
+<li class="task-list-item"><input class="task-list-item-checkbox" type="checkbox" disabled checked/>CPFL Piratininga NPU — search sentenças scrape for the 2019 CPFL Piratininga decision. If not found, pick a representative anecdote from our own data and replace the footnote.<ul>
+<li>created: 2026-04-16</li>
+<li>done: 2026-04-16. Found 85 CPFL Piratininga cases sentenced in 2019. Representative examples: 1000871-26.2018.8.26.0699 (Salto de Pirapora, PROCEDENTE, declaratory + R$5k damages); 1022733-34.2018.8.26.0576 (São José do Rio Preto, PROCEDENTE, inexistência de débito + danos morais).</li>
+</ul>
+</li>
+</ul>
+<h2 id="specs-for-ramon">Specs for Ramon</h2>
+<ul>
+<li class="task-list-item"><input class="task-list-item-checkbox" type="checkbox" disabled/>After vara-level results: spec for threat-assessment table (reduced-form of vara leniency on settlement, time-to-decision, preliminary injunction, damages amount)<ul>
+<li>created: 2026-04-16</li>
+</ul>
+</li>
+</ul>
+<h2 id="data-schema-gaps-to-fill-with-leonardo">Data schema — gaps to fill with Leonardo</h2>
+<ul>
+<li class="task-list-item"><p><input class="task-list-item-checkbox" type="checkbox" disabled/>Ask Leonardo for full BCB-side data dictionary: what raw files exist, coverage years, frequency, identifiers. Current knowledge comes from Ramon's code; a proper schema would let us write specs more precisely.</p>
+<ul>
+<li>created: 2026-04-16</li>
+</ul>
+</li>
+<li class="task-list-item"><p><input class="task-list-item-checkbox" type="checkbox" disabled/>Clarify Receita Federal snapshot vintage: is <code>Janeiro 2025</code> a point-in-time snapshot or does it have historical status? If point-in-time, firm opening/closing dates are recoverable but the panel of <code>active_firm</code> over time relies on a single <code>situacao_cadastral</code> observation. Need to understand if multiple snapshots are available.</p>
+<ul>
+<li>created: 2026-04-16</li>
+</ul>
+</li>
+<li class="task-list-item"><p><input class="task-list-item-checkbox" type="checkbox" disabled/>Clarify SCR panel frequency: Ramon's code collapses to annual. Is monthly data available for event-study precision? What are the coverage years?</p>
+<ul>
+<li>created: 2026-04-16</li>
+</ul>
+</li>
+</ul>
+<h2 id="needs-primary-source-from-institutions-md">NEEDS PRIMARY SOURCE (from institutions.md)</h2>
+<ul>
+<li class="task-list-item"><p><input class="task-list-item-checkbox" type="checkbox" disabled/>Serasa market-share lead over Boa Vista/SPC/Quod — find BCB or ANBC report</p>
+<ul>
+<li>created: 2026-04-16</li>
+</ul>
+</li>
+<li class="task-list-item"><p><input class="task-list-item-checkbox" type="checkbox" disabled/>Single negative entry → automated denial in bank underwriting — find BCB Relatório de Economia Bancária or Febraban technical note</p>
+<ul>
+<li>created: 2026-04-16</li>
+</ul>
+</li>
+<li class="task-list-item"><p><input class="task-list-item-checkbox" type="checkbox" disabled/>6226 parent-node path in TPU hierarchy — query live CNJ SGT</p>
+<ul>
+<li>created: 2026-04-16</li>
+</ul>
+</li>
+<li class="task-list-item"><p><input class="task-list-item-checkbox" type="checkbox" disabled checked/>Sentence breakdown by outcome category on our sample — own computation from sentenças scrape</p>
+<ul>
+<li>created: 2026-04-16</li>
+<li>done: 2026-04-16. See descriptive statistics above.</li>
+</ul>
+</li>
+<li class="task-list-item"><p><input class="task-list-item-checkbox" type="checkbox" disabled/>6226 share of TJSP civil caseload 2013–2024 — own computation from Datajud vs TJSP total</p>
+<ul>
+<li>created: 2026-04-16</li>
+</ul>
+</li>
+<li class="task-list-item"><p><input class="task-list-item-checkbox" type="checkbox" disabled/>NSCGJ exact article numbers for sorteio in cível — pull from current edition PDF and confirm the edition in force during sample period</p>
+<ul>
+<li>created: 2026-04-16</li>
+</ul>
+</li>
+<li class="task-list-item"><p><input class="task-list-item-checkbox" type="checkbox" disabled checked/>Filing-to-sentence timing (p50, p90, right-tail) — own computation from <code>mov</code> table</p>
+<ul>
+<li>created: 2026-04-16</li>
+<li>done: 2026-04-16. See descriptive statistics above.</li>
+</ul>
+</li>
+<li class="task-list-item"><p><input class="task-list-item-checkbox" type="checkbox" disabled checked/>CPFL Piratininga NPU — find specific case number or replace anecdote from sentenças scrape</p>
+<ul>
+<li>created: 2026-04-16</li>
+<li>done: 2026-04-16. See anecdote section above.</li>
+</ul>
+</li>
+</ul>
+<h2 id="new-action-items-from-april-2026-analysis">New action items (from April 2026 analysis)</h2>
+<ul>
+<li class="task-list-item"><p><input class="task-list-item-checkbox" type="checkbox" disabled/>Investigate defendant-type routing in large foros — check whether specific varas specialize by defendant type (consumer vs general cível). If so, restrict sample or control for defendant type in IV specifications.</p>
+<ul>
+<li>created: 2026-04-16</li>
+</ul>
+</li>
+<li class="task-list-item"><p><input class="task-list-item-checkbox" type="checkbox" disabled/>Decide on clustering level — vara vs foro×year vs firm. Vara is the randomization unit; current results reported with both.</p>
+<ul>
+<li>created: 2026-04-16</li>
+</ul>
+</li>
+<li class="task-list-item"><p><input class="task-list-item-checkbox" type="checkbox" disabled/>Flag for Ramon: no CPF/CNPJ in consulta data. BCB linkage needs name-matching or CPF extraction from sentence text.</p>
+<ul>
+<li>created: 2026-04-16</li>
+</ul>
+</li>
+<li class="task-list-item"><p><input class="task-list-item-checkbox" type="checkbox" disabled/>Investigate appeal-reversal rates — we know 38% of plaintiff-loss cases are appealed. Need to check how often the appeal <em>reverses</em> the first-instance decision (requires parsing mov_2a for appellate outcomes). Matters for LATE interpretation.</p>
+<ul>
+<li>created: 2026-04-16</li>
+</ul>
+</li>
+<li class="task-list-item"><p><input class="task-list-item-checkbox" type="checkbox" disabled checked/>Plot leniency histogram from <code>build/table/analysis_with_loo.parquet</code> column <code>loo_resid</code>.</p>
+<ul>
+<li>created: 2026-04-16</li>
+<li>done: 2026-04-17. Emitted to <code>paper/figures/leniency_histogram.pdf</code> by <code>source/table/first_stage.py</code>.</li>
+</ul>
+</li>
+</ul>
+
+</div>
+</main>
+
+<div class="lightbox" id="lightbox">
+  <button class="lightbox-close" id="lightbox-close">&times;</button>
+  <img id="lightbox-img" src="" alt="">
+</div>
+
+<footer>
+  Generated by <code>bash build.sh site</code>
+</footer>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const body = document.querySelector('.md-body');
+  if (!body) return;
+
+  function foldHeadings(container, tag) {
+    const level = tag.replace('H', '');
+    const headings = Array.from(container.querySelectorAll(':scope > ' + tag.toLowerCase()));
+    headings.forEach(h => {
+      const details = document.createElement('details');
+      details.className = 'level-' + level;
+      details.open = true;
+      if (h.id) details.id = h.id;
+      const summary = document.createElement('summary');
+      summary.innerHTML = h.innerHTML;
+      details.appendChild(summary);
+      let sibling = h.nextElementSibling;
+      const collected = [];
+      while (sibling && sibling.tagName !== tag) {
+        collected.push(sibling);
+        sibling = sibling.nextElementSibling;
+      }
+      collected.forEach(el => details.appendChild(el));
+      h.replaceWith(details);
+    });
+    return headings.length;
+  }
+
+  // Fold h2 sections, then h3 sections within each h2
+  const count = foldHeadings(body, 'H2');
+  if (count === 0) {
+    document.querySelector('.doc-controls').style.display = 'none';
+    return;
+  }
+  body.querySelectorAll('details.level-2').forEach(d => foldHeadings(d, 'H3'));
+
+  // Toggle button
+  const btn = document.getElementById('toggle-sections');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    const allDetails = body.querySelectorAll('details');
+    const expanding = btn.textContent === 'Expand all';
+    allDetails.forEach(d => d.open = expanding);
+    btn.textContent = expanding ? 'Collapse all' : 'Expand all';
+  });
+
+  // Auto-open details when navigating to an anchor
+  function openAnchorTarget() {
+    if (!location.hash) return;
+    const target = document.querySelector(location.hash);
+    if (!target) return;
+    let el = target;
+    while (el) {
+      if (el.tagName === 'DETAILS') el.open = true;
+      el = el.parentElement;
+    }
+    target.scrollIntoView();
+  }
+  openAnchorTarget();
+  window.addEventListener('hashchange', openAnchorTarget);
+
+  // Lightbox for images and image links
+  const lb = document.getElementById('lightbox');
+  const lbImg = document.getElementById('lightbox-img');
+  const lbClose = document.getElementById('lightbox-close');
+  if (lb && lbImg) {
+    function openLb(src, alt) {
+      lbImg.src = src;
+      lbImg.alt = alt || '';
+      lb.classList.add('active');
+    }
+    function closeLb() { lb.classList.remove('active'); lbImg.src = ''; }
+
+    // Click on <img> tags
+    body.querySelectorAll('img').forEach(img => {
+      img.addEventListener('click', () => openLb(img.src, img.alt));
+    });
+
+    // Click on <a> links pointing to images
+    body.querySelectorAll('a').forEach(a => {
+      const href = a.getAttribute('href') || '';
+      if (/\.(png|jpg|jpeg|gif|svg|webp)$/i.test(href)) {
+        a.addEventListener('click', e => {
+          e.preventDefault();
+          openLb(href, a.textContent);
+        });
+      }
+    });
+
+    lbClose.addEventListener('click', closeLb);
+    lb.addEventListener('click', e => { if (e.target === lb) closeLb(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLb(); });
+  }
+});
+</script>
+
+<script src="https://hypothes.is/embed.js" async></script>
+</body>
+</html>

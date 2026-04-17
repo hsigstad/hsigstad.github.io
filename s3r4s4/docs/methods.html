@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="robots" content="noindex, nofollow">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Methods — ML and Deterrence</title>
+<style>
+  :root {
+    --bg: #f8f9fa; --card: #fff; --fg: #1a1a1a; --muted: #666;
+    --border: #dee2e6; --accent: #0d6efd; --accent2: #198754;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--fg); line-height: 1.5;
+  }
+
+  main {
+    padding: 1.5rem 2rem 3rem; max-width: 900px; margin: 0 auto;
+  }
+
+  /* Markdown body styles */
+  .md-body { font-size: .92rem; line-height: 1.7; color: #1f2328; }
+
+  .md-body h1 { font-size: 1.5rem; font-weight: 600; margin: 1.8rem 0 .8rem; padding-bottom: .3rem; border-bottom: 1px solid var(--border); }
+  .md-body h2 { font-size: 1.25rem; font-weight: 600; margin: 1.6rem 0 .6rem; padding-bottom: .25rem; border-bottom: 1px solid var(--border); }
+  .md-body h3 { font-size: 1.05rem; font-weight: 600; margin: 1.3rem 0 .5rem; }
+  .md-body h4 { font-size: .95rem; font-weight: 600; margin: 1.1rem 0 .4rem; }
+  .md-body h5, .md-body h6 { font-size: .88rem; font-weight: 600; margin: 1rem 0 .4rem; }
+  .md-body h1:first-child { margin-top: 0; }
+
+  .md-body p { margin: 0 0 .8rem; }
+
+  .md-body ul, .md-body ol { margin: 0 0 .8rem; padding-left: 1.8rem; }
+  .md-body li { margin-bottom: .25rem; }
+  .md-body li > ul, .md-body li > ol { margin-top: .25rem; margin-bottom: 0; }
+
+  /* Task lists */
+  .md-body ul li { list-style: disc; }
+  .md-body li input[type="checkbox"] {
+    margin-right: .4rem; vertical-align: middle; position: relative; top: -1px;
+  }
+
+  .md-body a { color: var(--accent); text-decoration: none; }
+  .md-body a:hover { text-decoration: underline; }
+
+  .md-body strong { font-weight: 600; }
+
+  .md-body blockquote {
+    margin: 0 0 .8rem; padding: .4rem 1rem;
+    border-left: 4px solid var(--accent); background: #f0f4f8;
+    color: #555; font-size: .88rem;
+  }
+  .md-body blockquote p:last-child { margin-bottom: 0; }
+
+  .md-body code {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: .85em; background: #eef1f5; padding: .15rem .35rem;
+    border-radius: 4px;
+  }
+  .md-body pre {
+    margin: 0 0 .8rem; padding: .9rem 1rem;
+    background: #f6f8fa; border: 1px solid var(--border);
+    border-radius: 6px; overflow-x: auto; line-height: 1.45;
+  }
+  .md-body pre code {
+    background: none; padding: 0; font-size: .82rem;
+  }
+
+  .md-body table {
+    width: 100%; border-collapse: collapse; margin: 0 0 .8rem;
+    font-size: .85rem; display: block; overflow-x: auto;
+  }
+  .md-body th, .md-body td {
+    padding: .45rem .7rem; border: 1px solid var(--border); text-align: left;
+  }
+  .md-body th { background: #f0f4f8; font-weight: 600; }
+  .md-body tr:nth-child(even) td { background: #fafbfc; }
+
+  .md-body hr {
+    border: none; border-top: 1px solid var(--border); margin: 1.5rem 0;
+  }
+
+  .md-body img { max-width: 100%; cursor: pointer; transition: opacity .15s; }
+  .md-body img:hover { opacity: .85; }
+
+  /* Lightbox overlay */
+  .lightbox {
+    display: none; position: fixed; inset: 0; z-index: 9999;
+    background: rgba(0,0,0,.82); justify-content: center; align-items: center;
+    cursor: pointer;
+  }
+  .lightbox.active { display: flex; }
+  .lightbox img {
+    max-width: 94vw; max-height: 92vh; border-radius: 6px;
+    box-shadow: 0 4px 24px rgba(0,0,0,.4); cursor: default;
+  }
+  .lightbox-close {
+    position: fixed; top: 1rem; right: 1.2rem; z-index: 10000;
+    background: rgba(255,255,255,.9); border: none; border-radius: 50%;
+    width: 2.2rem; height: 2.2rem; font-size: 1.3rem; line-height: 2.2rem;
+    text-align: center; cursor: pointer; color: #333; font-weight: 600;
+  }
+  .lightbox-close:hover { background: #fff; }
+
+  /* Collapsible sections */
+  .doc-controls { margin-bottom: 1rem; }
+  .doc-controls button {
+    font-size: .8rem; padding: .3rem .7rem; cursor: pointer;
+    background: var(--card); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--accent); font-weight: 600;
+  }
+  .doc-controls button:hover { background: #e7f1ff; }
+  .md-body details { margin-bottom: .5rem; }
+  .md-body details summary {
+    font-weight: 600; cursor: pointer; list-style: none;
+  }
+  .md-body details summary::-webkit-details-marker { display: none; }
+  .md-body details summary::before {
+    content: "\25b6"; font-size: .7em; margin-right: .5rem;
+    display: inline-block; transition: transform .15s;
+  }
+  .md-body details[open] summary::before { transform: rotate(90deg); }
+  .md-body details.level-2 > summary {
+    font-size: 1.25rem; padding-bottom: .25rem;
+    border-bottom: 1px solid var(--border); margin: 1.6rem 0 .6rem;
+  }
+  .md-body details.level-3 > summary {
+    font-size: 1.05rem; margin: 1.3rem 0 .5rem;
+  }
+
+  footer {
+    text-align: center; padding: 1.5rem; font-size: .8rem; color: var(--muted);
+    border-top: 1px solid var(--border); margin-top: 2rem;
+  }
+</style>
+</head>
+<body>
+
+<style>
+  .site-nav {
+    position: sticky; top: 0; z-index: 100;
+    background: #212529; display: flex; align-items: center;
+    padding: 0 2rem; height: 3rem;
+  }
+  .site-nav .nav-brand {
+    color: #fff; text-decoration: none; font-weight: 600; font-size: 1rem;
+    margin-right: auto;
+  }
+  .site-nav .nav-brand:hover { color: #e9ecef; }
+  .site-nav .nav-link {
+    color: #adb5bd; text-decoration: none; font-size: .85rem;
+    padding: 0 .75rem; height: 3rem; display: flex; align-items: center;
+    background: none; border: none; cursor: pointer; font-family: inherit;
+  }
+  .site-nav .nav-link:hover, .site-nav .nav-link.active { color: #fff; }
+  .nav-dropdown { position: relative; }
+  .dropdown-menu {
+    display: none; position: absolute; top: 3rem; right: 0;
+    background: #fff; border: 1px solid var(--border); border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.12); min-width: 220px;
+    padding: .4rem 0; z-index: 200; max-height: 80vh; overflow-y: auto;
+  }
+  .nav-dropdown.open .dropdown-menu { display: block; }
+  .dropdown-menu a {
+    display: block; padding: .3rem 1rem; color: #1a1a1a;
+    text-decoration: none; font-size: .82rem;
+  }
+  .dropdown-menu a:hover { background: #f0f4f8; }
+  .dropdown-group-label {
+    padding: .4rem 1rem .15rem; font-size: .68rem; font-weight: 700;
+    color: #888; text-transform: uppercase; letter-spacing: .04em;
+  }
+  .dropdown-divider { border-top: 1px solid #eee; margin: .3rem 0; }
+  .page-header {
+    padding: .8rem 2rem; border-bottom: 1px solid var(--border); background: #fff;
+  }
+  .page-header h1 { font-size: 1.3rem; font-weight: 600; }
+  .page-header p { color: var(--muted); font-size: .85rem; margin-top: .15rem; }
+</style>
+
+<nav class="site-nav">
+  <a href="../index.html" class="nav-brand">SERASA Courts</a>
+  <a href="../index.html" class="nav-link">Home</a>
+  <a href="../paper/index.html" class="nav-link">Paper</a>
+  <a href="../results/index.html" class="nav-link">Results</a>
+  <a href="../talk/index.html" class="nav-link">Talk</a>
+  <div class="nav-dropdown">
+    <button class="nav-link active">Docs &#9662;</button>
+    <div class="dropdown-menu">
+    <div class="dropdown-group-label">Reference</div>
+    <a href="../docs/summary.html">Research Summary</a>
+    <a href="../docs/institutions.html">Institutional Background</a>
+    <a href="../docs/data.html">Data Sources</a>
+    <a href="../docs/methods.html">Methods</a>
+    <a href="../docs/results.html">Results</a>
+    <a href="../docs/literature.html">Literature</a>
+    <a href="../docs/README.html">Docs Conventions</a>
+    <a href="../docs/theory.html">Theory</a>
+    <a href="../docs/README.html">Setup & Conventions</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Working notes</div>
+    <a href="../docs/thinking.html">Open Questions & Ideas</a>
+    <a href="../docs/decisions.html">Key Decisions</a>
+    <a href="../docs/outline.html">Paper Outline</a>
+    <a href="../docs/hypotheses.html">Hypotheses</a>
+    <a href="../docs/anecdotes.html">News Anecdotes</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Tasks</div>
+    <a href="../docs/todo.html">Active Tasks</a>
+    <a href="../docs/done.html">Completed Tasks</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Communication</div>
+    <a href="../docs/meetings.html">Meeting Notes</a>
+    <a href="../docs/feedback.html">External Feedback</a>
+    </div>
+  </div>
+</nav>
+<script>
+document.querySelectorAll('.nav-dropdown > .nav-link').forEach(function(btn) {
+  btn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    var dd = btn.parentElement;
+    var wasOpen = dd.classList.contains('open');
+    document.querySelectorAll('.nav-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+    if (!wasOpen) dd.classList.add('open');
+  });
+});
+document.addEventListener('click', function() {
+  document.querySelectorAll('.nav-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+});
+</script>
+
+<div class="page-header">
+  <h1>Methods</h1>
+</div>
+
+<main>
+<div class="doc-controls">
+  <button id="toggle-sections">Collapse all</button>
+</div>
+<div class="md-body">
+<h1>Methods</h1>
+<p>Methodology, specifications, and design choices. Numerical findings
+(first-stage F, balance coefficients, classifier agreement rates, appeal
+rates, etc.) live in <code>results.md</code>.</p>
+<h2 id="judge-leniency-iv">Judge leniency IV</h2>
+<h3 id="identification-strategy">Identification strategy</h3>
+<ul>
+<li>Exploit random assignment of SERASA-listing civil cases <strong>to varas</strong>
+(not judges) via computerized algorithm (cf. Lichand-Soares 2014). The
+unit of randomization is the vara; judge identity enters only through
+which judge happens to occupy the vara at the time of filing.</li>
+<li>In most foros, one judge operates per vara, so vara-leniency and
+judge-leniency coincide for those cases. Where a vara has seen multiple
+judges over time, vara-leniency is constructed as a weighted average
+of the leniencies of the judges who have served in it.</li>
+<li>Use leave-one-out <strong>vara leniency</strong> (win-rate) as instrument for court
+outcomes.</li>
+<li>Restrict sample to foros/comarcas with more than one vara in the
+filing year, so that within-foro variation exists.</li>
+</ul>
+<h3 id="estimand">Estimand</h3>
+<ul>
+<li>Parameter of interest: effect of being removed from the Serasa
+blacklist (plaintiff &quot;wins&quot; case) on post-filing credit access, firm
+activity, and entrepreneurship.</li>
+<li>Interpretation: LATE for marginal cases whose outcome is shifted by
+variation in judge leniency.</li>
+</ul>
+<h3 id="control-group">Control group</h3>
+<ul>
+<li>Plaintiffs who filed a SERASA-listing lawsuit in the same year but
+<strong>lost</strong>. Window −5 to +5 years around the filing year.</li>
+</ul>
+<h3 id="key-assumptions">Key assumptions</h3>
+<ul>
+<li>Random assignment of cases to varas within foro-year.</li>
+<li>Exclusion restriction: judge leniency affects downstream outcomes only
+through the court decision.</li>
+<li>Monotonicity: more lenient judges weakly increase plaintiff-win
+probability for all cases.</li>
+</ul>
+<h3 id="specification-pre-bcb-following-the-march-2026-deck">Specification (pre-BCB, following the March 2026 deck)</h3>
+<p>$$Active_j = \alpha_j + \alpha_{dc} + \alpha_{ct} + \beta_S^t \cdot Post_Processo_{jt} \times WonCase_{jc} + \varepsilon_{jt}$$</p>
+<p>Fixed effects:</p>
+<ul>
+<li>firm $\alpha_j$ (<code>cnpj_basico</code>)</li>
+<li>comarca × case year $\alpha_{dc}$</li>
+<li>calendar year × case year $\alpha_{ct}$</li>
+</ul>
+<p>Standard errors clustered at the firm level.</p>
+<ul>
+<li><code>won_case = 1</code> if <code>sentenca in {PROCEDENTE, PARCIALMENTE PROCEDENTE}</code>.</li>
+<li><code>bias_magistrado</code> (in Ramon's current code): leave-one-out judge win
+rate computed among cases the judge decides in the same comarca/year
+cell. <strong>Caveat:</strong> the correct randomization unit is the vara, not the
+judge; the judge-level instrument is a reasonable approximation when
+one judge runs each vara (see <code>results.md</code> §Judge rotation for the
+modal-judge share).</li>
+<li>Sample: <code>year_processo &lt;= 2019</code> (so the full ±5 window is observable).</li>
+<li>Event-study variant: <code>ib5.id_dist_processo ## c.won_case</code> with t = −1
+omitted; analogous IV implementation interacts <code>bias_magistrado</code> with
+each event-time dummy and instruments the corresponding <code>won_case</code> ×
+event-time interactions.</li>
+</ul>
+<h3 id="outcomes-reported-in-the-march-2026-deck">Outcomes (reported in the March 2026 deck)</h3>
+<p>Pre-BCB stage (CNPJ/Receita side only):</p>
+<ul>
+<li><code>active_firm</code>: 1 if firm cadastral status is active in a given
+calendar year.</li>
+<li><code>n_plants</code>, <code>new_firms</code>, <code>closed_firms</code>: firm-establishment dynamics.</li>
+<li><code>mei</code>, <code>simples</code>: tax-regime indicators derived from <code>simples_data</code>.</li>
+</ul>
+<p>BCB stage (from Ramon's <code>5_rodandoregressoes.do</code>, run inside the Central
+Bank):</p>
+<ul>
+<li>Credit stock: <code>foc_vl_a_vencer</code>, <code>foc_vl_vencido</code>, <code>foc_vl_prejuizo</code>,
+<code>foc_vl_limite_credito</code>.</li>
+<li>Pricing: <code>foc_pc_tax_eft</code> (effective interest rate).</li>
+<li>Guarantees: <code>foc_qt_gar_fidej</code>, <code>foc_qt_gar_nao_fidej</code>.</li>
+<li>Each outcome in three transforms: levels, <code>log(x+1)</code>, <code>bin = 1[x &gt; 0]</code>.</li>
+<li>Each outcome separately on CPF and CNPJ panels, and as <code>tot_*</code> = sum of
+both sides (see <code>4_pareamento.do</code>).</li>
+</ul>
+<h3 id="first-stage-specification-april-2026">First-stage specification (April 2026)</h3>
+<ul>
+<li>Sample: adjudicated cases (natural-person plaintiff, multi-vara foro,
+≥30 cases per foro-vara-year cell).</li>
+<li>Regression: <code>plaintiffwins</code> on LOO vara leniency, within foro × year
+FE, SE clustered at foro × year.</li>
+<li>Implementation: <code>source/table/first_stage.py</code>.</li>
+<li>See <code>results.md</code> §First stage for estimates.</li>
+</ul>
+<h3 id="balance-and-random-assignment-diagnostics">Balance and random-assignment diagnostics</h3>
+<p><strong>Balance test.</strong> Regress each of four pre-filing covariates (defendant
+type dummies, log valor da ação, filing month) on LOO vara leniency
+conditional on foro × year FE. Joint F-test on all four. Implementation
+in <code>source/table/first_stage.py</code>; estimates in <code>results.md</code> §Balance
+table.</p>
+<p>The test found defendant type <em>not</em> balanced. Possible explanations:</p>
+<ol>
+<li><em>Vara specialization within foro.</em> Some foros may route bank cases
+to specific varas (e.g., consumer vs general cível). If routing
+depends on defendant type rather than plaintiff type, random
+assignment of <em>plaintiffs</em> is maintained but the exclusion restriction
+requires conditioning on defendant type.</li>
+<li><em>Mechanical relationship.</em> Banks may be harder defendants (bigger
+legal teams, lower settlement), so varas that happen to draw more
+bank cases show lower win rates. This is a reflection problem —
+a genuine outcome effect rather than a selection violation — but it
+means the balance test is not purely a randomization check.</li>
+</ol>
+<p>Action items:</p>
+<ul>
+<li class="task-list-item"><input class="task-list-item-checkbox" type="checkbox" disabled/>Check whether specific foros route bank cases to dedicated varas
+(e.g., &quot;Vara de Fazenda Pública&quot; vs &quot;Vara Cível&quot;). If so, restrict the
+sample to varas that hear all defendant types, or control for
+defendant type.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" type="checkbox" disabled/>Re-run first stage and balance with defendant-type controls.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" type="checkbox" disabled/>Consider clustering SE at the vara level instead of foro × year,
+since vara is the unit of randomization.</li>
+</ul>
+<p><strong>Random-assignment diagnostic.</strong> Chi-squared test of uniform case
+allocation across varas within each foro-year cell. See <code>results.md</code>
+§Random-assignment diagnostic for rejection rates.</p>
+<p>Unequal case <em>volumes</em> do not by themselves violate IV assumptions; what
+matters is whether case <em>characteristics</em> are non-randomly sorted across
+varas, which the balance test addresses. But if volume imbalance
+reflects systematic routing (e.g., specialized varas handling a subset
+of case types), the &quot;random assignment within foro&quot; assumption may not
+hold in all foros.</p>
+<p>Action items:</p>
+<ul>
+<li class="task-list-item"><input class="task-list-item-checkbox" type="checkbox" disabled/>Restrict to foros where the chi² test does not reject uniform, and
+check whether first-stage and balance results are stable.</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" type="checkbox" disabled/>Investigate the largest-volume foros (Foro Central Cível, Santo
+Amaro, São José do Rio Preto) to confirm that all varas in the sample
+hear 6226 cases and that redistribution events do not create
+systematic sorting.</li>
+</ul>
+<h3 id="robustness-specifications-april-2026">Robustness specifications (April 2026)</h3>
+<p>Run in <code>source/table/first_stage.py</code>. Each specification reported with
+both foro × year and vara clustering:</p>
+<ul>
+<li>Baseline: LOO on <code>plaintiffwins</code>, foro × year FE.</li>
+<li><ul>
+<li>defendant-type controls: adds <code>reu_bank</code>, <code>reu_firm</code>.</li>
+</ul>
+</li>
+<li>Balanced-foros subsample: restrict to foro-years where the chi² test
+does not reject uniform at 5%.</li>
+<li>LOO residualised on defendant type: tests whether remaining covariate
+imbalance persists after conditioning.</li>
+</ul>
+<p>See <code>results.md</code> §First-stage robustness for estimates.</p>
+<h3 id="sentence-classifier-validation">Sentence classifier validation</h3>
+<p><strong>Protocol.</strong> Hand-check 100 random classified cases against an
+independent regex classifier. Report exact-agreement rate, the nature
+of disagreements (which categories get confused), and misclassification
+rate among adjudicated categories specifically.</p>
+<p><strong>Classifier.</strong> In <code>source/clean/serasa.py</code>, uses ordered regexes:</p>
+<ol>
+<li>Primary: <code>julgo\s(procedente( em parte)?|improcedente|parcialmente procedente)</code> — catches explicit merits rulings.</li>
+<li>Fallback: <code>julgo.{0,20}extint[ao]|homologo|extingo</code> — catches
+procedural closures and homologated settlements.</li>
+</ol>
+<p>See <code>results.md</code> §Sentence classifier validation for the agreement rate
+and a breakdown of unclassified cases.</p>
+<h3 id="judge-rotation-within-varas">Judge rotation within varas</h3>
+<p><strong>Measurement.</strong> For each (vara, filing year), compute the share of
+6226 decisions attributable to the modal judge, plus the count of
+distinct judges observed within the vara over the full sample and within
+each vara-year. See <code>results.md</code> §Judge rotation for distributional
+summaries.</p>
+<h3 id="party-identifiers-for-bcb-linkage">Party identifiers for BCB linkage</h3>
+<p>The consulta processual data (<code>parte_1a.csv</code>) contains plaintiff names
+and a sequential <code>parte_id</code>, but <strong>no CPF or CNPJ</strong>. The TJSP consulta
+does not expose personal identifiers on its public-facing interface.
+Linkage to BCB administrative records will need to rely on one of:</p>
+<ol>
+<li>Plaintiff full name + foro (approximate matching), or</li>
+<li>CPF extraction from the sentence text (some sentences mention the
+plaintiff's CPF in the body), or</li>
+<li>Datajud API (may contain masked CPF in some fields), or</li>
+<li>A dedicated name-matching step inside BCB by Leonardo/Ramon.</li>
+</ol>
+<p>This is a constraint for the BCB-side pipeline — flagged for Ramon.</p>
+<h3 id="appeals-linkage">Appeals linkage</h3>
+<p><strong>Method.</strong> Link first- and second-instance data via NPU (the same case
+number in both instances). Compute appeal rate by first-instance outcome
+and decompose asymmetry between losing plaintiffs and losing defendants.
+See <code>results.md</code> §Appeals for rates and the LATE-interpretation
+implications.</p>
+<h3 id="open-implementation-questions">Open implementation questions</h3>
+<ul>
+<li><p><strong>Instrument construction at the vara level.</strong> The current
+<code>bias_magistrado</code> is a judge-level LOO. Randomization is at the vara,
+so the principled instrument is vara-level leniency. Candidates:</p>
+<ol>
+<li>Pure vara leniency: LOO win-rate over all cases decided in the
+vara.</li>
+<li>Weighted-judge-average: weighted mean of the leniencies of all
+judges who have served in the vara, weights proportional to each
+judge's total decisions (possibly across all case types, to gain
+power).</li>
+<li>Hybrid: weighted-judge-average when the vara has seen multiple
+judges; pure judge LOO when only one judge has ever served.</li>
+</ol>
+<p>Option 2 is likely the most powerful because it leverages each judge's
+full decision history for leniency estimation, not just sentences
+within this case type.</p>
+</li>
+<li><p>The control-group choice (&quot;filed in same year but lost&quot;) does not use
+<code>sentenca in {IMPROCEDENTE}</code> cleanly — need to confirm handling of
+<code>PARCIALMENTE PROCEDENTE</code> cases (counted as wins in Ramon's code).</p>
+</li>
+<li><p>Whether <code>year_processo &lt;= 2019</code> restriction should be relaxed for
+outcomes measured at shorter horizons.</p>
+</li>
+<li><p>Whether to cluster at vara level rather than firm level given the IV
+source of variation.</p>
+</li>
+</ul>
+
+</div>
+</main>
+
+<div class="lightbox" id="lightbox">
+  <button class="lightbox-close" id="lightbox-close">&times;</button>
+  <img id="lightbox-img" src="" alt="">
+</div>
+
+<footer>
+  Generated by <code>bash build.sh site</code>
+</footer>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const body = document.querySelector('.md-body');
+  if (!body) return;
+
+  function foldHeadings(container, tag) {
+    const level = tag.replace('H', '');
+    const headings = Array.from(container.querySelectorAll(':scope > ' + tag.toLowerCase()));
+    headings.forEach(h => {
+      const details = document.createElement('details');
+      details.className = 'level-' + level;
+      details.open = true;
+      if (h.id) details.id = h.id;
+      const summary = document.createElement('summary');
+      summary.innerHTML = h.innerHTML;
+      details.appendChild(summary);
+      let sibling = h.nextElementSibling;
+      const collected = [];
+      while (sibling && sibling.tagName !== tag) {
+        collected.push(sibling);
+        sibling = sibling.nextElementSibling;
+      }
+      collected.forEach(el => details.appendChild(el));
+      h.replaceWith(details);
+    });
+    return headings.length;
+  }
+
+  // Fold h2 sections, then h3 sections within each h2
+  const count = foldHeadings(body, 'H2');
+  if (count === 0) {
+    document.querySelector('.doc-controls').style.display = 'none';
+    return;
+  }
+  body.querySelectorAll('details.level-2').forEach(d => foldHeadings(d, 'H3'));
+
+  // Toggle button
+  const btn = document.getElementById('toggle-sections');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    const allDetails = body.querySelectorAll('details');
+    const expanding = btn.textContent === 'Expand all';
+    allDetails.forEach(d => d.open = expanding);
+    btn.textContent = expanding ? 'Collapse all' : 'Expand all';
+  });
+
+  // Auto-open details when navigating to an anchor
+  function openAnchorTarget() {
+    if (!location.hash) return;
+    const target = document.querySelector(location.hash);
+    if (!target) return;
+    let el = target;
+    while (el) {
+      if (el.tagName === 'DETAILS') el.open = true;
+      el = el.parentElement;
+    }
+    target.scrollIntoView();
+  }
+  openAnchorTarget();
+  window.addEventListener('hashchange', openAnchorTarget);
+
+  // Lightbox for images and image links
+  const lb = document.getElementById('lightbox');
+  const lbImg = document.getElementById('lightbox-img');
+  const lbClose = document.getElementById('lightbox-close');
+  if (lb && lbImg) {
+    function openLb(src, alt) {
+      lbImg.src = src;
+      lbImg.alt = alt || '';
+      lb.classList.add('active');
+    }
+    function closeLb() { lb.classList.remove('active'); lbImg.src = ''; }
+
+    // Click on <img> tags
+    body.querySelectorAll('img').forEach(img => {
+      img.addEventListener('click', () => openLb(img.src, img.alt));
+    });
+
+    // Click on <a> links pointing to images
+    body.querySelectorAll('a').forEach(a => {
+      const href = a.getAttribute('href') || '';
+      if (/\.(png|jpg|jpeg|gif|svg|webp)$/i.test(href)) {
+        a.addEventListener('click', e => {
+          e.preventDefault();
+          openLb(href, a.textContent);
+        });
+      }
+    });
+
+    lbClose.addEventListener('click', closeLb);
+    lb.addEventListener('click', e => { if (e.target === lb) closeLb(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLb(); });
+  }
+});
+</script>
+
+<script src="https://hypothes.is/embed.js" async></script>
+</body>
+</html>

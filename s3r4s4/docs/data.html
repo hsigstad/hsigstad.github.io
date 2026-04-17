@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="robots" content="noindex, nofollow">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Data Sources — ML and Deterrence</title>
+<style>
+  :root {
+    --bg: #f8f9fa; --card: #fff; --fg: #1a1a1a; --muted: #666;
+    --border: #dee2e6; --accent: #0d6efd; --accent2: #198754;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--fg); line-height: 1.5;
+  }
+
+  main {
+    padding: 1.5rem 2rem 3rem; max-width: 900px; margin: 0 auto;
+  }
+
+  /* Markdown body styles */
+  .md-body { font-size: .92rem; line-height: 1.7; color: #1f2328; }
+
+  .md-body h1 { font-size: 1.5rem; font-weight: 600; margin: 1.8rem 0 .8rem; padding-bottom: .3rem; border-bottom: 1px solid var(--border); }
+  .md-body h2 { font-size: 1.25rem; font-weight: 600; margin: 1.6rem 0 .6rem; padding-bottom: .25rem; border-bottom: 1px solid var(--border); }
+  .md-body h3 { font-size: 1.05rem; font-weight: 600; margin: 1.3rem 0 .5rem; }
+  .md-body h4 { font-size: .95rem; font-weight: 600; margin: 1.1rem 0 .4rem; }
+  .md-body h5, .md-body h6 { font-size: .88rem; font-weight: 600; margin: 1rem 0 .4rem; }
+  .md-body h1:first-child { margin-top: 0; }
+
+  .md-body p { margin: 0 0 .8rem; }
+
+  .md-body ul, .md-body ol { margin: 0 0 .8rem; padding-left: 1.8rem; }
+  .md-body li { margin-bottom: .25rem; }
+  .md-body li > ul, .md-body li > ol { margin-top: .25rem; margin-bottom: 0; }
+
+  /* Task lists */
+  .md-body ul li { list-style: disc; }
+  .md-body li input[type="checkbox"] {
+    margin-right: .4rem; vertical-align: middle; position: relative; top: -1px;
+  }
+
+  .md-body a { color: var(--accent); text-decoration: none; }
+  .md-body a:hover { text-decoration: underline; }
+
+  .md-body strong { font-weight: 600; }
+
+  .md-body blockquote {
+    margin: 0 0 .8rem; padding: .4rem 1rem;
+    border-left: 4px solid var(--accent); background: #f0f4f8;
+    color: #555; font-size: .88rem;
+  }
+  .md-body blockquote p:last-child { margin-bottom: 0; }
+
+  .md-body code {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: .85em; background: #eef1f5; padding: .15rem .35rem;
+    border-radius: 4px;
+  }
+  .md-body pre {
+    margin: 0 0 .8rem; padding: .9rem 1rem;
+    background: #f6f8fa; border: 1px solid var(--border);
+    border-radius: 6px; overflow-x: auto; line-height: 1.45;
+  }
+  .md-body pre code {
+    background: none; padding: 0; font-size: .82rem;
+  }
+
+  .md-body table {
+    width: 100%; border-collapse: collapse; margin: 0 0 .8rem;
+    font-size: .85rem; display: block; overflow-x: auto;
+  }
+  .md-body th, .md-body td {
+    padding: .45rem .7rem; border: 1px solid var(--border); text-align: left;
+  }
+  .md-body th { background: #f0f4f8; font-weight: 600; }
+  .md-body tr:nth-child(even) td { background: #fafbfc; }
+
+  .md-body hr {
+    border: none; border-top: 1px solid var(--border); margin: 1.5rem 0;
+  }
+
+  .md-body img { max-width: 100%; cursor: pointer; transition: opacity .15s; }
+  .md-body img:hover { opacity: .85; }
+
+  /* Lightbox overlay */
+  .lightbox {
+    display: none; position: fixed; inset: 0; z-index: 9999;
+    background: rgba(0,0,0,.82); justify-content: center; align-items: center;
+    cursor: pointer;
+  }
+  .lightbox.active { display: flex; }
+  .lightbox img {
+    max-width: 94vw; max-height: 92vh; border-radius: 6px;
+    box-shadow: 0 4px 24px rgba(0,0,0,.4); cursor: default;
+  }
+  .lightbox-close {
+    position: fixed; top: 1rem; right: 1.2rem; z-index: 10000;
+    background: rgba(255,255,255,.9); border: none; border-radius: 50%;
+    width: 2.2rem; height: 2.2rem; font-size: 1.3rem; line-height: 2.2rem;
+    text-align: center; cursor: pointer; color: #333; font-weight: 600;
+  }
+  .lightbox-close:hover { background: #fff; }
+
+  /* Collapsible sections */
+  .doc-controls { margin-bottom: 1rem; }
+  .doc-controls button {
+    font-size: .8rem; padding: .3rem .7rem; cursor: pointer;
+    background: var(--card); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--accent); font-weight: 600;
+  }
+  .doc-controls button:hover { background: #e7f1ff; }
+  .md-body details { margin-bottom: .5rem; }
+  .md-body details summary {
+    font-weight: 600; cursor: pointer; list-style: none;
+  }
+  .md-body details summary::-webkit-details-marker { display: none; }
+  .md-body details summary::before {
+    content: "\25b6"; font-size: .7em; margin-right: .5rem;
+    display: inline-block; transition: transform .15s;
+  }
+  .md-body details[open] summary::before { transform: rotate(90deg); }
+  .md-body details.level-2 > summary {
+    font-size: 1.25rem; padding-bottom: .25rem;
+    border-bottom: 1px solid var(--border); margin: 1.6rem 0 .6rem;
+  }
+  .md-body details.level-3 > summary {
+    font-size: 1.05rem; margin: 1.3rem 0 .5rem;
+  }
+
+  footer {
+    text-align: center; padding: 1.5rem; font-size: .8rem; color: var(--muted);
+    border-top: 1px solid var(--border); margin-top: 2rem;
+  }
+</style>
+</head>
+<body>
+
+<style>
+  .site-nav {
+    position: sticky; top: 0; z-index: 100;
+    background: #212529; display: flex; align-items: center;
+    padding: 0 2rem; height: 3rem;
+  }
+  .site-nav .nav-brand {
+    color: #fff; text-decoration: none; font-weight: 600; font-size: 1rem;
+    margin-right: auto;
+  }
+  .site-nav .nav-brand:hover { color: #e9ecef; }
+  .site-nav .nav-link {
+    color: #adb5bd; text-decoration: none; font-size: .85rem;
+    padding: 0 .75rem; height: 3rem; display: flex; align-items: center;
+    background: none; border: none; cursor: pointer; font-family: inherit;
+  }
+  .site-nav .nav-link:hover, .site-nav .nav-link.active { color: #fff; }
+  .nav-dropdown { position: relative; }
+  .dropdown-menu {
+    display: none; position: absolute; top: 3rem; right: 0;
+    background: #fff; border: 1px solid var(--border); border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.12); min-width: 220px;
+    padding: .4rem 0; z-index: 200; max-height: 80vh; overflow-y: auto;
+  }
+  .nav-dropdown.open .dropdown-menu { display: block; }
+  .dropdown-menu a {
+    display: block; padding: .3rem 1rem; color: #1a1a1a;
+    text-decoration: none; font-size: .82rem;
+  }
+  .dropdown-menu a:hover { background: #f0f4f8; }
+  .dropdown-group-label {
+    padding: .4rem 1rem .15rem; font-size: .68rem; font-weight: 700;
+    color: #888; text-transform: uppercase; letter-spacing: .04em;
+  }
+  .dropdown-divider { border-top: 1px solid #eee; margin: .3rem 0; }
+  .page-header {
+    padding: .8rem 2rem; border-bottom: 1px solid var(--border); background: #fff;
+  }
+  .page-header h1 { font-size: 1.3rem; font-weight: 600; }
+  .page-header p { color: var(--muted); font-size: .85rem; margin-top: .15rem; }
+</style>
+
+<nav class="site-nav">
+  <a href="../index.html" class="nav-brand">SERASA Courts</a>
+  <a href="../index.html" class="nav-link">Home</a>
+  <a href="../paper/index.html" class="nav-link">Paper</a>
+  <a href="../results/index.html" class="nav-link">Results</a>
+  <a href="../talk/index.html" class="nav-link">Talk</a>
+  <div class="nav-dropdown">
+    <button class="nav-link active">Docs &#9662;</button>
+    <div class="dropdown-menu">
+    <div class="dropdown-group-label">Reference</div>
+    <a href="../docs/summary.html">Research Summary</a>
+    <a href="../docs/institutions.html">Institutional Background</a>
+    <a href="../docs/data.html">Data Sources</a>
+    <a href="../docs/methods.html">Methods</a>
+    <a href="../docs/results.html">Results</a>
+    <a href="../docs/literature.html">Literature</a>
+    <a href="../docs/README.html">Docs Conventions</a>
+    <a href="../docs/theory.html">Theory</a>
+    <a href="../docs/README.html">Setup & Conventions</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Working notes</div>
+    <a href="../docs/thinking.html">Open Questions & Ideas</a>
+    <a href="../docs/decisions.html">Key Decisions</a>
+    <a href="../docs/outline.html">Paper Outline</a>
+    <a href="../docs/hypotheses.html">Hypotheses</a>
+    <a href="../docs/anecdotes.html">News Anecdotes</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Tasks</div>
+    <a href="../docs/todo.html">Active Tasks</a>
+    <a href="../docs/done.html">Completed Tasks</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Communication</div>
+    <a href="../docs/meetings.html">Meeting Notes</a>
+    <a href="../docs/feedback.html">External Feedback</a>
+    </div>
+  </div>
+</nav>
+<script>
+document.querySelectorAll('.nav-dropdown > .nav-link').forEach(function(btn) {
+  btn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    var dd = btn.parentElement;
+    var wasOpen = dd.classList.contains('open');
+    document.querySelectorAll('.nav-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+    if (!wasOpen) dd.classList.add('open');
+  });
+});
+document.addEventListener('click', function() {
+  document.querySelectorAll('.nav-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+});
+</script>
+
+<div class="page-header">
+  <h1>Data Sources</h1>
+</div>
+
+<main>
+<div class="doc-controls">
+  <button id="toggle-sections">Collapse all</button>
+</div>
+<div class="md-body">
+<h1>Data</h1>
+<h2 id="datajud-api">Datajud API</h2>
+<h3 id="source">Source</h3>
+<ul>
+<li>provider: CNJ (Conselho Nacional de Justica)</li>
+<li>access: public Elasticsearch API (api-publica.datajud.cnj.jus.br)</li>
+<li>authentication: API key via DATAJUD_APIKEY env var</li>
+</ul>
+<h3 id="coverage">Coverage</h3>
+<ul>
+<li>geographic scope: all Brazilian tribunals (currently downloading TJSP)</li>
+<li>population: all cases with assunto code 6226</li>
+</ul>
+<h3 id="unit-of-observation">Unit of observation</h3>
+<ul>
+<li>individual court case (processo)</li>
+</ul>
+<h3 id="key-variables">Key variables</h3>
+<ul>
+<li>numeroProcesso: case number (NPU format)</li>
+<li>classe: case type (codigo + nome)</li>
+<li>assuntos: subject codes (one-to-many)</li>
+<li>orgaoJulgador: court/judge division (codigo, nome, municipio IBGE)</li>
+<li>grau: instance (1o grau, 2o grau, TR)</li>
+<li>dataAjuizamento: filing date</li>
+<li>dataHoraUltimaAtualizacao: last update timestamp</li>
+</ul>
+<h3 id="current-counts-tjsp">Current counts (TJSP)</h3>
+<ul>
+<li>339,797 cases downloaded</li>
+<li>317 unique assunto codes (cases can have multiple assuntos)</li>
+<li>106 unique case classes</li>
+<li>1,739 unique orgaos julgadores</li>
+</ul>
+<h3 id="pipeline">Pipeline</h3>
+<ul>
+<li>scrape: <code>source/scrape/datajud.py</code> -&gt; <code>build/scrape/datajud_tjsp.jsonl</code></li>
+<li>clean: <code>source/clean/datajud.py</code> -&gt; <code>build/clean/datajud_tjsp_*.csv</code></li>
+</ul>
+<h2 id="tjsp-consulta">TJSP consulta</h2>
+<h3 id="source">Source</h3>
+<ul>
+<li>provider: Tribunal de Justica de Sao Paulo (TJSP)</li>
+<li>access: scraped case pages stored as markdown files in ZIP archives</li>
+<li>location: <code>data/TJSP/consulta/TJSP_serasa*.zip</code> (3 ZIP files)</li>
+</ul>
+<h3 id="coverage">Coverage</h3>
+<ul>
+<li>geographic scope: Sao Paulo state</li>
+<li>population: cases with assunto &quot;Inclusao Indevida em Cadastro de Inadimplentes&quot;</li>
+</ul>
+<h3 id="unit-of-observation">Unit of observation</h3>
+<ul>
+<li>individual court case (processo)</li>
+</ul>
+<h3 id="key-variables-after-parsing">Key variables (after parsing)</h3>
+<ul>
+<li>proc: case metadata (classe, assunto, foro, vara, juiz, distribuicao, status)</li>
+<li>mov: case movements (date, text)</li>
+<li>parte: parties (key, parte name, tipo)</li>
+<li>adv: lawyers (advogado name)</li>
+</ul>
+<h3 id="current-counts">Current counts</h3>
+<ul>
+<li>1a instancia: 312,968 cases (proc), 16.6M movements, 703k parties, 858k lawyers</li>
+<li>2a instancia: 114,860 cases (proc), 2.4M movements, 180k parties, 232k lawyers</li>
+<li>329,185 unique case numbers across both instances</li>
+</ul>
+<h3 id="pipeline">Pipeline</h3>
+<ul>
+<li>clean: <code>source/clean/consulta.py</code> -&gt; <code>build/clean/{proc,mov,parte,adv}_{1a,2a}.csv</code></li>
+<li>parsing logic: use the shared <code>diarios</code> module (do not duplicate)</li>
+</ul>
+<h3 id="overlap-with-datajud">Overlap with Datajud</h3>
+<ul>
+<li>178,678 cases in both sources</li>
+<li>147,102 cases in Datajud only (to be scraped)</li>
+<li>150,507 cases in consulta only</li>
+</ul>
+<h2 id="tjsp-court-sentences-sentenca">TJSP court sentences (sentenca)</h2>
+<h3 id="source">Source</h3>
+<ul>
+<li>provider: Tribunal de Justica de Sao Paulo (TJSP)</li>
+<li>access: scraped court records</li>
+<li>documentation: raw CSV files with semicolon separator</li>
+<li>physical location: Henrik's educloud server (raw files are not in this repo and must not be read directly)</li>
+<li>role: authoritative source for <strong>individual judge identity</strong> via the <code>magistrado</code> field — this is the judge-ID input to the leniency IV</li>
+</ul>
+<h3 id="coverage">Coverage</h3>
+<ul>
+<li>geographic scope: Sao Paulo state</li>
+<li>population: civil court sentences</li>
+</ul>
+<h3 id="unit-of-observation">Unit of observation</h3>
+<ul>
+<li>individual court case (processo)</li>
+</ul>
+<h3 id="key-variables">Key variables</h3>
+<ul>
+<li>text: full sentence text</li>
+<li>assunto: case subject classification</li>
+<li>classe: case type</li>
+<li>comarca: court district</li>
+<li>vara: court division</li>
+<li>foro: forum</li>
+<li>magistrado: judge name</li>
+<li>data: decision date</li>
+</ul>
+<h3 id="sample-restrictions">Sample restrictions</h3>
+<ul>
+<li>filtered to assunto == &quot;Inclusao Indevida em Cadastro de Inadimplentes&quot;</li>
+</ul>
+<h3 id="pipeline">Pipeline</h3>
+<ul>
+<li>extract: <code>source/extract/sentenca.py</code> -&gt; <code>build/extract/serasa.csv</code></li>
+<li>clean: <code>source/clean/serasa.py</code> -&gt; <code>build/clean/serasa.csv</code>, <code>build/clean/serasa_no_text.csv</code></li>
+</ul>
+<h2 id="shared-dropbox-folder">Shared Dropbox folder</h2>
+<h3 id="location">Location</h3>
+<ul>
+<li><code>bi-dropbox:AlencarAmoniMarianiSigstad/</code></li>
+<li>shared coauthor folder for exchanging intermediate outputs, code, and figures outside the git repo</li>
+</ul>
+<h3 id="structure">Structure</h3>
+<ul>
+<li><code>Data/</code> — <code>Raw/</code>, <code>Intermediate/</code>, <code>Final/</code></li>
+<li><code>Codes/</code> — Stata <code>.do</code> files (name/municipality matching, preliminary OLS and by-CNPJ regressions)</li>
+<li><code>Claims/</code> — Python pipeline for regex-based classification of legal reasons in sentences; includes <code>serasa1pct.csv</code> 1% sample, <code>analyze_claim_topics.py</code>, reason word-cloud and visualization scripts, and a README describing run order</li>
+<li><code>Figures and Tables/</code> — preliminary OLS/RF/IV result figures on firm outcomes (active firms, new firms, closed firms, procedente, won, partially) and LaTeX tables (<code>active_firm.tex</code>, <code>n_firms.tex</code>)</li>
+<li><code>RA/</code> — Ramon Bertotto's workspace:<ul>
+<li><code>Codes/</code> — Stata pipeline for building the plaintiff-firm matched dataset and running OLS/RF/IV on firm activity. Main files: <code>do_name_mun_match.do</code> (data build only), <code>do_regression_by_cnpj.do</code> (build + event-time panel + judge-bias IV + regressions/plots), <code>ajuste-caracteres especiais.do</code>, <code>preliminary regressions.do</code>. Workflow documented in <code>stata_scripts_description.md</code></li>
+<li><code>Data/Intermediate/</code> — cleaned intermediate <code>.dta</code> files used by Ramon's code (<code>final_data_no_panel.dta</code>, <code>serasa_comarca_id*.dta</code>, <code>banco201909_clean.csv</code>, <code>serasa1pct.csv</code>, <code>serasa_no_text.csv</code>, municipio files)</li>
+<li><code>Reports BCB/14042026/</code> — LaTeX tables from runs inside the Central Bank (focus/total, bin/log variants, CPF/CNPJ splits) on outcomes: <code>pc_tax_eft</code>, <code>qt_gar_fidej</code>, <code>qt_gar_nao_fidej</code>, <code>vl_a_vencer</code>, <code>vl_prejuizo</code>, <code>vl_vencido</code></li>
+<li><code>other/</code> — <code>Dicionario SCR.xlsx</code>, <code>descricao das variaveis usadas.docx</code>, <code>SERASA_presentation.pdf</code></li>
+</ul>
+</li>
+</ul>
+<h3 id="notes">Notes</h3>
+<ul>
+<li>Not a raw-data source; holds collaborator-shared working files</li>
+<li>Data under <code>Data/Raw/</code> is not inspected from this repo; Central Bank microdata stays inside the Central Bank environment</li>
+</ul>
+<h2 id="receita-federal-firm-data-accessed-inside-bcb">Receita Federal firm data (accessed inside BCB)</h2>
+<p>Receita Federal datasets are accessed by Ramon inside the BCB environment.
+They are the source for firm-activity outcomes and for the plaintiff→firm linkage.
+Variable names below are from Ramon's Stata code (<code>source/ra/do_regression_by_cnpj.do</code>).</p>
+<h3 id="estabelecimentos-firm-establishments">Estabelecimentos (firm establishments)</h3>
+<ul>
+<li>source file: <code>Receita/Janeiro 2025/estabelecimentos_all_codibge</code></li>
+<li>unit: establishment (CNPJ branch)</li>
+<li>key variables:<ul>
+<li><code>cnpj_basico</code>: 8-digit CNPJ root (firm identifier)</li>
+<li><code>situacao_cadastral</code>: cadastral status code (e.g., <code>&quot;02&quot;</code> = active, <code>&quot;08&quot;</code> = closed)</li>
+<li><code>data_situacao_cadastral</code>: date of last status change (YMD string)</li>
+<li><code>data_inicio_atividade</code>: establishment opening date (YMD string)</li>
+<li><code>razao_social</code>: firm legal name</li>
+<li><code>cod_ibge</code>: IBGE municipality code</li>
+</ul>
+</li>
+</ul>
+<h3 id="s-cios-firm-owners-partners">Sócios (firm owners/partners)</h3>
+<ul>
+<li>source file: <code>Receita/Janeiro 2025/socios_all.dta</code></li>
+<li>unit: owner × firm</li>
+<li>key variables:<ul>
+<li><code>cnpj_basico</code>: firm identifier</li>
+<li><code>cnpj_cpf</code>: owner CPF (masked in some contexts)</li>
+<li><code>nome</code>: owner name</li>
+<li><code>qualificacao_socio</code>: role code (sócio, administrador, etc.)</li>
+<li><code>data_entrada_sociedade</code>: date joined</li>
+</ul>
+</li>
+</ul>
+<h3 id="simples-mei-status">Simples/MEI status</h3>
+<ul>
+<li>source file: <code>Receita/Janeiro 2025/simples_data.dta</code></li>
+<li>unit: firm</li>
+<li>key variables:<ul>
+<li><code>cnpj_basico</code>: firm identifier</li>
+<li>Fields indicating opt-in dates and status for Simples Nacional and MEI regimes</li>
+</ul>
+</li>
+</ul>
+<h3 id="constructed-outcome-variables-from-source-ra">Constructed outcome variables (from <code>source/ra/</code>)</h3>
+<p>Built in Ramon's stacked event-time panel, collapsed to (<code>numero</code>, <code>year</code>) or (<code>cnpj_basico</code>, <code>year</code>):</p>
+<table>
+<thead>
+<tr>
+  <th>Variable</th>
+  <th>Definition</th>
+  <th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><code>active_firm</code></td>
+  <td>1 if <code>year</code> &lt; closing year and <code>year</code> &gt;= opening year</td>
+  <td><code>situacao_cadastral</code>, <code>data_situacao_cadastral</code>, <code>data_inicio_atividade</code></td>
+</tr>
+<tr>
+  <td><code>n_plants</code></td>
+  <td>Count of active establishments in year</td>
+  <td>Sum of <code>active_firm</code> across establishments</td>
+</tr>
+<tr>
+  <td><code>new_firms</code></td>
+  <td>1 if establishment opened in this year</td>
+  <td><code>data_inicio_atividade</code></td>
+</tr>
+<tr>
+  <td><code>closed_firms</code></td>
+  <td>1 if establishment closed in this year</td>
+  <td><code>situacao_cadastral == &quot;08&quot;</code></td>
+</tr>
+<tr>
+  <td><code>mei</code></td>
+  <td>1 if firm is in MEI regime in year</td>
+  <td><code>simples_data</code></td>
+</tr>
+<tr>
+  <td><code>simples</code></td>
+  <td>1 if firm is in Simples Nacional in year</td>
+  <td><code>simples_data</code></td>
+</tr>
+<tr>
+  <td><code>won_case</code></td>
+  <td>1 if sentença ∈ {PROCEDENTE, PARCIALMENTE PROCEDENTE}</td>
+  <td>Court sentence classification</td>
+</tr>
+<tr>
+  <td><code>bias_magistrado</code></td>
+  <td>Leave-one-out judge win rate (by magistrado)</td>
+  <td>LOO mean of <code>won_case</code></td>
+</tr>
+<tr>
+  <td><code>n_plants_baseline</code></td>
+  <td>Plants at t-1 (year before filing)</td>
+  <td><code>n_plants</code> at <code>year == year_processo - 1</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Known issue:</strong> <code>bias_magistrado</code> is computed at the judge level, not the vara level. The principled instrument is vara-level leniency (see <code>docs/methods.md</code> §Open implementation questions).</p>
+<h2 id="central-bank-administrative-data">Central Bank administrative data</h2>
+<h3 id="source">Source</h3>
+<ul>
+<li>provider: Central Bank of Brazil</li>
+<li>access: through Leonardo Alencar (Senior Advisor)</li>
+</ul>
+<h3 id="datasets">Datasets</h3>
+<ul>
+<li>individual-level credit registry (SCR)</li>
+<li>formal firm registry (with ownership details)</li>
+<li>employment records</li>
+</ul>
+<h3 id="key-scr-variables-used">Key SCR variables used</h3>
+<ul>
+<li>Credit stock: <code>FOC_VL_LIMITE_CREDITO</code>, <code>FOC_VL_A_VENCER</code>, <code>FOC_VL_VENCIDO</code>, <code>FOC_VL_PREJUIZO</code></li>
+<li>Pricing: <code>FOC_PC_TAX_EFT</code> (effective contracted rate, annualized)</li>
+<li>Guarantees: <code>FOC_QT_GAR_FIDEJ</code>, <code>FOC_QT_GAR_NAO_FIDEJ</code></li>
+<li>Identifiers: <code>CLI_CD</code> (masked CPF/CNPJ), <code>CCJ_CD</code> (CNPJ root), <code>MEE_CD_MES</code> (YYYYMM reference)</li>
+<li>Client type/size: <code>TPC_CD</code>, <code>POC_CD</code> (porte in salários mínimos for PF)</li>
+<li>See <code>docs/reference/scr_variables.md</code> for the full lookup. Source dictionary: <code>bi-dropbox:AlencarAmoniMarianiSigstad/RA/other/Dicionario SCR.xlsx</code> (local copy at <code>references/bcb/Dicionario_SCR.xlsx</code>).</li>
+</ul>
+<h3 id="bcb-side-panel-construction">BCB-side panel construction</h3>
+<p>Everything below is inferred from Ramon's <code>.do</code> files in
+<code>references/ra_code/09042026/</code>. It is <em>not</em> a Leonardo-approved data
+dictionary; the open questions at the end flag what still needs confirming.</p>
+<h4 id="raw-input-files-delivered-by-leonardo-to-ramon-s-bcb-workspace">Raw input files (delivered by Leonardo to Ramon's BCB workspace)</h4>
+<table>
+<thead>
+<tr>
+  <th>File pattern</th>
+  <th>Source</th>
+  <th>Vintage</th>
+  <th>Years covered</th>
+  <th>Identifier</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><code>cnpj_v25112025_YYYY.csv</code></td>
+  <td>SCR, CNPJ side</td>
+  <td>2025-11-25</td>
+  <td>2007–2024</td>
+  <td><code>mask_client</code> (anonymised CNPJ)</td>
+</tr>
+<tr>
+  <td><code>full_cpf_v25112025_YYYY.csv</code></td>
+  <td>SCR, CPF side</td>
+  <td>2025-11-25</td>
+  <td>2007–2024</td>
+  <td><code>mask_client</code> (anonymised CPF)</td>
+</tr>
+<tr>
+  <td><code>masked_cpf_with_names_v06022026_cleaned_YYYY.csv</code></td>
+  <td>SCR, CPF side + clear-text names for matching</td>
+  <td>2026-02-06</td>
+  <td>2007–2024</td>
+  <td><code>mask_client</code> + <code>nome</code></td>
+</tr>
+</tbody>
+</table>
+<p>One CSV per year per source; the April 2026 run uses the
+<code>masked_cpf_with_names_v06022026_cleaned_*</code> vintage for the CPF side
+(supersedes <code>full_cpf_v25112025_*</code>).</p>
+<p>Row-level unit in the raw files: (<code>mask_client</code>, <code>numero</code>, <code>dmo_cd</code>, <code>mee_cd_mes</code>)
+— a client × process × credit-modality × year-month observation.</p>
+<ul>
+<li><code>mee_cd_mes</code> is YYYYMM (monthly frequency).</li>
+<li><code>dmo_cd</code> is the credit-modality code; Ramon drops rows with <code>dmo_cd &gt;= 1900</code>
+before collapsing. [TBD: what this filter excludes — ask Leonardo.]</li>
+<li>Each process (<code>numero</code>) can have multiple clients attached, and each client
+can appear in multiple processes; duplicates inside a (process, month)
+are additive (see <code>3_montarpainelcredito.do</code> comments).</li>
+</ul>
+<h4 id="collapse-logic-3-montarpainelcredito-do">Collapse logic (<code>3_montarpainelcredito.do</code>)</h4>
+<p>For each year's CSV, two sequential collapses produce one row per
+(<code>numero</code>, year):</p>
+<ol>
+<li><code>collapse (sum) tot_contratos foc_vl_* foc_pc_* foc_qt_*, by(numero month)</code></li>
+<li><code>collapse (mean) ..., by(numero)</code></li>
+</ol>
+<p>Sums of values within a client-process-month, then averaged across the 12
+months of the year. An alternative mask_client-level collapse is present
+in the same file but kept in stand-by.</p>
+<p>Yearly outputs are appended into <code>painel_cnpj_processo.dta</code> and
+<code>painel_cpfnovo__processo.dta</code> (the CPF panel built from the April 2026
+vintage).</p>
+<h4 id="merge-with-court-side-panel-4-pareamento-do">Merge with court-side panel (<code>4_pareamento.do</code>)</h4>
+<ul>
+<li><strong>Input from our side:</strong> <code>painel_processos_judges.dta</code> (~229,757 obs)
+— the process × year panel built by Mariani/Sigstad with plaintiff,
+judge/vara/comarca, and <code>won_case</code> already merged in. The linkage
+between court plaintiff and BCB <code>mask_client</code> is done <em>upstream of this
+file</em>, inside the BCB environment by Leonardo/Ramon.</li>
+<li><strong>Merge:</strong> <code>merge 1:1 numero year</code> against the CNPJ panel, then again
+against the CPF-novo panel. Unmatched BCB rows (<code>_merge == 2</code>) are
+dropped; unmatched court rows (<code>_merge == 1</code>) have their financial
+variables set to zero, on the read &quot;no credit record = no credit.&quot;</li>
+<li><strong>Output:</strong> <code>painel_processo_merge.dta</code>, with <code>foc_*_cnpj</code>, <code>foc_*_cpf</code>,
+and <code>tot_*</code> (sum of both sides) outcome variants.</li>
+</ul>
+<h4 id="regression-harness-5-rodandoregressoes-do-summary">Regression harness (<code>5_rodandoregressoes.do</code>, summary)</h4>
+<p>Restricted to <code>n_judges &gt; 1</code>. Fixed effects <code>cnpj_basico</code>,
+<code>comarca_id # year_processo</code>, <code>year_processo # year</code>; SE clustered at
+<code>cnpj_basico</code>. Three transforms per outcome (levels / <code>log(x+1)</code> / <code>x &gt; 0</code>).
+Event study with <code>ib5.id_dist_processo</code> (t = −5 baseline, window ±5).</p>
+<p>Full naming schema in <code>docs/reference/bcb_reports_index.md</code>.</p>
+<h4 id="open-questions-for-leonardo">Open questions for Leonardo</h4>
+<ul>
+<li>Full BCB-side data dictionary (authoritative list of raw files, fields,
+semantics) — the table above is inferred from Ramon's code.</li>
+<li>What <code>dmo_cd &gt;= 1900</code> excludes (likely a modality class such as
+securitised credit or FGTS operations, but unconfirmed).</li>
+<li>How the court-plaintiff → <code>mask_client</code> match was constructed and at
+what match rate. The clear-text names in the Feb 2026 vintage suggest
+BCB now runs name-based matching; the earlier vintage likely used a
+different mechanism.</li>
+<li>Whether the monthly granularity before the annual collapse is available
+downstream (Ramon collapses to annual; keeping monthly would help
+event-study precision).</li>
+</ul>
+
+</div>
+</main>
+
+<div class="lightbox" id="lightbox">
+  <button class="lightbox-close" id="lightbox-close">&times;</button>
+  <img id="lightbox-img" src="" alt="">
+</div>
+
+<footer>
+  Generated by <code>bash build.sh site</code>
+</footer>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const body = document.querySelector('.md-body');
+  if (!body) return;
+
+  function foldHeadings(container, tag) {
+    const level = tag.replace('H', '');
+    const headings = Array.from(container.querySelectorAll(':scope > ' + tag.toLowerCase()));
+    headings.forEach(h => {
+      const details = document.createElement('details');
+      details.className = 'level-' + level;
+      details.open = true;
+      if (h.id) details.id = h.id;
+      const summary = document.createElement('summary');
+      summary.innerHTML = h.innerHTML;
+      details.appendChild(summary);
+      let sibling = h.nextElementSibling;
+      const collected = [];
+      while (sibling && sibling.tagName !== tag) {
+        collected.push(sibling);
+        sibling = sibling.nextElementSibling;
+      }
+      collected.forEach(el => details.appendChild(el));
+      h.replaceWith(details);
+    });
+    return headings.length;
+  }
+
+  // Fold h2 sections, then h3 sections within each h2
+  const count = foldHeadings(body, 'H2');
+  if (count === 0) {
+    document.querySelector('.doc-controls').style.display = 'none';
+    return;
+  }
+  body.querySelectorAll('details.level-2').forEach(d => foldHeadings(d, 'H3'));
+
+  // Toggle button
+  const btn = document.getElementById('toggle-sections');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    const allDetails = body.querySelectorAll('details');
+    const expanding = btn.textContent === 'Expand all';
+    allDetails.forEach(d => d.open = expanding);
+    btn.textContent = expanding ? 'Collapse all' : 'Expand all';
+  });
+
+  // Auto-open details when navigating to an anchor
+  function openAnchorTarget() {
+    if (!location.hash) return;
+    const target = document.querySelector(location.hash);
+    if (!target) return;
+    let el = target;
+    while (el) {
+      if (el.tagName === 'DETAILS') el.open = true;
+      el = el.parentElement;
+    }
+    target.scrollIntoView();
+  }
+  openAnchorTarget();
+  window.addEventListener('hashchange', openAnchorTarget);
+
+  // Lightbox for images and image links
+  const lb = document.getElementById('lightbox');
+  const lbImg = document.getElementById('lightbox-img');
+  const lbClose = document.getElementById('lightbox-close');
+  if (lb && lbImg) {
+    function openLb(src, alt) {
+      lbImg.src = src;
+      lbImg.alt = alt || '';
+      lb.classList.add('active');
+    }
+    function closeLb() { lb.classList.remove('active'); lbImg.src = ''; }
+
+    // Click on <img> tags
+    body.querySelectorAll('img').forEach(img => {
+      img.addEventListener('click', () => openLb(img.src, img.alt));
+    });
+
+    // Click on <a> links pointing to images
+    body.querySelectorAll('a').forEach(a => {
+      const href = a.getAttribute('href') || '';
+      if (/\.(png|jpg|jpeg|gif|svg|webp)$/i.test(href)) {
+        a.addEventListener('click', e => {
+          e.preventDefault();
+          openLb(href, a.textContent);
+        });
+      }
+    });
+
+    lbClose.addEventListener('click', closeLb);
+    lb.addEventListener('click', e => { if (e.target === lb) closeLb(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLb(); });
+  }
+});
+</script>
+
+<script src="https://hypothes.is/embed.js" async></script>
+</body>
+</html>
