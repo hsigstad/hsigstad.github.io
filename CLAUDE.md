@@ -8,7 +8,6 @@ Jekyll site deployed via GitHub Pages at https://hsigstad.github.io/.
 - Project-specific subsites under top-level dirs (`procure/`, `saude/`, `bind/`)
 - Course book pages (`book-gra6296.html`, `book.html`)
 - Data viewers (`viewer.html`)
-- Downloadable files (`downloads/`)
 
 ## How project sites get here
 
