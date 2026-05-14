@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="robots" content="noindex, nofollow">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Codebase Cleanup Plan — Judicial Connections</title>
+<style>
+  :root {
+    --bg: #f8f9fa; --card: #fff; --fg: #1a1a1a; --muted: #666;
+    --border: #dee2e6; --accent: #0d6efd; --accent2: #198754;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--fg); line-height: 1.5;
+  }
+
+  main {
+    padding: 1.5rem 2rem 3rem; max-width: 900px; margin: 0 auto;
+  }
+
+  /* Markdown body styles */
+  .md-body { font-size: .92rem; line-height: 1.7; color: #1f2328; }
+
+  .md-body h1 { font-size: 1.5rem; font-weight: 600; margin: 1.8rem 0 .8rem; padding-bottom: .3rem; border-bottom: 1px solid var(--border); }
+  .md-body h2 { font-size: 1.25rem; font-weight: 600; margin: 1.6rem 0 .6rem; padding-bottom: .25rem; border-bottom: 1px solid var(--border); }
+  .md-body h3 { font-size: 1.05rem; font-weight: 600; margin: 1.3rem 0 .5rem; }
+  .md-body h4 { font-size: .95rem; font-weight: 600; margin: 1.1rem 0 .4rem; }
+  .md-body h5, .md-body h6 { font-size: .88rem; font-weight: 600; margin: 1rem 0 .4rem; }
+  .md-body h1:first-child { margin-top: 0; }
+
+  .md-body p { margin: 0 0 .8rem; }
+
+  .md-body ul, .md-body ol { margin: 0 0 .8rem; padding-left: 1.8rem; }
+  .md-body li { margin-bottom: .25rem; }
+  .md-body li > ul, .md-body li > ol { margin-top: .25rem; margin-bottom: 0; }
+
+  /* Task lists */
+  .md-body ul li { list-style: disc; }
+  .md-body li input[type="checkbox"] {
+    margin-right: .4rem; vertical-align: middle; position: relative; top: -1px;
+  }
+
+  .md-body a { color: var(--accent); text-decoration: none; }
+  .md-body a:hover { text-decoration: underline; }
+
+  .md-body strong { font-weight: 600; }
+
+  .md-body blockquote {
+    margin: 0 0 .8rem; padding: .4rem 1rem;
+    border-left: 4px solid var(--accent); background: #f0f4f8;
+    color: #555; font-size: .88rem;
+  }
+  .md-body blockquote p:last-child { margin-bottom: 0; }
+
+  .md-body code {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: .85em; background: #eef1f5; padding: .15rem .35rem;
+    border-radius: 4px;
+  }
+  .md-body pre {
+    margin: 0 0 .8rem; padding: .9rem 1rem;
+    background: #f6f8fa; border: 1px solid var(--border);
+    border-radius: 6px; overflow-x: auto; line-height: 1.45;
+  }
+  .md-body pre code {
+    background: none; padding: 0; font-size: .82rem;
+  }
+
+  .md-body table {
+    width: 100%; border-collapse: collapse; margin: 0 0 .8rem;
+    font-size: .85rem; display: block; overflow-x: auto;
+  }
+  .md-body th, .md-body td {
+    padding: .45rem .7rem; border: 1px solid var(--border); text-align: left;
+  }
+  .md-body th { background: #f0f4f8; font-weight: 600; }
+  .md-body tr:nth-child(even) td { background: #fafbfc; }
+
+  .md-body hr {
+    border: none; border-top: 1px solid var(--border); margin: 1.5rem 0;
+  }
+
+  .md-body img { max-width: 100%; cursor: pointer; transition: opacity .15s; }
+  .md-body img:hover { opacity: .85; }
+
+  /* Lightbox overlay */
+  .lightbox {
+    display: none; position: fixed; inset: 0; z-index: 9999;
+    background: rgba(0,0,0,.82); justify-content: center; align-items: center;
+    cursor: pointer;
+  }
+  .lightbox.active { display: flex; }
+  .lightbox img {
+    max-width: 94vw; max-height: 92vh; border-radius: 6px;
+    box-shadow: 0 4px 24px rgba(0,0,0,.4); cursor: default;
+  }
+  .lightbox-close {
+    position: fixed; top: 1rem; right: 1.2rem; z-index: 10000;
+    background: rgba(255,255,255,.9); border: none; border-radius: 50%;
+    width: 2.2rem; height: 2.2rem; font-size: 1.3rem; line-height: 2.2rem;
+    text-align: center; cursor: pointer; color: #333; font-weight: 600;
+  }
+  .lightbox-close:hover { background: #fff; }
+
+  /* Collapsible sections */
+  .doc-controls { margin-bottom: 1rem; }
+  .doc-controls button {
+    font-size: .8rem; padding: .3rem .7rem; cursor: pointer;
+    background: var(--card); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--accent); font-weight: 600;
+  }
+  .doc-controls button:hover { background: #e7f1ff; }
+  .md-body details { margin-bottom: .5rem; }
+  .md-body details summary {
+    font-weight: 600; cursor: pointer; list-style: none;
+  }
+  .md-body details summary::-webkit-details-marker { display: none; }
+  .md-body details summary::before {
+    content: "\25b6"; font-size: .7em; margin-right: .5rem;
+    display: inline-block; transition: transform .15s;
+  }
+  .md-body details[open] summary::before { transform: rotate(90deg); }
+  .md-body details.level-2 > summary {
+    font-size: 1.25rem; padding-bottom: .25rem;
+    border-bottom: 1px solid var(--border); margin: 1.6rem 0 .6rem;
+  }
+  .md-body details.level-3 > summary {
+    font-size: 1.05rem; margin: 1.3rem 0 .5rem;
+  }
+
+  footer {
+    text-align: center; padding: 1.5rem; font-size: .8rem; color: var(--muted);
+    border-top: 1px solid var(--border); margin-top: 2rem;
+  }
+</style>
+</head>
+<body>
+
+<style>
+  .site-nav {
+    position: sticky; top: 0; z-index: 100;
+    background: #212529; display: flex; align-items: center;
+    padding: 0 2rem; height: 3rem;
+  }
+  .site-nav .nav-brand {
+    color: #fff; text-decoration: none; font-weight: 600; font-size: 1rem;
+    margin-right: auto;
+  }
+  .site-nav .nav-brand:hover { color: #e9ecef; }
+  .site-nav .nav-link {
+    color: #adb5bd; text-decoration: none; font-size: .85rem;
+    padding: 0 .75rem; height: 3rem; display: flex; align-items: center;
+    background: none; border: none; cursor: pointer; font-family: inherit;
+  }
+  .site-nav .nav-link:hover, .site-nav .nav-link.active { color: #fff; }
+  .nav-dropdown { position: relative; }
+  .dropdown-menu {
+    display: none; position: absolute; top: 3rem; right: 0;
+    background: #fff; border: 1px solid var(--border); border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.12); min-width: 220px;
+    padding: .4rem 0; z-index: 200; max-height: 80vh; overflow-y: auto;
+  }
+  .nav-dropdown.open .dropdown-menu { display: block; }
+  .dropdown-menu a {
+    display: block; padding: .3rem 1rem; color: #1a1a1a;
+    text-decoration: none; font-size: .82rem;
+  }
+  .dropdown-menu a:hover { background: #f0f4f8; }
+  .dropdown-group-label {
+    padding: .4rem 1rem .15rem; font-size: .68rem; font-weight: 700;
+    color: #888; text-transform: uppercase; letter-spacing: .04em;
+  }
+  .dropdown-divider { border-top: 1px solid #eee; margin: .3rem 0; }
+  .page-header {
+    padding: .8rem 2rem; border-bottom: 1px solid var(--border); background: #fff;
+  }
+  .page-header h1 { font-size: 1.3rem; font-weight: 600; }
+  .page-header p { color: var(--muted); font-size: .85rem; margin-top: .15rem; }
+</style>
+
+<nav class="site-nav">
+  <a href="../index.html" class="nav-brand">Judicial Connections</a>
+  <a href="../index.html" class="nav-link">Home</a>
+  <a href="../paper/index.html" class="nav-link">Paper</a>
+  <div class="nav-dropdown">
+    <button class="nav-link">Scandals &#9662;</button>
+    <div class="dropdown-menu">
+    <a href="../scandals/banco_master.html">Banco Master &amp; the STF</a>
+    <a href="../scandals/faroeste.html">Operação Faroeste — TJ-BA</a>
+    <a href="../scandals/mais_valia.html">Operação Mais Valia — TRT-1</a>
+    <a href="../scandals/more_cases.html">More Cases</a>
+    <a href="../scandals/sisamnes.html">Operação Sisamnes — STJ</a>
+    <a href="../scandals/ultima_ratio.html">Operação Última Ratio — TJ-MS</a>
+    </div>
+  </div>
+  <div class="nav-dropdown">
+    <button class="nav-link active">Docs &#9662;</button>
+    <div class="dropdown-menu">
+    <div class="dropdown-group-label">Reference</div>
+    <a href="../docs/README.html">Project Overview</a>
+    <a href="../docs/summary.html">Research Summary</a>
+    <a href="../docs/institutions.html">Institutional Background</a>
+    <a href="../docs/data.html">Data Sources</a>
+    <a href="../docs/methods.html">Empirical Methods</a>
+    <a href="../docs/literature.html">Literature</a>
+    <a href="../docs/theory.html">Theory</a>
+    <a href="../docs/hypotheses.html">Hypotheses</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Working notes</div>
+    <a href="../docs/thinking.html">Open Questions & Ideas</a>
+    <a href="../docs/decisions.html">Key Decisions</a>
+    <a href="../docs/archive.html">Archive</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Tasks</div>
+    <a href="../docs/todo.html">Active Tasks</a>
+    <a href="../docs/done.html">Completed Tasks</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Communication</div>
+    <a href="../docs/meetings.html">Meeting Notes</a>
+    <a href="../docs/feedback.html">External Feedback</a>
+    <div class="dropdown-divider"></div>
+    <div class="dropdown-group-label">Notes</div>
+    <a href="../notes/ai_workflow.html">AI-Assisted Development Workflow</a>
+    <a href="../notes/anecdotes.html">Anecdotes and Media References</a>
+    <a href="../notes/codebase_cleanup_plan.html">Codebase Cleanup Plan</a>
+    <a href="../notes/family_involvement_table.html">Family Involvement in Judicial Corruption Episodes</a>
+    <a href="../notes/file_export.html">Automatic File Export Request — Bocconi Secure Server</a>
+    <a href="../notes/lit_almeida2010.html">Almeida (2010) -- A nobreza togada</a>
+    <a href="../notes/lit_alvim2011.html">Alvim (2011) -- Operação Hurricane: um juiz no olho do furacão</a>
+    <a href="../notes/lit_daros2017.html">Da Ros & Taylor (2017) -- Opening the Black Box: Three Decades of Reforms to Brazil's Judicial System</a>
+    <a href="../notes/lit_leal1977.html">Leal (1977) -- Coronelismo: the municipality and representative government in Brazil</a>
+    <a href="../notes/lit_mujica2011.html">Mujica (2011) -- Micropolíticas de la corrupción</a>
+    <a href="../notes/lit_vasconcelos2005.html">Vasconcelos (2005) --- Juizes no banco dos reus</a>
+    <a href="../notes/scandals.html">Judicial Corruption Scandals: Detailed Summaries</a>
+    <a href="../notes/server_paths.html">Bocconi Server File Paths</a>
+    <a href="../notes/synthetic_data_plan.html">Plan: Synthetic Raw Data for Full Pipeline Testing</a>
+    </div>
+  </div>
+</nav>
+<script>
+document.querySelectorAll('.nav-dropdown > .nav-link').forEach(function(btn) {
+  btn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    var dd = btn.parentElement;
+    var wasOpen = dd.classList.contains('open');
+    document.querySelectorAll('.nav-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+    if (!wasOpen) dd.classList.add('open');
+  });
+});
+document.addEventListener('click', function() {
+  document.querySelectorAll('.nav-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+});
+</script>
+
+<div class="page-header">
+  <h1>Codebase Cleanup Plan</h1>
+</div>
+
+<main>
+<div class="doc-controls">
+  <button id="toggle-sections">Collapse all</button>
+</div>
+<div class="md-body">
+<h1>Codebase Cleanup Plan</h1>
+<p>Created: 2026-03-27</p>
+<p>Goal: Get the codebase into a clean, well-organized state before transferring back to the Bocconi server.</p>
+<h2 id="phase-1-delete-dead-code-safe-no-risk">Phase 1: Delete dead code (safe, no risk)</h2>
+<h3 id="1a-delete-conflicted-copies-5-files">1a. Delete conflicted copies (5 files)</h3>
+<p>All are Dropbox sync artifacts dated 2025-01-06. Main versions are correct/newer.</p>
+<ul>
+<li><code>source/clean/clean (Clean's conflicted copy 2025-01-06).R</code> — identical to main</li>
+<li><code>source/query/TRT/adv_address_year (Clean's conflicted copy 2025-01-06).do</code> — main is newer</li>
+<li><code>source/query/TRT/adv_relative_year__shared_address (Clean's conflicted copy 2025-01-06).R</code> — main is cleaner</li>
+<li><code>source/query/escritorio__size (Clean's conflicted copy 2025-01-06).R</code> — has bugs, main is correct</li>
+<li><code>source/table/adv_connection_desc (Clean's conflicted copy 2025-01-06).R</code> — main is current</li>
+</ul>
+<h3 id="1b-delete-test-scratch-files-2-files">1b. Delete test/scratch files (2 files)</h3>
+<ul>
+<li><code>source/query/test.R</code> — 9-line trivial test</li>
+<li><code>source/query/test2.R</code> — 9-line trivial test</li>
+</ul>
+<h3 id="1c-delete-archive-folders-29-files-across-7-dirs">1c. Delete archive/ folders (29 files across 7 dirs)</h3>
+<p>All are legacy scripts from earlier pipeline versions. No current script reads them. Delete from working tree — git history preserves them.</p>
+<p>Directories:</p>
+<ul>
+<li><code>source/clean/archive/</code> (19 files)</li>
+<li><code>source/extract/archive/</code> (1 file)</li>
+<li><code>source/merge/archive/</code> (3 files)</li>
+<li><code>source/query/archive/</code> (3 files)</li>
+<li><code>source/query/TJ/archive/</code> (1 file)</li>
+<li><code>source/query/TRF/archive/</code> (1 file)</li>
+<li><code>source/query/TRT/archive/</code> (1 file)</li>
+</ul>
+<h2 id="phase-2-fix-bugs-and-inconsistencies">Phase 2: Fix bugs and inconsistencies</h2>
+<h3 id="2a-column-naming-adv-cpf-advogado-cpf">2a. Column naming: adv_cpf → advogado_cpf</h3>
+<p>The correct name is <code>advogado_cpf</code>. Fix remaining uses of <code>adv_cpf</code>:</p>
+<ul>
+<li><code>source/table/shared_address.R</code> lines 57, 80</li>
+<li>Verify no other scripts use <code>adv_cpf</code></li>
+</ul>
+<h3 id="2b-column-naming-median-n-foro-year-median-n-randunit-year">2b. Column naming: median_n_foro_year → median_n_randunit_year</h3>
+<p>Already fixed in <code>adv_randomization.R</code>. Verify no other scripts use the old name.</p>
+<h3 id="2c-missing-library-calls">2c. Missing library() calls</h3>
+<ul>
+<li><code>adv_randomization.R</code> was missing <code>library(Hmisc)</code> — already fixed</li>
+</ul>
+<h3 id="2d-merge-r-feather">2d. merge.R feather</h3>
+<ul>
+<li>Already wrapped in tryCatch — keep this fix</li>
+</ul>
+<h2 id="phase-3-organize-table-scripts">Phase 3: Organize table scripts</h2>
+<p>58 R files in <code>source/table/</code>. Reorganize into:</p>
+<h3 id="source-table-paper-scripts-that-produce-paper-tables"><code>source/table/paper/</code> — scripts that produce paper tables</h3>
+<p>Based on analysis, these produce .tex output for the paper:</p>
+<ul>
+<li><code>adv_connection_effects.R</code> → main_results.tex, robustness.tex, by_connection_tp.tex, recursos.tex, impedimento.tex, het.tex</li>
+<li><code>adv_randomization.R</code> → adv_randomization.tex</li>
+<li><code>adv_connection_effects_TJ.R</code> → TJ variants</li>
+<li><code>adv_connection_effects_TRF.R</code> → TRF variants</li>
+<li><code>table.R</code> → shared utilities (keep at top level)</li>
+<li><code>synth_config.R</code> → synthetic data config (keep at top level)</li>
+</ul>
+<h3 id="source-table-descriptive-descriptive-statistics"><code>source/table/descriptive/</code> — descriptive statistics</h3>
+<ul>
+<li><code>summary.R</code>, <code>summary_TJ.R</code></li>
+<li><code>summary_connections.R</code>, <code>summary_connections_TJ.R</code></li>
+<li><code>summary_judgelawyers.R</code></li>
+<li><code>summary_judge_relatives.R</code></li>
+<li><code>descriptives.R</code></li>
+<li><code>adv_connection_desc.R</code></li>
+<li><code>escritorio_desc.R</code>, <code>escritorio_desc2.R</code>, <code>escritorio_desc3.R</code></li>
+<li><code>violations_of_impedimento_rules_desc.R</code></li>
+</ul>
+<h3 id="source-table-exploratory-one-off-analyses-not-in-paper"><code>source/table/exploratory/</code> — one-off analyses, not in paper</h3>
+<ul>
+<li><code>adv_connection_OLS.R</code></li>
+<li><code>adv_connection_effects_adv_level.R</code></li>
+<li><code>adv_connection_effects_2a.R</code></li>
+<li><code>adv_randomization2.R</code>, <code>adv_randomization_2a.R</code></li>
+<li><code>cnpj_connection_effects.R</code>, <code>cnpj_randomization.R</code></li>
+<li><code>doubleML.R</code></li>
+<li><code>dynastic_bias.R</code></li>
+<li><code>effect_of_judge_with_firm_connections.R</code></li>
+<li><code>funcionario_ols.R</code>, <code>funcionarios_lawfirms.R</code></li>
+<li><code>hiring_connected_lawyers_in_important_cases.R</code></li>
+<li><code>hiring_relative_in_another_case_TJ.R</code></li>
+<li><code>home_vs_away_lawyerFE.R</code></li>
+<li><code>judge_nomination_effects.R</code>, <code>judge_remocao_effects.R</code></li>
+<li><code>judge_with_adv_relative_effects.R</code></li>
+<li><code>judge_aposentadoria_effects.R</code></li>
+<li><code>lawfirm.R</code>, <code>top_lawfirms.R</code></li>
+<li><code>ministro_relatives.R</code></li>
+<li><code>panama.R</code></li>
+<li><code>shared_address.R</code></li>
+<li><code>who_uses_connected_lawyers.R</code></li>
+<li><code>what_characterizes_lawyers_with_joint_cases.R</code></li>
+<li><code>autores_e_reus_em_processos_conectados.R</code></li>
+<li><code>adv_connection_as_outcome.R</code></li>
+<li>And remaining scripts</li>
+</ul>
+<h2 id="phase-4-remove-commented-out-code-blocks">Phase 4: Remove commented-out code blocks</h2>
+<p>Many scripts have large blocks of commented-out code (old approaches, debugging). Review each and remove blocks that are:</p>
+<ul>
+<li>Old versions of the same analysis</li>
+<li>Debugging print statements</li>
+<li>Alternative approaches that were rejected</li>
+<li>Dead variable assignments</li>
+</ul>
+<p>Keep comments that explain WHY something was done or document gotchas.</p>
+<h2 id="phase-5-pipeline-cleanup-pipelines-bocconi">Phase 5: Pipeline cleanup (pipelines/bocconi/)</h2>
+<h3 id="5a-delete-archive-folders">5a. Delete archive folders</h3>
+<ul>
+<li><code>justica/source/clean/archive/</code> — old parse_mov_*.py files</li>
+<li><code>justica/source/clean/TJ/archive/</code> — old adv_proc, vara_year</li>
+</ul>
+<h3 id="5b-delete-backup-files">5b. Delete backup files</h3>
+<ul>
+<li>Files ending in <code>~</code> (editor backups): <code>parse_mov_TJRJ.py~</code>, etc.</li>
+</ul>
+<h3 id="5c-remove-orphaned-stata-do-scripts">5c. Remove orphaned Stata .do scripts</h3>
+<ul>
+<li>Files in <code>clean/</code> and <code>extract/</code> that were replaced by R equivalents</li>
+</ul>
+<h2 id="phase-6-sconstruct-and-documentation">Phase 6: SConstruct and documentation</h2>
+<h3 id="6a-add-all-paper-table-scripts-to-sconstruct">6a. Add all paper table scripts to SConstruct</h3>
+<p>Each table script becomes a build target with explicit dependencies.</p>
+<h3 id="6b-update-synthetic-data-plan">6b. Update synthetic data plan</h3>
+<p>Reflect current state: what works, what's missing.</p>
+<h3 id="6c-document-the-pipeline">6c. Document the pipeline</h3>
+<p>Brief README in each source/ subdirectory explaining what the scripts do and their execution order.</p>
+<h2 id="execution-order">Execution order</h2>
+<ol>
+<li>Phase 1 first (safe deletes, no risk)</li>
+<li>Phase 2 (bug fixes, verify each)</li>
+<li>Phase 3 (reorganize tables — this changes paths, so update SConstruct)</li>
+<li>Phase 4 (commented-out code — review carefully, commit per script)</li>
+<li>Phase 5 (pipeline cleanup — separate repo)</li>
+<li>Phase 6 (docs, last)</li>
+</ol>
+<p>Test <code>scons</code> after each phase to make sure nothing breaks.</p>
+
+</div>
+</main>
+
+<div class="lightbox" id="lightbox">
+  <button class="lightbox-close" id="lightbox-close">&times;</button>
+  <img id="lightbox-img" src="" alt="">
+</div>
+
+<footer>
+  Generated by <code>bash build.sh site</code>
+</footer>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const body = document.querySelector('.md-body');
+  if (!body) return;
+
+  function foldHeadings(container, tag) {
+    const level = tag.replace('H', '');
+    const headings = Array.from(container.querySelectorAll(':scope > ' + tag.toLowerCase()));
+    headings.forEach(h => {
+      const details = document.createElement('details');
+      details.className = 'level-' + level;
+      details.open = true;
+      if (h.id) details.id = h.id;
+      const summary = document.createElement('summary');
+      summary.innerHTML = h.innerHTML;
+      details.appendChild(summary);
+      let sibling = h.nextElementSibling;
+      const collected = [];
+      while (sibling && sibling.tagName !== tag) {
+        collected.push(sibling);
+        sibling = sibling.nextElementSibling;
+      }
+      collected.forEach(el => details.appendChild(el));
+      h.replaceWith(details);
+    });
+    return headings.length;
+  }
+
+  // Fold h2 sections, then h3 sections within each h2
+  const count = foldHeadings(body, 'H2');
+  if (count === 0) {
+    document.querySelector('.doc-controls').style.display = 'none';
+    return;
+  }
+  body.querySelectorAll('details.level-2').forEach(d => foldHeadings(d, 'H3'));
+
+  // Toggle button
+  const btn = document.getElementById('toggle-sections');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    const allDetails = body.querySelectorAll('details');
+    const collapsing = btn.textContent === 'Collapse all';
+    allDetails.forEach(d => d.open = !collapsing);
+    btn.textContent = collapsing ? 'Expand all' : 'Collapse all';
+  });
+
+  // Auto-open details when navigating to an anchor
+  function openAnchorTarget() {
+    if (!location.hash) return;
+    const target = document.querySelector(location.hash);
+    if (!target) return;
+    let el = target;
+    while (el) {
+      if (el.tagName === 'DETAILS') el.open = true;
+      el = el.parentElement;
+    }
+    target.scrollIntoView();
+  }
+  openAnchorTarget();
+  window.addEventListener('hashchange', openAnchorTarget);
+
+  // Lightbox for images and image links
+  const lb = document.getElementById('lightbox');
+  const lbImg = document.getElementById('lightbox-img');
+  const lbClose = document.getElementById('lightbox-close');
+  if (lb && lbImg) {
+    function openLb(src, alt) {
+      lbImg.src = src;
+      lbImg.alt = alt || '';
+      lb.classList.add('active');
+    }
+    function closeLb() { lb.classList.remove('active'); lbImg.src = ''; }
+
+    // Click on <img> tags
+    body.querySelectorAll('img').forEach(img => {
+      img.addEventListener('click', () => openLb(img.src, img.alt));
+    });
+
+    // Click on <a> links pointing to images (e.g. in tables)
+    body.querySelectorAll('a').forEach(a => {
+      const href = a.getAttribute('href') || '';
+      if (/\.(png|jpg|jpeg|gif|svg|webp)$/i.test(href)) {
+        a.addEventListener('click', e => {
+          e.preventDefault();
+          openLb(href, a.textContent);
+        });
+      }
+    });
+
+    lbClose.addEventListener('click', closeLb);
+    lb.addEventListener('click', e => { if (e.target === lb) closeLb(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLb(); });
+  }
+});
+</script>
+
+</body>
+</html>
