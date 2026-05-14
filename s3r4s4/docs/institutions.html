@@ -104,31 +104,20 @@
   }
   .lightbox-close:hover { background: #fff; }
 
-  /* Collapsible sections */
-  .doc-controls { margin-bottom: 1rem; }
-  .doc-controls button {
-    font-size: .8rem; padding: .3rem .7rem; cursor: pointer;
-    background: var(--card); border: 1px solid var(--border); border-radius: 4px;
-    color: var(--accent); font-weight: 600;
+  /* Table of contents */
+  .doc-toc {
+    background: var(--card); border: 1px solid var(--border); border-radius: 6px;
+    padding: .8rem 1.2rem; margin-bottom: 1.5rem; font-size: .85rem;
   }
-  .doc-controls button:hover { background: #e7f1ff; }
-  .md-body details { margin-bottom: .5rem; }
-  .md-body details summary {
-    font-weight: 600; cursor: pointer; list-style: none;
+  .doc-toc-label {
+    font-size: .7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .04em; color: var(--muted); margin-bottom: .4rem;
   }
-  .md-body details summary::-webkit-details-marker { display: none; }
-  .md-body details summary::before {
-    content: "\25b6"; font-size: .7em; margin-right: .5rem;
-    display: inline-block; transition: transform .15s;
-  }
-  .md-body details[open] summary::before { transform: rotate(90deg); }
-  .md-body details.level-2 > summary {
-    font-size: 1.25rem; padding-bottom: .25rem;
-    border-bottom: 1px solid var(--border); margin: 1.6rem 0 .6rem;
-  }
-  .md-body details.level-3 > summary {
-    font-size: 1.05rem; margin: 1.3rem 0 .5rem;
-  }
+  .doc-toc ul { list-style: none; padding-left: 0; margin: 0; }
+  .doc-toc ul ul { padding-left: 1.2rem; margin-top: .15rem; }
+  .doc-toc li { margin-bottom: .15rem; }
+  .doc-toc a { color: var(--accent); text-decoration: none; }
+  .doc-toc a:hover { text-decoration: underline; }
 
   footer {
     text-align: center; padding: 1.5rem; font-size: .8rem; color: var(--muted);
@@ -206,6 +195,7 @@
     <a href="../docs/outline.html">Paper Outline</a>
     <a href="../docs/hypotheses.html">Hypotheses</a>
     <a href="../docs/anecdotes.html">News Anecdotes</a>
+    <a href="../docs/pasta_digital_extraction.html">Pasta Digital Extraction</a>
     <div class="dropdown-divider"></div>
     <div class="dropdown-group-label">Tasks</div>
     <a href="../docs/todo.html">Active Tasks</a>
@@ -237,9 +227,10 @@ document.addEventListener('click', function() {
 </div>
 
 <main>
-<div class="doc-controls">
-  <button id="toggle-sections">Collapse all</button>
-</div>
+<nav class="doc-toc" id="doc-toc" hidden>
+  <div class="doc-toc-label">Contents</div>
+  <ul></ul>
+</nav>
 <div class="md-body">
 <h1>Institutional Background — Source of Truth</h1>
 <p>Single reference for all institutional facts used in the paper. Before writing
@@ -516,11 +507,26 @@ the judge's discretion.</p>
 <h3 id="4-3-volume-and-plaintiff-win-rate">4.3 Volume and plaintiff-win rate</h3>
 <p>Between 2013 and 2024 the Tribunal de Justiça de São Paulo (TJSP) alone
 produced approximately <strong>365,000 first-instance sentences</strong> on 6226 cases
-(source: our own sentenças scrape). The breakdown: EXTINTO 24%, IMPROCEDENTE
-19%, PARCIALMENTE PROCEDENTE 19%, ACORDO 14%, PROCEDENTE 14%, unclassified
-10%. Among <strong>adjudicated</strong> cases (PROCEDENTE + PARCIALMENTE PROCEDENTE +
-IMPROCEDENTE), the plaintiff wins in approximately <strong>63%</strong> of rulings.
-<strong>Source:</strong> own computation from <code>source/table/descriptives.py</code>.</p>
+(source: our own sentenças scrape). After collapsing to one row per NPU
+(keeping the earliest sentença) and restricting to knowledge-phase classes
+(dropping CUMPRIMENTO DE SENTENCA, LIQUIDACAO, RPV, etc.), this resolves
+to <strong>~254,000 cases</strong>. Case-level breakdown: IMPROCEDENTE 27.1%, PARCIALMENTE
+PROCEDENTE 26.0%, PROCEDENTE 18.6%, ACORDO 14.8%, unclassified 9.2%, EXTINTO
+4.3%. Treating knowledge-stage EXTINTO as a loss (procedural dismissal
+where the autor stays on the negative list — first approximation pending
+the autor_status refinement in <code>source/clean/extincao_reasons.py</code>),
+<strong>193,000 cases (76%) are adjudicated</strong> and the plaintiff wins
+approximately <strong>59%</strong> of those. <strong>Source:</strong> own computation from
+<code>source/table/descriptives.py</code>.</p>
+<p><strong>Earlier (row-level) numbers in this file (EXTINTO 24%, etc.) reflected
+the raw sentenças table, where ~22% of NPUs appear with multiple rows
+because a merits ruling is followed by a cumprimento closure
+(CPC.924.II — satisfação) under the same NPU. The closure outranked the
+merits ruling under a &quot;last sentence per case&quot; rule, mislabeling roughly
+30k merit-stage wins as EXTINTO. The case-level rule (first sentence per
+NPU + knowledge-phase classes only) is implemented in
+<code>source/table/descriptives.py:filter_knowledge_classes</code> and
+<code>keep_first_per_npu</code>.</strong></p>
 <p>The 80% figure should not be read mechanically as the share of listings that
 were &quot;wrongful&quot;: a plaintiff win can reflect (a) creditor non-appearance
 (<em>revelia</em>), (b) procedural violations (missing Súmula 359 notification),
@@ -773,61 +779,41 @@ document.addEventListener('DOMContentLoaded', () => {
   const body = document.querySelector('.md-body');
   if (!body) return;
 
-  function foldHeadings(container, tag) {
-    const level = tag.replace('H', '');
-    const headings = Array.from(container.querySelectorAll(':scope > ' + tag.toLowerCase()));
-    headings.forEach(h => {
-      const details = document.createElement('details');
-      details.className = 'level-' + level;
-      details.open = true;
-      if (h.id) details.id = h.id;
-      const summary = document.createElement('summary');
-      summary.innerHTML = h.innerHTML;
-      details.appendChild(summary);
-      let sibling = h.nextElementSibling;
-      const collected = [];
-      while (sibling && sibling.tagName !== tag) {
-        collected.push(sibling);
-        sibling = sibling.nextElementSibling;
+  // Build table of contents from h2 (top-level) and nested h3 entries
+  const toc = document.getElementById('doc-toc');
+  const tocList = toc && toc.querySelector('ul');
+  const h2s = Array.from(body.querySelectorAll(':scope > h2'));
+  if (toc && tocList && h2s.length > 0) {
+    h2s.forEach(h2 => {
+      const li = document.createElement('li');
+      const a = document.createElement('a');
+      a.href = '#' + h2.id;
+      a.textContent = h2.textContent;
+      li.appendChild(a);
+
+      // Collect h3 siblings until next h2
+      const subs = [];
+      let sib = h2.nextElementSibling;
+      while (sib && sib.tagName !== 'H2') {
+        if (sib.tagName === 'H3' && sib.id) subs.push(sib);
+        sib = sib.nextElementSibling;
       }
-      collected.forEach(el => details.appendChild(el));
-      h.replaceWith(details);
+      if (subs.length > 0) {
+        const sublist = document.createElement('ul');
+        subs.forEach(h3 => {
+          const sli = document.createElement('li');
+          const sa = document.createElement('a');
+          sa.href = '#' + h3.id;
+          sa.textContent = h3.textContent;
+          sli.appendChild(sa);
+          sublist.appendChild(sli);
+        });
+        li.appendChild(sublist);
+      }
+      tocList.appendChild(li);
     });
-    return headings.length;
+    toc.hidden = false;
   }
-
-  // Fold h2 sections, then h3 sections within each h2
-  const count = foldHeadings(body, 'H2');
-  if (count === 0) {
-    document.querySelector('.doc-controls').style.display = 'none';
-    return;
-  }
-  body.querySelectorAll('details.level-2').forEach(d => foldHeadings(d, 'H3'));
-
-  // Toggle button
-  const btn = document.getElementById('toggle-sections');
-  if (!btn) return;
-  btn.addEventListener('click', () => {
-    const allDetails = body.querySelectorAll('details');
-    const expanding = btn.textContent === 'Expand all';
-    allDetails.forEach(d => d.open = expanding);
-    btn.textContent = expanding ? 'Collapse all' : 'Expand all';
-  });
-
-  // Auto-open details when navigating to an anchor
-  function openAnchorTarget() {
-    if (!location.hash) return;
-    const target = document.querySelector(location.hash);
-    if (!target) return;
-    let el = target;
-    while (el) {
-      if (el.tagName === 'DETAILS') el.open = true;
-      el = el.parentElement;
-    }
-    target.scrollIntoView();
-  }
-  openAnchorTarget();
-  window.addEventListener('hashchange', openAnchorTarget);
 
   // Lightbox for images and image links
   const lb = document.getElementById('lightbox');
@@ -865,5 +851,6 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 
 <script src="https://hypothes.is/embed.js" async></script>
+<script src="../../../../build/browser/workspace_nav.js" onerror=""></script>
 </body>
 </html>

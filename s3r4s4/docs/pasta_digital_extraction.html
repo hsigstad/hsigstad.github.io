@@ -4,7 +4,7 @@
 <meta name="robots" content="noindex, nofollow">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Paper Outline — ML and Deterrence</title>
+<title>Pasta Digital Extraction — ML and Deterrence</title>
 <style>
   :root {
     --bg: #f8f9fa; --card: #fff; --fg: #1a1a1a; --muted: #666;
@@ -223,7 +223,7 @@ document.addEventListener('click', function() {
 </script>
 
 <div class="page-header">
-  <h1>Paper Outline</h1>
+  <h1>Pasta Digital Extraction</h1>
 </div>
 
 <main>
@@ -232,105 +232,250 @@ document.addEventListener('click', function() {
   <ul></ul>
 </nav>
 <div class="md-body">
-<h1>Paper Outline</h1>
-<p>Living skeleton for the paper &quot;Redress Delayed, Business Denied: Credit Blacklisting and Entrepreneurship in Brazil&quot;. Section purposes and dependencies only — not drafted prose. Update when scope or structure changes; draft prose belongs in <code>paper/paper.tex</code>.</p>
-<h2 id="argument-structure">Argument structure</h2>
+<h1>Extracting data from full case files (pasta digital)</h1>
+<p>Two sample <em>pasta digital</em> PDFs downloaded from TJSP e-SAJ, stored in the project root.
+<strong>Not git-tracked.</strong> Eventually move to Dropbox.</p>
+<p>Potential source: legal tech firm, ~R$1/process.</p>
+<hr />
+<h2 id="what-we-already-have-consulta-processual-senten-a-pipeline">What we already have (consulta processual + sentença pipeline)</h2>
+<p>From the TJSP consulta scrape and our sentença classifier we already extract:</p>
 <ul>
-<li><strong>Claim:</strong> wrongful inclusion in Brazilian credit bureaus (Serasa) is frequent, courts correct a large share of wrongful listings, and judicial correction causally improves firm survival and entrepreneurial activity. Judicial delay therefore imposes real costs on small firms.</li>
-<li><strong>Evidence:</strong> (i) descriptive: ~80% of ~118k Sao Paulo rulings on &quot;inclusao indevida&quot; favor the plaintiff, (ii) IV using vara-level leniency on TJSP cases, (iii) outcomes from CNPJ/Receita (firm activity, plants, MEI, Simples) and BCB credit registry (credit stock, pricing, guarantees, prejuizo).</li>
-<li><strong>Contribution:</strong> first microeconomic evidence on the interaction of wrongful credit reporting and weak judicial redress; fills a gap in the credit-bureau / consumer-protection literature that has been silent on the absence-of-protection margin.</li>
+<li>Party names and roles (author/defendant)</li>
+<li><code>valor_da_acao</code> (claim amount set by the lawyer — not the actual debt)</li>
+<li>Foro, vara, judge name</li>
+<li>Filing date (<code>data_distribuicao</code>)</li>
+<li>Case class and subject code (assunto 6226)</li>
+<li>Movimentações (procedural events with dates)</li>
+<li>Sentence outcome (procedente / improcedente / parcialmente procedente / extinto / acordo)</li>
+<li>Defendant type (bank, telecom, retail — from regex on party names)</li>
 </ul>
-<h2 id="section-plan">Section plan</h2>
-<h3 id="1-introduction">1. Introduction</h3>
+<hr />
+<h2 id="what-the-pasta-digital-adds-not-available-from-apis">What the pasta digital adds (not available from APIs)</h2>
+<h3 id="party-identifiers-cpf-cnpj">Party identifiers (CPF/CNPJ)</h3>
+<table>
+<thead>
+<tr>
+  <th>Field</th>
+  <th>Source within PDF</th>
+  <th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><strong>Plaintiff CPF</strong></td>
+  <td>Termo de ajuizamento, petição inicial</td>
+  <td>Critical for linking to BCB credit registry, firm registry, employment records. Currently we only have names from consulta.</td>
+</tr>
+<tr>
+  <td><strong>Plaintiff CNPJ</strong> (when applicable)</td>
+  <td>Bank records, petição inicial</td>
+  <td>PDF 1 reveals the plaintiff's micro-empresa CNPJ — the debt was on a PJ account, invisible from case metadata.</td>
+</tr>
+<tr>
+  <td><strong>Defendant CNPJ</strong></td>
+  <td>Filing form, contestação</td>
+  <td>Useful for disambiguating subsidiaries, securitizadoras, debt buyers.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="debt-characterization">Debt characterization</h3>
+<table>
+<thead>
+<tr>
+  <th>Field</th>
+  <th>Source within PDF</th>
+  <th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><strong>Actual debt amount</strong></td>
+  <td>Contestação debt table, bank records</td>
+  <td>Distinct from <code>valor_da_acao</code>. The contestação often has a structured table with the updated debt value.</td>
+</tr>
+<tr>
+  <td><strong>Product type</strong></td>
+  <td>Contestação, petição inicial</td>
+  <td>E.g., &quot;LIS PJ Pré Aprovado&quot; (overdraft), telecom installments, credit card. Lets us distinguish secured vs. unsecured, consumer vs. business credit.</td>
+</tr>
+<tr>
+  <td><strong>Debt origination date</strong></td>
+  <td>Contestação debt table</td>
+  <td>When the debt was first contracted — combined with filing date, gives the age of the debt at lawsuit.</td>
+</tr>
+<tr>
+  <td><strong>Contract number</strong></td>
+  <td>Contestação, bank records</td>
+  <td>Could potentially link to BCB credit registry if format matches.</td>
+</tr>
+<tr>
+  <td><strong>Whether debt is PJ or PF</strong></td>
+  <td>Bank records, petição inicial</td>
+  <td>PDF 1 reveals the debt was on a micro-empresa account — invisible from case metadata which lists the individual plaintiff.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="credit-market-secondary-debt-market">Credit market / secondary debt market</h3>
+<table>
+<thead>
+<tr>
+  <th>Field</th>
+  <th>Source</th>
+  <th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><strong>Cessão (debt assignment) details</strong></td>
+  <td>Cessão declarations, contestação</td>
+  <td>Who bought the debt (securitizadora), when, from whom. Maps the secondary debt market.</td>
+</tr>
+<tr>
+  <td><strong>Collection agent</strong></td>
+  <td>Contestação, bank response</td>
+  <td>E.g., Recovery do Brasil handling collection for iResolve.</td>
+</tr>
+<tr>
+  <td><strong>Serasa Limpa Nome listing details</strong></td>
+  <td>Screenshots in exhibits</td>
+  <td>What the consumer actually sees: listed amount, discount offers, payment plans. Direct evidence of the platform's role.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="plaintiff-characteristics-beyond-party-name">Plaintiff characteristics (beyond party name)</h3>
+<table>
+<thead>
+<tr>
+  <th>Field</th>
+  <th>Source</th>
+  <th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><strong>Demographics</strong></td>
+  <td>Termo de ajuizamento, RG copy</td>
+  <td>Age (from birth date), gender, race, marital status, occupation. Much richer than what consulta gives.</td>
+</tr>
+<tr>
+  <td><strong>Employment status</strong></td>
+  <td>Petição inicial</td>
+  <td>E.g., &quot;desempregada&quot;, &quot;autônomo&quot;. Relevant for understanding who litigates.</td>
+</tr>
+<tr>
+  <td><strong>Justiça gratuita</strong></td>
+  <td>Petição inicial</td>
+  <td>Whether plaintiff claims inability to pay court costs — proxy for income.</td>
+</tr>
+<tr>
+  <td><strong>Address</strong></td>
+  <td>Filing form</td>
+  <td>Municipality, neighborhood. Could geo-link.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="pre-litigation-and-procedural-detail">Pre-litigation and procedural detail</h3>
+<table>
+<thead>
+<tr>
+  <th>Field</th>
+  <th>Source</th>
+  <th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><strong>PROCON complaint</strong></td>
+  <td>Attached CIP documents</td>
+  <td>Whether consumer went through PROCON before court, and what happened.</td>
+</tr>
+<tr>
+  <td><strong>Conciliation details</strong></td>
+  <td>CEJUSC terms</td>
+  <td>Whether conciliation was attempted, attendance, offers made. Goes beyond the movimentação code.</td>
+</tr>
+<tr>
+  <td><strong>Moral damages amount requested</strong></td>
+  <td>Petição inicial</td>
+  <td>Specific R$ amount or formula (e.g., &quot;40 salários mínimos&quot;).</td>
+</tr>
+<tr>
+  <td><strong>Moral damages amount awarded</strong></td>
+  <td>Sentença text</td>
+  <td>When granted, the exact amount — not just win/lose.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="litigation-industry">Litigation industry</h3>
+<table>
+<thead>
+<tr>
+  <th>Field</th>
+  <th>Source</th>
+  <th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><strong>Law firm identity</strong></td>
+  <td>Letterhead, procurações</td>
+  <td>Identify high-volume template-litigation firms (e.g., De Nicola Advogados in PDF 2 — 80-page template petition, multiple office locations).</td>
+</tr>
+<tr>
+  <td><strong>Template vs. bespoke petition</strong></td>
+  <td>Petição inicial</td>
+  <td>Length, boilerplate ratio, jurisprudence dump style. Indicator of industrialized litigation.</td>
+</tr>
+<tr>
+  <td><strong>Legal arguments used</strong></td>
+  <td>Petição inicial, contestação</td>
+  <td>LGPD angle, prescription doctrine, exercício regular de direito. Could track argument diffusion over time.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="bank-creditor-internal-records">Bank/creditor internal records</h3>
+<table>
+<thead>
+<tr>
+  <th>Field</th>
+  <th>Source</th>
+  <th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><strong>Ficha de cobrança</strong></td>
+  <td>Defendant exhibits</td>
+  <td>Full arrears timeline from the bank's internal system: dates of each missed payment, charges, interest. Only available here.</td>
+</tr>
+<tr>
+  <td><strong>Bank response to PROCON</strong></td>
+  <td>Email exhibits</td>
+  <td>How the bank characterizes the debt internally.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="what-s-not-worth-extracting-already-covered-or-low-value">What's NOT worth extracting (already covered or low value)</h2>
 <ul>
-<li>purpose: set up the wrongful-blacklisting / judicial-redress angle, state headline numbers, preview identification and main finding.</li>
-<li>depends on: all other sections being in reasonable shape.</li>
-<li>key evidence: 80% plaintiff-win rate; main IV coefficient on active-firm; one-line on BCB credit-access result when available.</li>
-<li>status: not started.</li>
+<li><strong>Procedural certifications and publication dates</strong> — already in movimentações</li>
+<li><strong>Powers of attorney chain</strong> — unless studying lawyer networks</li>
+<li><strong>Corporate identity documents</strong> of defendants (AGE minutes etc.)</li>
+<li><strong>Boilerplate legal text</strong> — jurisprudence citations in briefs are voluminous but low signal for our RD</li>
 </ul>
-<h3 id="2-institutional-background">2. Institutional background</h3>
+<hr />
+<h2 id="sample-pdfs">Sample PDFs</h2>
+<h3 id="pdf-1-0000024-63-2025-8-26-0095-224-pages">PDF 1: <code>0000024-63.2025.8.26.0095</code> (224 pages)</h3>
+<p>Juizado Especial Cível, Foro de Brotas. Individual (autônomo, male, born 1956) suing iResolve Securitizadora + Itaú over a 2002 bank overdraft on a micro-empresa account. Debt ceded to iResolve in 2020, collected by Recovery do Brasil. Full name, CPF, RG, CNPJ all present in documents. Contains PROCON complaint, bank email response, cessão declaration, Itaú internal ficha de cobrança, Serasa screenshots, contestação, CEJUSC conciliation record.</p>
+<h3 id="pdf-2-1012896-43-2023-8-26-0005-364-pages">PDF 2: <code>1012896-43.2023.8.26.0005</code> (364 pages)</h3>
+<p>2ª Vara Cível, São Miguel Paulista. Individual (desempregada, female) suing Telefônica over prescribed telecom debts (Nov 2015 – Feb 2016). Filed by De Nicola Advogados (high-volume consumer firm, 80-page template petition with LGPD arguments). Sentence: partially granted — debts declared inexigíveis, collection prohibited, but moral damages denied. Contains contestação with Serasa Limpa Nome / score-impact arguments, embargos de declaração (rejected).</p>
+<hr />
+<h2 id="feasibility">Feasibility</h2>
 <ul>
-<li>purpose: explain Serasa and the Brazilian credit-bureau system; &quot;inclusao indevida&quot; as a cause of action; how TJSP civil courts handle these cases; random assignment of cases to varas.</li>
-<li>depends on: nothing.</li>
-<li>key evidence: institutional references, citations to Lichand-Soares 2014 and Ponticelli-Alencar 2016.</li>
-<li>status: not started. Source material: <code>docs/institutions.md</code> once populated.</li>
-</ul>
-<h3 id="3-data">3. Data</h3>
-<ul>
-<li>purpose: describe TJSP court data (Datajud + consulta + sentenca) and BCB administrative data; outline the linkage; state sample restrictions.</li>
-<li>depends on: sample definition being settled (currently open, see <code>docs/methods.md</code>).</li>
-<li>key evidence: counts at each filter step; map of Sao Paulo coverage; balance on pre-period characteristics across judge-leniency terciles (once built).</li>
-<li>status: not started. Source material: <code>docs/data.md</code>, <code>docs/reference/scr_variables.md</code>.</li>
-</ul>
-<h3 id="4-empirical-strategy">4. Empirical strategy</h3>
-<ul>
-<li>purpose: formalize the vara-leniency IV; define the estimand; state assumptions (random assignment, exclusion, monotonicity); discuss control group (filed-and-lost, +/-5 window).</li>
-<li>depends on: settling the instrument construction (current: judge-LOO; target: weighted vara-level leniency — see <code>docs/methods.md</code>).</li>
-<li>key evidence: first-stage F, within-foro leniency SD, LATE interpretation.</li>
-<li>status: not started. Source material: <code>docs/methods.md</code>.</li>
-</ul>
-<h3 id="5-results-firm-activity-and-dynamics-receita-cnpj-side">5. Results: firm activity and dynamics (Receita/CNPJ side)</h3>
-<ul>
-<li>purpose: present the pre-BCB active-firm IV, event-study, and firm-dynamics table (# plants, new, closed, MEI, Simples).</li>
-<li>depends on: §4.</li>
-<li>key evidence:<ul>
-<li>Table: active-firm OLS / RF / IV (currently N = 97,732, IV = 0.104**, F = 309).</li>
-<li>Figure: event study of active-firm probability around lawsuit year.</li>
-<li>Table: firm dynamics IV (plants, new, closed, MEI, Simples).</li>
-</ul>
-</li>
-<li>status: preliminary results already exist (see <code>docs/briefs/presentation_march2026.md</code>). Need to re-run with the vara-level instrument.</li>
-</ul>
-<h3 id="6-results-credit-access-pricing-and-delinquency-bcb-side">6. Results: credit access, pricing, and delinquency (BCB side)</h3>
-<ul>
-<li>purpose: extend outcomes to the credit registry — credit stock, interest rates, guarantees, prejuizo — using the same IV on the linked sample.</li>
-<li>depends on: §4, §5, court↔BCB linkage being documented.</li>
-<li>key evidence:<ul>
-<li>Tables: <code>tot_*</code> and <code>foc_*_{cpf,cnpj}</code> IV tables for each SCR outcome (levels, log, bin).</li>
-<li>Figures: event studies for headline outcomes.</li>
-</ul>
-</li>
-<li>status: not started from our side. Outputs for 2026-04-14 run exist in the Dropbox (<code>RA/Reports BCB/14042026/</code>); need to read and pick headline outcomes.</li>
-</ul>
-<h3 id="7-mechanisms-and-heterogeneity">7. Mechanisms and heterogeneity</h3>
-<ul>
-<li>purpose: unpack what drives the main effect — by firm size, sector, vara delay, plaintiff type (individual vs firm), type of wrongful listing.</li>
-<li>depends on: §5, §6. Open whether the Claims/ regex classification of legal reasons enters here.</li>
-<li>key evidence: (TBD).</li>
-<li>status: not started. Note: <code>docs/thinking.md</code> flags the claim-reason classifier as a candidate heterogeneity source.</li>
-</ul>
-<h3 id="8-robustness">8. Robustness</h3>
-<ul>
-<li>purpose: show the main result is not driven by: instrument construction choice, sample restrictions, fixed-effect specification, outcome transformation, clustering level.</li>
-<li>depends on: §5, §6.</li>
-<li>key evidence: (TBD).</li>
-<li>status: not started.</li>
-</ul>
-<h3 id="9-interpretation-and-policy">9. Interpretation and policy</h3>
-<ul>
-<li>purpose: connect the estimates to the cost of judicial delay, the value of consumer-protection enforcement, and policy levers (administrative redress, automatic removal, judicial efficiency).</li>
-<li>depends on: §5-§8.</li>
-<li>key evidence: back-of-envelope aggregate cost of delay; counterfactual implied by IV LATE.</li>
-<li>status: not started.</li>
-</ul>
-<h3 id="10-conclusion">10. Conclusion</h3>
-<ul>
-<li>purpose: summarize contribution, headline numbers, and limitations.</li>
-<li>depends on: all above.</li>
-<li>status: not started.</li>
-</ul>
-<h2 id="appendix-plan">Appendix plan</h2>
-<ul>
-<li>A. Data construction details — case filtering steps, party classification, linkage diagnostics.</li>
-<li>B. Instrument construction — alternative vara-leniency constructions and their implied first stages.</li>
-<li>C. Additional SCR outcomes not in the main text.</li>
-<li>D. IRB and BCB approval documentation references.</li>
-</ul>
-<h2 id="notes">Notes</h2>
-<ul>
-<li>Paper title used here matches the March 2026 deck: &quot;Redress Delayed, Business Denied: Credit Blacklisting and Entrepreneurship in Brazil&quot;.</li>
-<li>Section 5 and 6 split reflects the pre-BCB / BCB distinction in the current analysis. Once the linkage is stable this may fold into a single &quot;Results&quot; section organized by outcome family rather than data source.</li>
-<li>Deliverable gate: start-up report to IPA due 2026-05-30. A minimal version of §§2-5 is the realistic target for that date.</li>
+<li>At R$1/process and ~300K cases in our Datajud sample, full download would cost ~R$300K — need to sample strategically</li>
+<li>Could target: (a) cases with sentences only, (b) specific varas/judges, (c) specific defendant types</li>
+<li>Text quality is mixed: some pages are clean digital text, others are scanned/OCR. LLM extraction would be needed for many fields.</li>
+<li>The most unique data (ficha de cobrança, cessão details, demographics) only appears in a subset of cases — not every PDF will have bank internal records.</li>
 </ul>
 
 </div>
