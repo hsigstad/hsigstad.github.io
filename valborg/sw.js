@@ -1,7 +1,7 @@
 /* Valborg PWA service worker — offline shell cache (stale-while-revalidate).
    Assets are served unencrypted; the encrypted pages decrypt client-side (staticrypt),
    so with "husk meg" the key sits in localStorage and pages open offline too. */
-const CACHE = 'valborg-v1';
+const CACHE = 'valborg-v2';
 const PRECACHE = [
   'index.html', 'manifest.webmanifest',
   'apple-touch-icon.png', 'icon-192.png', 'icon-512.png'
